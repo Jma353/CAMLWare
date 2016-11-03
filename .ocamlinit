@@ -1,0 +1,10 @@
+(* load up the compiled packages *)
+#directory "_build";;
+#load "bitstream.cmo";;
+#load "combinational.cmo";;
+#load "circuit.cmo";;
+
+(* open the compiled packages *)
+open Bitstream;;
+open Combinational;;
+open Circuit;;
