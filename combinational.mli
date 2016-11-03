@@ -7,7 +7,7 @@ type id = string
 
 (* the digital gates *)
 type gate =
-  | AND | OR | XOR | NAND | NOR | XNOR
+  | And | Or | Xor | Nand | Nor | Nxor
 
 (* the types of negation *)
 type negation =
@@ -15,7 +15,7 @@ type negation =
 
 (* the types of comparison *)
 type comparison =
-  | Lt | Gt | Eq | Le | Ge | Ne
+  | Lt | Gt | Eq | Lte | Gte | Neq
 
 (* the types of supported arithmetic *)
 type arithmetic =

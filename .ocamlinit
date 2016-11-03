@@ -3,8 +3,12 @@
 #load "bitstream.cmo";;
 #load "combinational.cmo";;
 #load "circuit.cmo";;
+#load "parser.cmo";;
+#load "lexer.cmo";;
+#load "parse.cmo";;
 
 (* open the compiled packages *)
 open Bitstream;;
 open Combinational;;
 open Circuit;;
+open Parse;;

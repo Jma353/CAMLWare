@@ -3,13 +3,13 @@ open Bitstream
 type id = string
 
 type gate =
-  | AND | OR | XOR | NAND | NOR | XNOR
+  | And | Or | Xor | Nand | Nor | Nxor
 
 type negation =
   | Neg_bitwise | Neg_logical | Neg_arithmetic
 
 type comparison =
-  | Lt | Gt | Eq | Le | Ge | Ne
+  | Lt | Gt | Eq | Lte | Gte | Neq
 
 type arithmetic =
   | Add | Subtract
