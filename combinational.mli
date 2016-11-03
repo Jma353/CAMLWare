@@ -44,6 +44,6 @@ type comb =
   | Mux       of comb * comb list
   | Neg       of negation * comb
   | Comp      of comparison * comb * comb
-  | Arith     of arithmetic_op * comb * comb
+  | Arith     of arithmetic * comb * comb
   | Concat    of comb * comb
   | Replicate of int * comb
