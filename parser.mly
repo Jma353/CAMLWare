@@ -96,6 +96,12 @@ unary:
   | NOT unary {Neg (Neg_bitwise,$2)}
   | LNOT unary {Neg (Neg_logical,$2)}
   | DASH unary {Neg (Neg_arithmetic,$2)}
+  | AND unary {Reduce (And,$2)}
+  | OR unary {Reduce (Or,$2)}
+  | XOR unary {Reduce (Xor,$2)}
+  | NAND unary {Reduce (Nand,$2)}
+  | NOR unary {Reduce (Nor,$2)}
+  | NXOR unary {Reduce (Nxor,$2)}
 ;
 
 primary:
