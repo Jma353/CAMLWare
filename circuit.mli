@@ -1,8 +1,8 @@
 open Bitstream
 open Combinational
 
-(* A circuit represents a collection of registers linked together by logical
- * gates *)
+(* A circuit represents a collection of registers linked together by
+ * combinational logic expressions *)
 
 (* a map with strings as the keys *)
 module M = Map.Make(String)
@@ -17,19 +17,19 @@ type reg_type =
 type clock_behavior =
   | Rising | Falling
 
-(* a type to represent the state of a circuit *)
-type circuit = {
-  registers : register M.t;
-  clock : bool
-}
-
 (* a digital state component *)
-and register = {
+type register = {
   reg_type : reg_type;
   clock_behavior : clock_behavior;
   length : int;
   value : bitstream;
   next : comb;
+}
+
+(* a type to represent the state of a circuit *)
+type circuit = {
+  registers : register M.t;
+  clock : bool
 }
 
 (* [evaluate circ reg] is the bitstream that results from evaluating
