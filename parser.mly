@@ -18,6 +18,8 @@ let parse_error _ =
 %token REGISTER
 %token FALLING
 %token RISING
+%token INPUT
+%token OUTPUT
 %token ASSIGN
 %token EQ
 %token NEQ
@@ -54,19 +56,23 @@ let parse_error _ =
 %%
 
 comb:
-  | term {$1}
-  | term PLUS comb {Arith (Add,$1,$3)}
-  | term DASH comb {Arith (Subtract,$1,$3)}
+  | arith_expr {$1}
 ;
 
-term:
+arith_expr:
+  | comp_expr {$1}
+  | comp_expr PLUS comb {Arith (Add,$1,$3)}
+  | comp_expr DASH comb {Arith (Subtract,$1,$3)}
+;
+
+comp_expr:
   | or_expr {$1}
-  | or_expr EQ term {Comp (Eq,$1,$3)}
-  | or_expr NEQ term {Comp (Neq,$1,$3)}
-  | or_expr LT term {Comp (Lt,$1,$3)}
-  | or_expr GT term {Comp (Gt,$1,$3)}
-  | or_expr LTE term {Comp (Lte,$1,$3)}
-  | or_expr GTE term {Comp (Gte,$1,$3)}
+  | or_expr EQ comp_expr {Comp (Eq,$1,$3)}
+  | or_expr NEQ comp_expr {Comp (Neq,$1,$3)}
+  | or_expr LT comp_expr {Comp (Lt,$1,$3)}
+  | or_expr GT comp_expr {Comp (Gt,$1,$3)}
+  | or_expr LTE comp_expr {Comp (Lte,$1,$3)}
+  | or_expr GTE comp_expr {Comp (Gte,$1,$3)}
 ;
 
 or_expr:
@@ -95,4 +101,11 @@ unary:
 primary:
   | VAR {Reg $1}
   | LPAREN comb RPAREN {$2}
+  | LBRACE concat_inside {$2}
+;
+
+concat_inside:
+  | comb RBRACE {$1}
+  | comb COMMA concat_inside {Concat ($1,$3)}
+  | INT LBRACE concat_inside {Replicate (int_of_string $1, $3)}
 ;

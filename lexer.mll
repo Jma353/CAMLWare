@@ -23,6 +23,8 @@ rule token = parse
   | "register" { REGISTER }
   | "falling" { FALLING }
   | "rising" { RISING }
+  | "input" { INPUT }
+  | "output" { OUTPUT }
   | "=" { ASSIGN }
   | "==" { EQ }
   | "!=" { NEQ }
