@@ -1,3 +1,5 @@
+open Bitstream
+
 (* Abstract syntax for combinational logic expressions *)
 
 (* the type of the keys to which registers are bound *)

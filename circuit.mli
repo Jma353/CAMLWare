@@ -4,36 +4,11 @@ open Combinational
 (* A circuit represents a collection of registers linked together by
  * combinational logic expressions *)
 
-(* a map with strings as the keys *)
-module M = Map.Make(String)
-
-(* since we internally represent inputs and outputs as registers, we need a
- * flag to specify their type *)
-type reg_type =
-  | Register | Input | Output
-
-(* a type to specify whether a component is rising edge or falling edge
- * triggered *)
-type clock_behavior =
-  | Rising | Falling
-
-(* a digital state component *)
-type register = {
-  reg_type : reg_type;
-  clock_behavior : clock_behavior;
-  length : int;
-  value : bitstream;
-  next : comb;
-}
-
 (* a type to represent the state of a circuit *)
-type circuit = {
-  registers : register M.t;
-  clock : bool
-}
+type circuit
 
-(* [evaluate circ reg] is the bitstream that results from evaluating
- * [comb] in the context of circuit [circ]*)
+(* [evaluate circ comb] is the bitstream that results from evaluating
+ * [comb] in the context of circuit [circ] *)
 val evaluate : circuit -> comb -> bitstream
 
 (* [step circ] is the circuit that results from toggling the state of the clock

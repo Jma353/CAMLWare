@@ -29,6 +29,9 @@ val ones : int -> bitstream
  * 0th position which is [1]*)
 val one : int -> bitstream
 
+(* [singleton b] is a bitstream of length 1 containing only the value [b] *)
+val singleton : bool -> bitstream
+
 (* [create bs] is a bitstream [b] where each bit [b_i] is [List.nth i bs] *)
 val create : bool list -> bitstream
 
@@ -81,19 +84,19 @@ val add : bitstream -> bitstream -> bitstream
  * Requires: [length b1] equals [length b2] *)
 val subtract : bitstream -> bitstream -> bitstream
 
-(* [less_than b1 b2] is a bitstream containing [one (length b1)] if the twos
+(* [less_than b1 b2] is a bitstream containing [one 1] if the twos
  * complement interpretation of [b1] is less than [b2],
- * otherwise [zeros (length b1)]
+ * otherwise [zeros 1]
  * Requires: [length b1] equals [length b2] *)
 val less_than : bitstream -> bitstream -> bitstream
 
-(* [greater_than b1 b2] is bitstream containing [one (length b1)] if the twos
+(* [greater_than b1 b2] is bitstream containing [one 1] if the twos
  * complement interpretation of [b1] is greater than [b2],
- * otherwise [zeros (length b1)]
+ * otherwise [zeros 1)]
  * Requires: [length b1] equals [length b2] *)
 val greater_than : bitstream -> bitstream -> bitstream
 
-(* [equals b1 b2] is a bitstream containing [one (length b1)] if [b1] equals
- * [b2], otherwise [zeros (length b1)]
+(* [equals b1 b2] is a bitstream containing [one 1] if [b1] equals
+ * [b2], otherwise [zeros 1]
  * Requires: [length b1] equals [length b2] *)
 val equals : bitstream -> bitstream -> bitstream
