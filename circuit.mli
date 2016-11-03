@@ -42,3 +42,8 @@ val step : circuit -> circuit
 
 (* [step_n circ n] is the circuit that results from stepping [circ] [n] times *)
 val step_n : circuit -> int -> circuit
+
+(* [change_input circ in value] is the circuit that results from replacing the
+ * value of input [in] in [circ] with [value] and updating and dependent
+ * outputs *)
+val change_input : circuit -> id -> bitstream -> circuit
