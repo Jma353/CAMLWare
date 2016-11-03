@@ -43,6 +43,9 @@ rule token = parse
   | "^" { XOR }
   | "~" { NOT }
   | "+" { PLUS }
+  | "<<" { SLL }
+  | ">>" { SRL }
+  | ">>>" { SRA }
   | "-" { DASH }
   | "," { COMMA }
   | '(' { LPAREN }

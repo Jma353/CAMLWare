@@ -38,6 +38,9 @@ let parse_error _ =
 %token XOR
 %token NOT
 %token PLUS
+%token SLL
+%token SRL
+%token SRA
 %token DASH
 %token COMMA
 %token LPAREN
@@ -56,39 +59,46 @@ let parse_error _ =
 %%
 
 comb:
-  | arith_expr {$1}
+  | add_expr {$1}
 ;
 
-arith_expr:
+add_expr:
+  | shift_expr {$1}
+  | add_expr PLUS shift_expr {Arith (Add,$1,$3)}
+  | add_expr DASH shift_expr {Arith (Subtract,$1,$3)}
+;
+
+shift_expr:
   | comp_expr {$1}
-  | comp_expr PLUS comb {Arith (Add,$1,$3)}
-  | comp_expr DASH comb {Arith (Subtract,$1,$3)}
+  | shift_expr SLL comp_expr {Arith (Sll,$1,$3)}
+  | shift_expr SRL comp_expr {Arith (Srl,$1,$3)}
+  | shift_expr SRA comp_expr {Arith (Sra,$1,$3)}
 ;
 
 comp_expr:
   | or_expr {$1}
-  | or_expr EQ comp_expr {Comp (Eq,$1,$3)}
-  | or_expr NEQ comp_expr {Comp (Neq,$1,$3)}
-  | or_expr LT comp_expr {Comp (Lt,$1,$3)}
-  | or_expr GT comp_expr {Comp (Gt,$1,$3)}
-  | or_expr LTE comp_expr {Comp (Lte,$1,$3)}
-  | or_expr GTE comp_expr {Comp (Gte,$1,$3)}
+  | comp_expr EQ or_expr {Comp (Eq,$1,$3)}
+  | comp_expr NEQ or_expr {Comp (Neq,$1,$3)}
+  | comp_expr LT or_expr {Comp (Lt,$1,$3)}
+  | comp_expr GT or_expr {Comp (Gt,$1,$3)}
+  | comp_expr LTE or_expr {Comp (Lte,$1,$3)}
+  | comp_expr GTE or_expr {Comp (Gte,$1,$3)}
 ;
 
 or_expr:
   | and_expr {$1}
-  | and_expr OR or_expr {Gate (Or,$1,$3)}
-  | and_expr XOR or_expr {Gate (Xor,$1,$3)}
-  | and_expr NOR or_expr {Gate (Nor,$1,$3)}
-  | and_expr NXOR or_expr {Gate (Nxor,$1,$3)}
-  | and_expr LOR or_expr {Logical (Or,$1,$3)}
+  | or_expr OR and_expr {Gate (Or,$1,$3)}
+  | or_expr XOR and_expr {Gate (Xor,$1,$3)}
+  | or_expr NOR and_expr {Gate (Nor,$1,$3)}
+  | or_expr NXOR and_expr {Gate (Nxor,$1,$3)}
+  | or_expr LOR and_expr {Logical (Or,$1,$3)}
 ;
 
 and_expr:
   | unary {$1}
-  | unary AND and_expr {Gate (And,$1,$3)}
-  | unary NAND and_expr {Gate (Nand,$1,$3)}
-  | unary LAND and_expr {Logical (And,$1,$3)}
+  | and_expr AND unary {Gate (And,$1,$3)}
+  | and_expr NAND unary {Gate (Nand,$1,$3)}
+  | and_expr LAND unary {Logical (And,$1,$3)}
 ;
 
 unary:

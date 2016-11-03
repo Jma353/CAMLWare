@@ -12,11 +12,12 @@ type comparison =
   | Lt | Gt | Eq | Lte | Gte | Neq
 
 type arithmetic =
-  | Add | Subtract
+  | Add | Subtract | Sll | Srl | Sra
 
 type comb =
   | Const     of bitstream
   | Reg       of id
+  | Nth       of int * comb
   | Sub_seq   of int * int * comb
   | Gate      of gate * comb * comb
   | Logical   of gate * comb * comb

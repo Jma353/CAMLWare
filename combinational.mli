@@ -19,11 +19,12 @@ type comparison =
 
 (* the types of supported arithmetic *)
 type arithmetic =
-  | Add | Subtract
+  | Add | Subtract | Sll | Srl | Sra
 
 (* values of type [comb] represent combinational logic circuits.
  * - [Const b] represents a constant value containing bitstream [b]
  * - [Reg id] represents the value of the register with id [id]
+ * - [Nth n b] represents bit at index [n] in [b]
  * - [Sub_seq from to b] represents the subsequence of bitstream [b] from index
  *   [from] to index [to]
  * - [Gate g b1 b2] represents gate [g] applied bitwise to [b1] and [b2]
@@ -39,6 +40,7 @@ type arithmetic =
 type comb =
   | Const     of bitstream
   | Reg       of id
+  | Nth       of int * comb
   | Sub_seq   of int * int * comb
   | Gate      of gate * comb * comb
   | Logical   of gate * comb * comb
