@@ -30,12 +30,12 @@ type arithmetic =
  * - [Gate g b1 b2] represents gate [g] applied bitwise to [b1] and [b2]
  * - [Logical g b1 b2] represents gate [g] applied logically to [b1] and [b2]
  * - [Reduce g b] represents [b] reduced with gate [g]
- * - [Mux sel bs] represents bitstreams [bs] multiplexed on [sel]
  * - [Neg negation b] represents [negation] applied to [b]
  * - [Comp comp b1 b2] represents [comp] applied to [b1] and [b2]
  * - [Arith op b1 b2] represents [op] applied to [b1] and [b2]
  * - [Concat b1 b2] represents [b1] concatenated to [b2]
  * - [Replicate n b] represents [b] replicated [n] times
+ * - [In] represents a value that is controlled by a user
  *)
 type comb =
   | Const     of bitstream
@@ -45,9 +45,11 @@ type comb =
   | Gate      of gate * comb * comb
   | Logical   of gate * comb * comb
   | Reduce    of gate * comb
-  | Mux       of comb * comb list
   | Neg       of negation * comb
   | Comp      of comparison * comb * comb
   | Arith     of arithmetic * comb * comb
   | Concat    of comb * comb
   | Replicate of int * comb
+  | In
+
+val format_logic : Format.formatter -> comb -> unit

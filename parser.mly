@@ -61,7 +61,32 @@ let parse_error _ =
 %start comb
 %type <Combinational.comb> comb
 
+%start circuit
+%type <Circuit.circuit> circuit
+
 %%
+
+circuit:
+  | registers {circuit $1}
+;
+
+registers:
+  | register {let reg = $1 in StringMap.singleton (fst reg) (snd reg)}
+  | register registers {let reg = $1 in StringMap.add (fst reg) (snd reg) $2}
+;
+
+register:
+  | REGISTER VAR LBRACKET number RBRACKET ASSIGN comb
+    {($2, rising_register $4 $7)}
+  | RISING REGISTER VAR LBRACKET number RBRACKET ASSIGN comb
+    {($3, rising_register $5 $8)}
+  | FALLING REGISTER VAR LBRACKET number RBRACKET ASSIGN comb
+    {($3, falling_register $5 $8)}
+  | INPUT VAR LBRACKET number RBRACKET
+    {($2, input $4)}
+  | OUTPUT VAR LBRACKET number RBRACKET ASSIGN comb
+    {($2, output $4 $7)}
+;
 
 comb:
   | add_expr {$1}
@@ -123,6 +148,7 @@ array_access:
   | primary {$1}
   | primary LBRACKET number RBRACKET {Nth ($3,$1)}
   | primary LBRACKET number DASH number RBRACKET {Sub_seq ($3,$5,$1)}
+;
 
 primary:
   | VAR {Reg $1}
@@ -141,6 +167,7 @@ bitstream:
   | DEC {bitstream_of_decimal (int_of_string $1)}
   | HEX {bitstream_of_hexstring $1}
   | BIN {bitstream_of_binstring $1}
+;
 
 number:
   | DEC {int_of_string $1}

@@ -1,10 +1,10 @@
 (* load up the compiled packages *)
 #directory "_build";;
 #load "str.cma";;
+#load "base_conversions.cmo"
 #load "bitstream.cmo";;
 #load "combinational.cmo";;
 #load "circuit.cmo";;
-#load "base_conversions.cmo"
 #load "parser.cmo";;
 #load "lexer.cmo";;
 #load "parse.cmo";;
@@ -15,3 +15,8 @@ open Combinational;;
 open Circuit;;
 open Base_conversions;;
 open Parse;;
+
+(* install defined printers*)
+#install_printer format_bitstream;;
+#install_printer format_register;;
+#install_printer format_circuit;;

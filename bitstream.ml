@@ -1,4 +1,8 @@
-type bitstream = unit
+open Base_conversions
+
+(* Temporary implementation so the parser is testable *)
+
+type bitstream = string
 
 let length b =
   failwith "unimplemented"
@@ -15,8 +19,12 @@ let is_zero b =
 let negative b =
   failwith "unimplemented"
 
+let rec replicate_string c n =
+  if n = 0 then "" else
+  c^(replicate_string c (n-1))
+
 let zeros n =
-  failwith "unimplemented"
+  "0x"^(replicate_string "0" (if n mod 4 = 0 then n/4 else n/4 + 1))
 
 let ones n =
   failwith "unimplemented"
@@ -31,10 +39,10 @@ let create bs =
   failwith "unimplemented"
 
 let bitstream_of_binstring s =
-  failwith "unimplemented"
+  hexstring_of_binstring_unsigned s
 
 let bitstream_of_hexstring s =
-  failwith "unimplemented"
+  s
 
 let bitstream_of_decimal d =
   failwith "unimplemented"
@@ -89,3 +97,6 @@ let greater_than b1 b2 =
 
 let equals b1 b2 =
   failwith "unimplemented"
+
+let format_bitstream f b =
+  Format.fprintf f "%s" b

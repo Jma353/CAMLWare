@@ -126,3 +126,6 @@ val greater_than : bitstream -> bitstream -> bitstream
  * [b2], otherwise [zeros 1]
  * Requires: [length b1] equals [length b2] *)
 val equals : bitstream -> bitstream -> bitstream
+
+(* formatter for bitstreams *)
+val format_bitstream : Format.formatter -> bitstream -> unit
