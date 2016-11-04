@@ -1,5 +1,5 @@
 main:
-	ocamlbuild main.byte
+	ocamlbuild -pkgs str main.byte
 
 clean:
 	ocamlbuild -clean

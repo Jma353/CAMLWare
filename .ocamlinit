@@ -1,5 +1,6 @@
 (* load up the compiled packages *)
 #directory "_build";;
+#load "str.cma";;
 #load "bitstream.cmo";;
 #load "combinational.cmo";;
 #load "circuit.cmo";;

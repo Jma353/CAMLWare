@@ -126,9 +126,6 @@ primary:
   | BIN {Const (bitstream_of_binstring $1)}
   | LPAREN comb RPAREN {$2}
   | LBRACE concat_inside {$2}
-  | comb LBRACKET DEC RBRACKET {Nth (int_of_string $3,$1)}
-  | comb LBRACKET HEX RBRACKET {Nth (dec_of_hexstring $3,$1)}
-  | comb LBRACKET BIN RBRACKET {Nth (dec_of_binstring $3,$1)}
 ;
 
 concat_inside:
