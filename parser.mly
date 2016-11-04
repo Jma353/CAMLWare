@@ -132,6 +132,6 @@ concat_inside:
   | comb RBRACE {$1}
   | comb COMMA concat_inside {Concat ($1,$3)}
   | DEC LBRACE concat_inside {Replicate (int_of_string $1, $3)}
-  | HEX LBRACE concat_inside {Replicate (dec_of_hexstring $1, $3)}
-  | BIN LBRACE concat_inside {Replicate (dec_of_binstring $1, $3)}
+  | HEX LBRACE concat_inside {Replicate (dec_of_hexstring_unsigned $1, $3)}
+  | BIN LBRACE concat_inside {Replicate (dec_of_binstring_unsigned $1, $3)}
 ;

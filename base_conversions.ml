@@ -47,27 +47,46 @@ let rec string_to_char_list_helper l s =
 let string_to_char_list s =
   string_to_char_list_helper [] s
 
-let rec group_bin_by_fours_helper l s =
+let rec group_bin_by_fours_helper signed l s =
   match String.length s with
   | 0 -> l
-  | 1 -> let ext = if s = "1" then "111" else "000" in (ext^s)::l
-  | 2 -> let ext = if String.get s 0 = '1' then "11" else "00" in (ext^s)::l
-  | 3 -> let ext = if String.get s 0 = '1' then "1" else "0" in (ext^s)::l
+  | 1 -> let ext =
+           if signed then (if s = "1" then "111" else "000")
+           else "000" in (ext^s)::l
+  | 2 -> let ext =
+           if signed then (if String.get s 0 = '1' then "11" else "00")
+           else "00" in (ext^s)::l
+  | 3 -> let ext =
+           if signed then (if String.get s 0 = '1' then "1" else "0")
+           else "0" in (ext^s)::l
   | _ ->
     let c = String.sub s (String.length s - 4) 4 in
     let sub = String.sub s 0 (String.length s - 4) in
-    group_bin_by_fours_helper (c::l) sub
+    group_bin_by_fours_helper signed (c::l) sub
 
-let group_bin_by_fours s =
-  group_bin_by_fours_helper [] s
+let group_bin_by_fours_signed s =
+  group_bin_by_fours_helper true [] s
 
-let hexstring_of_binstring s =
+let group_bin_by_fours_unsigned s =
+  group_bin_by_fours_helper false [] s
+
+let hexstring_of_binstring_helper signed s =
   let bin =
     if String.length s >= 3 && String.sub s 0 2 = "0b"
     then String.sub s 2 (String.length s - 2)
     else s in
-  let lst = group_bin_by_fours bin in
+  let grouper =
+    if signed
+    then group_bin_by_fours_signed
+    else group_bin_by_fours_unsigned in
+  let lst = grouper bin in
   lst |> (List.map bin_group_to_hex) |> (List.fold_left (^) "0x")
+
+let hexstring_of_binstring_signed s =
+  hexstring_of_binstring_helper true s
+
+let hexstring_of_binstring_unsigned s =
+  hexstring_of_binstring_helper false s
 
 let binstring_of_hexstring s =
     let hex =
@@ -77,7 +96,7 @@ let binstring_of_hexstring s =
     let lst = string_to_char_list hex in
     lst |> (List.map hex_digit_to_bin) |> (List.fold_left (^) "0b")
 
-let dec_of_binstring s =
+let dec_of_binstring_helper signed s =
   let bin =
     if String.length s >= 3 && String.sub s 0 2 = "0b"
     then String.sub s 2 (String.length s - 2)
@@ -89,11 +108,20 @@ let dec_of_binstring s =
        if digit = '0'
        then (sum,2*mult,index+1,total)
        else if digit = '1'
-       then (sum+mult*(if index = total then (-1) else 1),
+       then (sum+mult*(if index = total && signed then (-1) else 1),
              2*mult,index+1,total)
        else failwith ((String.make 1 digit)^ " is not valid binary"))
    lst (0,1,1,String.length bin)) with
   | (sum,_,_,_) -> sum
 
-let dec_of_hexstring s =
-  dec_of_binstring (binstring_of_hexstring s)
+let dec_of_binstring_signed s =
+  dec_of_binstring_helper true s
+
+let dec_of_binstring_unsigned s =
+  dec_of_binstring_helper false s
+
+let dec_of_hexstring_signed s =
+  dec_of_binstring_signed (binstring_of_hexstring s)
+
+let dec_of_hexstring_unsigned s =
+  dec_of_binstring_unsigned (binstring_of_hexstring s)
