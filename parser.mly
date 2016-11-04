@@ -1,7 +1,9 @@
 %{
 
+open Bitstream
 open Combinational
 open Circuit
+open Base_conversions
 open Lexing
 
 let parse_error _ =
@@ -49,7 +51,10 @@ let parse_error _ =
 %token RBRACKET
 %token LBRACE
 %token RBRACE
-%token <string> INT
+%token COLON
+%token <string> DEC
+%token <string> BIN
+%token <string> HEX
 %token <string> VAR
 %token EOF
 
@@ -116,12 +121,20 @@ unary:
 
 primary:
   | VAR {Reg $1}
+  | DEC {Const (bitstream_of_decimal (int_of_string $1))}
+  | HEX {Const (bitstream_of_hexstring $1)}
+  | BIN {Const (bitstream_of_binstring $1)}
   | LPAREN comb RPAREN {$2}
   | LBRACE concat_inside {$2}
+  | comb LBRACKET DEC RBRACKET {Nth (int_of_string $3,$1)}
+  | comb LBRACKET HEX RBRACKET {Nth (dec_of_hexstring $3,$1)}
+  | comb LBRACKET BIN RBRACKET {Nth (dec_of_binstring $3,$1)}
 ;
 
 concat_inside:
   | comb RBRACE {$1}
   | comb COMMA concat_inside {Concat ($1,$3)}
-  | INT LBRACE concat_inside {Replicate (int_of_string $1, $3)}
+  | DEC LBRACE concat_inside {Replicate (int_of_string $1, $3)}
+  | HEX LBRACE concat_inside {Replicate (dec_of_hexstring $1, $3)}
+  | BIN LBRACE concat_inside {Replicate (dec_of_binstring $1, $3)}
 ;

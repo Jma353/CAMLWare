@@ -13,7 +13,9 @@ let incr_linenum lexbuf =
 }
 
 let ident      = (['a'-'z'] | ['A'-'Z'] | ['0'-'9'] | '_' | '\'')+
-let integral   = ['0'-'9']+
+let decimal    = ['0'-'9']+
+let hex        = ("0x")(['0'-'9''A'-'F'])+
+let binary     = ("0b")(['0' '1'])+
 let whitespace = [' ' '\t']
 
 rule token = parse
@@ -54,6 +56,9 @@ rule token = parse
   | ']' { RBRACKET }
   | "{" { LBRACE }
   | "}" { RBRACE }
-  | integral as i { INT i }
+  | ':' { COLON }
+  | decimal as d { DEC d }
+  | binary as b { BIN b }
+  | hex as h { HEX h }
   | ident as id { VAR id }
   | eof { EOF }

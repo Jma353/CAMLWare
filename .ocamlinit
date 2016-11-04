@@ -3,6 +3,7 @@
 #load "bitstream.cmo";;
 #load "combinational.cmo";;
 #load "circuit.cmo";;
+#load "base_conversions.cmo"
 #load "parser.cmo";;
 #load "lexer.cmo";;
 #load "parse.cmo";;
@@ -11,4 +12,5 @@
 open Bitstream;;
 open Combinational;;
 open Circuit;;
+open Base_conversions;;
 open Parse;;

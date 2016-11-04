@@ -17,8 +17,8 @@ type arithmetic =
 type comb =
   | Const     of bitstream
   | Reg       of id
-  | Nth       of int * comb
   | Sub_seq   of int * int * comb
+  | Nth       of int * comb
   | Gate      of gate * comb * comb
   | Logical   of gate * comb * comb
   | Reduce    of gate * comb

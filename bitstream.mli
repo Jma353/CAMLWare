@@ -19,6 +19,9 @@ val substream : bitstream -> int -> int -> bitstream
 (* [is_zero b] is [true] if [b] contains all zeros, [false] otherwise *)
 val is_zero : bitstream -> bool
 
+(* [negative b] is [true] if [b] is negative, [false] otherwise *)
+val negative : bitstream -> bool
+
 (* [zeros n] is a bitstream of length [n] consisting of all zero values *)
 val zeros : int -> bitstream
 
@@ -34,6 +37,18 @@ val singleton : bool -> bitstream
 
 (* [create bs] is a bitstream [b] where each bit [b_i] is [List.nth i bs] *)
 val create : bool list -> bitstream
+
+(* [bistream_of_binstring s] is a bitstream created by parsing [s] into a series
+ * of binary values *)
+val bitstream_of_binstring : string -> bitstream
+
+(* [bistream_of_hexstring s] is a bitstream created by parsing [s] into a series
+ * of hexadecimal values *)
+val bitstream_of_hexstring : string -> bitstream
+
+(* [bitstream_of_decimal d] is a bistream created by converting [d] into its
+ * binary representation *)
+val bitstream_of_decimal : int -> bitstream
 
 (* [set b n value] is a bitstream [s] with the same number of bits as [b]
  * where each bit [s_i] is the same as [b_i] except for [b_n] which
@@ -83,6 +98,17 @@ val add : bitstream -> bitstream -> bitstream
  * of [b1] and [b2]
  * Requires: [length b1] equals [length b2] *)
 val subtract : bitstream -> bitstream -> bitstream
+
+(* [shift_left b n] is [b] shifted left by the value encoded by [n] *)
+val shift_left : bitstream -> bitstream -> bitstream
+
+(* [shift_right_logical b n] is [b] shifted right (with zeros shifted in) by the
+ * value encoded by [n] *)
+val shift_right_logical : bitstream -> bitstream -> bitstream
+
+(* [shift_right_arithmetic b n] is [b] shifted right (with the sign of [b]
+* shifted in) by the value encoded by [n] *)
+val shift_right_arithmetic : bitstream -> bitstream -> bitstream
 
 (* [less_than b1 b2] is a bitstream containing [one 1] if the twos
  * complement interpretation of [b1] is less than [b2],

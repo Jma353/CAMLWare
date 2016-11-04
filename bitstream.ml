@@ -12,6 +12,9 @@ let substream b n1 n2 =
 let is_zero b =
   failwith "unimplemented"
 
+let negative b =
+  failwith "unimplemented"
+
 let zeros n =
   failwith "unimplemented"
 
@@ -25,6 +28,15 @@ let singleton b =
   failwith "unimplemented"
 
 let create bs =
+  failwith "unimplemented"
+
+let bitstream_of_binstring s =
+  failwith "unimplemented"
+
+let bitstream_of_hexstring s =
+  failwith "unimplemented"
+
+let bitstream_of_decimal d =
   failwith "unimplemented"
 
 let set b n value =
@@ -58,6 +70,15 @@ let add b1 b2 =
   failwith "unimplemented"
 
 let subtract b1 b2 =
+  failwith "unimplemented"
+
+let shift_left b n =
+  failwith "unimplemented"
+
+let shift_right_logical b n =
+  failwith "unimplemented"
+
+let shift_right_arithmetic b n =
   failwith "unimplemented"
 
 let less_than b1 b2 =
