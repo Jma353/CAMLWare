@@ -107,7 +107,7 @@ and_expr:
 ;
 
 unary:
-  | primary {$1}
+  | array_access {$1}
   | NOT unary {Neg (Neg_bitwise,$2)}
   | LNOT unary {Neg (Neg_logical,$2)}
   | DASH unary {Neg (Neg_arithmetic,$2)}
@@ -119,11 +119,14 @@ unary:
   | NXOR unary {Reduce (Nxor,$2)}
 ;
 
+array_access:
+  | primary {$1}
+  | primary LBRACKET number RBRACKET {Nth ($3,$1)}
+  | primary LBRACKET number DASH number RBRACKET {Sub_seq ($3,$5,$1)}
+
 primary:
   | VAR {Reg $1}
-  | DEC {Const (bitstream_of_decimal (int_of_string $1))}
-  | HEX {Const (bitstream_of_hexstring $1)}
-  | BIN {Const (bitstream_of_binstring $1)}
+  | bitstream {Const ($1)}
   | LPAREN comb RPAREN {$2}
   | LBRACE concat_inside {$2}
 ;
@@ -131,7 +134,16 @@ primary:
 concat_inside:
   | comb RBRACE {$1}
   | comb COMMA concat_inside {Concat ($1,$3)}
-  | DEC LBRACE concat_inside {Replicate (int_of_string $1, $3)}
-  | HEX LBRACE concat_inside {Replicate (dec_of_hexstring_unsigned $1, $3)}
-  | BIN LBRACE concat_inside {Replicate (dec_of_binstring_unsigned $1, $3)}
+  | number LBRACE concat_inside {Replicate ($1, $3)}
+;
+
+bitstream:
+  | DEC {bitstream_of_decimal (int_of_string $1)}
+  | HEX {bitstream_of_hexstring $1}
+  | BIN {bitstream_of_binstring $1}
+
+number:
+  | DEC {int_of_string $1}
+  | HEX {dec_of_hexstring_unsigned $1}
+  | BIN {dec_of_binstring_unsigned $1}
 ;
