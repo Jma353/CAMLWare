@@ -2,6 +2,7 @@
 
 {
 open Parser
+open Printf
 exception Eof
 
 let incr_linenum lexbuf =
@@ -56,8 +57,8 @@ rule token = parse
   | ']' { RBRACKET }
   | "{" { LBRACE }
   | "}" { RBRACE }
-  | ':' { COLON }
-  | decimal as d { DEC d }
+  | ';' { SEMICOLON }
+  | decimal as d {  DEC d }
   | binary as b { BIN b }
   | hex as h { HEX h }
   | ident as id { VAR id }

@@ -51,7 +51,7 @@ let parse_error _ =
 %token RBRACKET
 %token LBRACE
 %token RBRACE
-%token COLON
+%token SEMICOLON
 %token <string> DEC
 %token <string> BIN
 %token <string> HEX
@@ -76,15 +76,15 @@ registers:
 ;
 
 register:
-  | REGISTER VAR LBRACKET number RBRACKET ASSIGN comb
+  | REGISTER VAR LBRACKET number RBRACKET ASSIGN comb SEMICOLON
     {($2, rising_register $4 $7)}
-  | RISING REGISTER VAR LBRACKET number RBRACKET ASSIGN comb
+  | RISING REGISTER VAR LBRACKET number RBRACKET ASSIGN comb SEMICOLON
     {($3, rising_register $5 $8)}
-  | FALLING REGISTER VAR LBRACKET number RBRACKET ASSIGN comb
+  | FALLING REGISTER VAR LBRACKET number RBRACKET ASSIGN comb SEMICOLON
     {($3, falling_register $5 $8)}
-  | INPUT VAR LBRACKET number RBRACKET
+  | INPUT VAR LBRACKET number RBRACKET SEMICOLON
     {($2, input $4)}
-  | OUTPUT VAR LBRACKET number RBRACKET ASSIGN comb
+  | OUTPUT VAR LBRACKET number RBRACKET ASSIGN comb SEMICOLON
     {($2, output $4 $7)}
 ;
 
@@ -160,7 +160,6 @@ primary:
 concat_inside:
   | comb RBRACE {$1}
   | comb COMMA concat_inside {Concat ($1,$3)}
-  | number LBRACE concat_inside {Replicate ($1, $3)}
 ;
 
 bitstream:
