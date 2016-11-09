@@ -73,6 +73,10 @@ This module is an OCaml wrapper that makes it easy to pass strings and files thr
 ### Formatter
 This module provides an intermediate data structure for representing circuits that's easy to render as an SVG, and an array of functions for converting our internal circuit representation to this renderable format.
 
+In a formatted_circuit, all registers are assigned a column depending on the other registers they depend on.  For example, in the circuit `C = a & B`, Registers A and B would be assigned column 0 and Register C would be assigned column 1. 
+
+The formatter also assigns wiring positions between circuits and gate placement.  All placements are given in percents rather than pixels, etc to make for a more flexible display.
+
 ### Renderer
 This module drives the GUI. It uses the intermediate data structures defined in the Formatter module to render circuits. When neccesary, it passes along user input to the simulator, before reformatting and rerendering the result.
 
