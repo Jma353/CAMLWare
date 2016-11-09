@@ -8,7 +8,7 @@ open Combinational
 module StringMap : Map.S with type key = string
 type 'a map = 'a StringMap.t
 
-(* a type to represent the state of a circuit *)
+(* a type to represent a digital state component *)
 type register
 
 (* a type to represent the state of a circuit *)

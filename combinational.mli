@@ -34,7 +34,6 @@ type arithmetic =
  * - [Comp comp b1 b2] represents [comp] applied to [b1] and [b2]
  * - [Arith op b1 b2] represents [op] applied to [b1] and [b2]
  * - [Concat b1 b2] represents [b1] concatenated to [b2]
- * - [Replicate n b] represents [b] replicated [n] times
  * - [In] represents a value that is controlled by a user
  *)
 type comb =
@@ -49,7 +48,6 @@ type comb =
   | Comp      of comparison * comb * comb
   | Arith     of arithmetic * comb * comb
   | Concat    of comb * comb
-  | Replicate of int * comb
   | In
 
 val format_logic : Format.formatter -> comb -> unit
