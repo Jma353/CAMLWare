@@ -84,7 +84,87 @@ This module drives the GUI. It uses the intermediate data structures defined in 
 See `interfaces.zip`
 
 ## Data
+We defined several data structures to use in our project.
 
+### Bitstream
+A `bitstream` is a collection of boolean values indexed from least to most significant bit. Internally, this is implemented a `list`.
+
+### Combinational
+A `comb` is an AST representing a combinational logic expression. We define it as:
+
+```OCaml
+(* the type of the keys to which registers are bound *)
+type id = string
+
+(* the digital gates *)
+type gate =
+  | And | Or | Xor | Nand | Nor | Nxor
+
+(* the types of negation *)
+type negation =
+  | Neg_bitwise | Neg_logical | Neg_arithmetic
+
+(* the types of comparison *)
+type comparison =
+  | Lt | Gt | Eq | Lte | Gte | Neq
+
+(* the types of supported arithmetic *)
+type arithmetic =
+  | Add | Subtract | Sll | Srl | Sra
+
+(* values of type [comb] represent combinational logic circuits.
+ * - [Const b] represents a constant value containing bitstream [b]
+ * - [Reg id] represents the value of the register with id [id]
+ * - [Sub_seq from to b] represents the subsequence of bitstream [b] from index
+ * - [Nth n b] represents the [n]th bit of [b]
+ *   [from] to index [to]
+ * - [Gate g b1 b2] represents gate [g] applied bitwise to [b1] and [b2]
+ * - [Logical g b1 b2] represents gate [g] applied logically to [b1] and [b2]
+ * - [Reduce g b] represents [b] reduced with gate [g]
+ * - [Neg negation b] represents [negation] applied to [b]
+ * - [Comp comp b1 b2] represents [comp] applied to [b1] and [b2]
+ * - [Arith op b1 b2] represents [op] applied to [b1] and [b2]
+ * - [Concat b1 b2] represents [b1] concatenated to [b2]
+ * - [In] represents a value that is controlled by a user
+ *)
+type comb =
+  | Const     of bitstream
+  | Reg       of id
+  | Sub_seq   of int * int * comb
+  | Nth       of int * comb
+  | Gate      of gate * comb * comb
+  | Logical   of gate * comb * comb
+  | Reduce    of gate * comb
+  | Neg       of negation * comb
+  | Comp      of comparison * comb * comb
+  | Arith     of arithmetic * comb * comb
+  | Concat    of comb * comb
+  | In
+```
+
+### Register
+A `register` is a digital state component. It consists of a value paired with an AST to evaluate when the clock steps to compute the next value.
+
+```OCaml
+(* since we internally represent inputs and outputs as registers, we need a
+ * flag to specify their type *)
+type reg_type =
+  | Rising | Falling | Input | Output
+
+(* a digital state component *)
+type register = {
+  reg_type : reg_type;
+  length : int;
+  value : bitstream;
+  next : comb;
+}
+```
+
+### Circuit
+A `circuit` is our top level data structure for representing state. It consists of a clock value (either high or low) and a map from `id`s to `register`s. When we step the circuit we compute the new value of each register by evaluating its AST in the context of the current circuit.
+
+### Formatted Circuit
+A `formatted_circuit` is an intermediate representation of a circuit with extra information (eg locations) added in to make rendering easy.
 
 ## Language Definition
 The following is a formal definition of our language in Backus-Naur form. A source file consists of a sequence of variable definitions
@@ -159,7 +239,6 @@ primary := (* a primary expression *)
 
 ## External Dependencies
 
-We will be using Js_of_ocaml, OcamlLex, OcamlYacc. OcamlLex and OcamlYacc are part of the standard Ocaml library, but we wanted to define them here because of the significant dependency our project will have on these. This will allow us to parse user defined input in our hardware description language. Js_of_ocaml will be our javascript binding to Ocaml. We will use it to create our GUI frontend rendering into an interactive html.
-
+We will be using Js_of_ocaml, OcamlLex, OcamlYacc. The latter two, will allow us to easily lex and parse source files, the former will make building an interactive GUI significantly less challenging by binding our OCaml code to javascript.
 
 ## Testing Plan
