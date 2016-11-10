@@ -1,5 +1,5 @@
-(* A bitstream represents a zero indexed collection of boolean values,
- * indexed from least to most significant *)
+(* A bitstream represents a fixed length zero indexed collection of boolean
+ * values, indexed from least to most significant *)
 
 (* The type of bitstream values *)
 type bitstream
@@ -31,22 +31,22 @@ val zeros : int -> bitstream
 (* [ones n] is a bitstream of length [n] consisting of all one values *)
 val ones : int -> bitstream
 
-(* [one n] is a bistream of length [n] consisting of all zeros except for the
+(* [one n] is a bitstream of length [n] consisting of all zeros except for the
  * 0th position which is [1]*)
 val one : int -> bitstream
 
 (* [singleton b] is a bitstream of length 1 containing only the value [b] *)
 val singleton : bool -> bitstream
 
-(* [bistream_of_binstring s] is a bitstream created by parsing [s] into a series
+(* [bitstream_of_binstring s] is a bitstream built by parsing [s] into a series
  * of binary values *)
 val bitstream_of_binstring : string -> bitstream
 
-(* [bistream_of_hexstring s] is a bitstream created by parsing [s] into a series
+(* [bitstream_of_hexstring s] is a bitstream built by parsing [s] into a series
  * of hexadecimal values *)
 val bitstream_of_hexstring : string -> bitstream
 
-(* [bitstream_of_decimal d] is a bistream created by converting [d] into its
+(* [bitstream_of_decimal d] is a bitstream created by converting [d] into its
  * binary representation *)
 val bitstream_of_decimal : int -> bitstream
 

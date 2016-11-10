@@ -26,7 +26,6 @@ type comb =
   | Comp      of comparison * comb * comb
   | Arith     of arithmetic * comb * comb
   | Concat    of comb * comb
-  | Replicate of int * comb
   | In
 
 let string_of_gate g =
@@ -90,5 +89,4 @@ let rec format_logic f comb =
                         (string_of_arithmetic a) (format_logic) c2
   | Concat (c1,c2) -> Format.fprintf f "{%a, %a}" (format_logic) c1
                         (format_logic) c2
-  | Replicate (n,c) -> Format.fprintf f "%i{%a}" n (format_logic) c
   | In -> Format.fprintf f "User Input"

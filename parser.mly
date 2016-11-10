@@ -100,19 +100,9 @@ add_expr:
 
 shift_expr:
   | comp_expr {$1}
-  | shift_expr SLL comp_expr {Arith (Sll,$1,$3)}
-  | shift_expr SRL comp_expr {Arith (Srl,$1,$3)}
-  | shift_expr SRA comp_expr {Arith (Sra,$1,$3)}
-;
-
-comp_expr:
-  | or_expr {$1}
-  | comp_expr EQ or_expr {Comp (Eq,$1,$3)}
-  | comp_expr NEQ or_expr {Comp (Neq,$1,$3)}
-  | comp_expr LT or_expr {Comp (Lt,$1,$3)}
-  | comp_expr GT or_expr {Comp (Gt,$1,$3)}
-  | comp_expr LTE or_expr {Comp (Lte,$1,$3)}
-  | comp_expr GTE or_expr {Comp (Gte,$1,$3)}
+  | shift_expr SLL or_expr {Arith (Sll,$1,$3)}
+  | shift_expr SRL or_expr {Arith (Srl,$1,$3)}
+  | shift_expr SRA or_expr {Arith (Sra,$1,$3)}
 ;
 
 or_expr:
@@ -126,9 +116,19 @@ or_expr:
 
 and_expr:
   | unary {$1}
-  | and_expr AND unary {Gate (And,$1,$3)}
-  | and_expr NAND unary {Gate (Nand,$1,$3)}
-  | and_expr LAND unary {Logical (And,$1,$3)}
+  | and_expr AND comp_expr {Gate (And,$1,$3)}
+  | and_expr NAND comp_expr {Gate (Nand,$1,$3)}
+  | and_expr LAND comp_expr {Logical (And,$1,$3)}
+;
+
+comp_expr:
+  | unary {$1}
+  | comp_expr EQ unary {Comp (Eq,$1,$3)}
+  | comp_expr NEQ unary {Comp (Neq,$1,$3)}
+  | comp_expr LT unary {Comp (Lt,$1,$3)}
+  | comp_expr GT unary {Comp (Gt,$1,$3)}
+  | comp_expr LTE unary {Comp (Lte,$1,$3)}
+  | comp_expr GTE unary {Comp (Gte,$1,$3)}
 ;
 
 unary:
