@@ -7,6 +7,9 @@ type bitstream
 (* [length b] is the number of bits in [b] *)
 val length : bitstream -> int
 
+(* [create bs] is a bitstream [b] where each bit [b_i] is [List.nth i bs] *)
+val create : bool list -> bitstream
+
 (* [nth b n] is a bitstream containing only the value in the [n]th position
  * in [b]
  * Requires: 0 <= [n] < [length b] *)
@@ -35,9 +38,6 @@ val one : int -> bitstream
 (* [singleton b] is a bitstream of length 1 containing only the value [b] *)
 val singleton : bool -> bitstream
 
-(* [create bs] is a bitstream [b] where each bit [b_i] is [List.nth i bs] *)
-val create : bool list -> bitstream
-
 (* [bistream_of_binstring s] is a bitstream created by parsing [s] into a series
  * of binary values *)
 val bitstream_of_binstring : string -> bitstream
@@ -52,7 +52,8 @@ val bitstream_of_decimal : int -> bitstream
 
 (* [set b n value] is a bitstream [s] with the same number of bits as [b]
  * where each bit [s_i] is the same as [b_i] except for [b_n] which
- * is [value] *)
+ * is [value] 
+ * Requires: 0 <= [n] < [length b] *)
 val set : bitstream -> int -> bool -> bitstream
 
 (* [replicate b n] is a bitstream [s] consisting of [n] copies of [b] *)
