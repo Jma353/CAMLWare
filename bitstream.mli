@@ -1,6 +1,8 @@
 (* A bitstream represents a fixed length zero indexed collection of boolean
  * values, indexed from least to most significant *)
 
+(* RI: Bitstream max length is 64 representing [0 - 63] bits. *)
+
 (* The type of bitstream values *)
 type bitstream
 
@@ -38,6 +40,9 @@ val one : int -> bitstream
 (* [singleton b] is a bitstream of length 1 containing only the value [b] *)
 val singleton : bool -> bitstream
 
+(* [bitstream_to_binstring b] is the binary string representing the bistream *)
+val bitstream_to_binstring: bitstream -> string
+
 (* [bitstream_of_binstring s] is a bitstream built by parsing [s] into a series
  * of binary values *)
 val bitstream_of_binstring : string -> bitstream
@@ -47,7 +52,8 @@ val bitstream_of_binstring : string -> bitstream
 val bitstream_of_hexstring : string -> bitstream
 
 (* [bitstream_of_decimal d] is a bitstream created by converting [d] into its
- * binary representation *)
+ * binary representation 
+ * returns 64 length bitstream *)
 val bitstream_of_decimal : int -> bitstream
 
 (* [set b n value] is a bitstream [s] with the same number of bits as [b]
@@ -87,28 +93,44 @@ val bitwise_not : bitstream -> bitstream
  * [s] is an application of [zeros] *)
 val logical_not : bitstream -> bitstream
 
-(* [negate b] is a bitstream containing the twos complement negation of [b] *)
+(* [sign_extend n b] sign extends b to a bitstream of length n. 
+* Requires b is a valid bitstream and n + length b <= 64 *)
+val sign_extend : int -> bitstream -> bool -> bitstream 
+
+(* [negate b] is a bitstream containing the twos complement negation of [b] 
+ * Requires length b >= 3 
+ * Returns: 64 length bitstream 
+ *)
 val negate : bitstream -> bitstream
 
 (* [add b1 b2] is a bitstream containing the twos complement addition of [b1]
  * and [b2]
- * Requires: [length b1] equals [length b2] *)
+ * Requires: [length b1] equals [length b2] 
+ * Returns: 64 length bitstream sign extended if length b1 + b2 is less than 64
+ *)
 val add : bitstream -> bitstream -> bitstream
 
 (* [subtract b1 b2] is a bitstream containing the twos complement subtraction
  * of [b1] and [b2]
+ * Returns: 64 length bitstream sign extended if length b1 + b2 is less than 64
  * Requires: [length b1] equals [length b2] *)
 val subtract : bitstream -> bitstream -> bitstream
 
-(* [shift_left b n] is [b] shifted left by the value encoded by [n] *)
+(* [shift_left b n] is [b] shifted left by the value encoded by [n] 
+ * Requires: n represents a positive bitstream 
+ *)
 val shift_left : bitstream -> bitstream -> bitstream
 
 (* [shift_right_logical b n] is [b] shifted right (with zeros shifted in) by the
- * value encoded by [n] *)
+ * value encoded by [n] 
+ * Requires: n represents a positive bitstream 
+ *)
 val shift_right_logical : bitstream -> bitstream -> bitstream
 
 (* [shift_right_arithmetic b n] is [b] shifted right (with the sign of [b]
-* shifted in) by the value encoded by [n] *)
+* shifted in) by the value encoded by [n] 
+* Requires: n represents a positive bitstream 
+*)
 val shift_right_arithmetic : bitstream -> bitstream -> bitstream
 
 (* [less_than b1 b2] is a bitstream containing [one 1] if the twos
