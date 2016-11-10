@@ -247,9 +247,4 @@ let equals b1 b2 =
 
 
 let rec format_bitstream f b =
-  match b with
-  | [] -> ()
-  | h::t -> if h then Format.fprintf f "%a%s" "1"
-                        (format_bitstream) t
-            else Format.fprintf f "%a%s" "0"
-                        (format_bitstream) t 
+  Format.fprintf f "%s" (bitstream_to_binstring b)
