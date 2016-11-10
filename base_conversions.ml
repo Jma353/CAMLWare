@@ -125,9 +125,3 @@ let dec_of_hexstring_signed s =
 
 let dec_of_hexstring_unsigned s =
   dec_of_binstring_unsigned (binstring_of_hexstring s)
-
-
-let binstring_of_decstring s = 
-  let rec divide q =
-    if q / 2 = 0 then [q mod 2] else (q mod 2)::(divide (q / 2))
-  in divide (Pervasives.int_of_string s)
