@@ -51,14 +51,14 @@ val bitstream_of_binstring : string -> bitstream
  * of hexadecimal values *)
 val bitstream_of_hexstring : string -> bitstream
 
-(* [bitstream_of_decimal d] is a bitstream created by converting [d] into its
- * binary representation 
- * returns 64 length bitstream *)
+(* [bitstream_of_decimal d l] is a bitstream created by converting [d] into its
+ * binary representation
+ * returns l length bitstream *)
 val bitstream_of_decimal : int -> bitstream
 
 (* [set b n value] is a bitstream [s] with the same number of bits as [b]
  * where each bit [s_i] is the same as [b_i] except for [b_n] which
- * is [value] 
+ * is [value]
  * Requires: 0 <= [n] < [length b] *)
 val set : bitstream -> int -> bool -> bitstream
 
@@ -93,19 +93,19 @@ val bitwise_not : bitstream -> bitstream
  * [s] is an application of [zeros] *)
 val logical_not : bitstream -> bitstream
 
-(* [sign_extend n b] sign extends b to a bitstream of length n. 
+(* [sign_extend n b] sign extends b to a bitstream of length n.
 * Requires b is a valid bitstream and n + length b <= 64 *)
-val sign_extend : int -> bitstream -> bool -> bitstream 
+val sign_extend : int -> bitstream -> bitstream
 
-(* [negate b] is a bitstream containing the twos complement negation of [b] 
- * Requires length b >= 3 
- * Returns: 64 length bitstream 
+(* [negate b] is a bitstream containing the twos complement negation of [b]
+ * Requires length b >= 3
+ * Returns: 64 length bitstream
  *)
 val negate : bitstream -> bitstream
 
 (* [add b1 b2] is a bitstream containing the twos complement addition of [b1]
  * and [b2]
- * Requires: [length b1] equals [length b2] 
+ * Requires: [length b1] equals [length b2]
  * Returns: 64 length bitstream sign extended if length b1 + b2 is less than 64
  *)
 val add : bitstream -> bitstream -> bitstream
@@ -116,20 +116,20 @@ val add : bitstream -> bitstream -> bitstream
  * Requires: [length b1] equals [length b2] *)
 val subtract : bitstream -> bitstream -> bitstream
 
-(* [shift_left b n] is [b] shifted left by the value encoded by [n] 
- * Requires: n represents a positive bitstream 
+(* [shift_left b n] is [b] shifted left by the value encoded by [n]
+ * Requires: n represents a positive bitstream
  *)
 val shift_left : bitstream -> bitstream -> bitstream
 
 (* [shift_right_logical b n] is [b] shifted right (with zeros shifted in) by the
- * value encoded by [n] 
- * Requires: n represents a positive bitstream 
+ * value encoded by [n]
+ * Requires: n represents a positive bitstream
  *)
 val shift_right_logical : bitstream -> bitstream -> bitstream
 
 (* [shift_right_arithmetic b n] is [b] shifted right (with the sign of [b]
-* shifted in) by the value encoded by [n] 
-* Requires: n represents a positive bitstream 
+* shifted in) by the value encoded by [n]
+* Requires: n represents a positive bitstream
 *)
 val shift_right_arithmetic : bitstream -> bitstream -> bitstream
 
