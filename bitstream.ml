@@ -247,7 +247,6 @@ let equals b1 b2 =
       then ones 1
     else zeros 1
 
-
 let rec format_bitstream_helper f b =
   match b with
   | [] -> ()
