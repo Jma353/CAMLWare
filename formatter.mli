@@ -1,3 +1,12 @@
+(* Indicates the scaled coordinate of a particular component -
+ * e.g. (1.5, 47). *)
+type coord
+
+(* Combinational logical components with coordinates associated with
+ * them, based on the 100 x 100 canvas this formatter places components
+ * on *)
+type formatted_comb
+
 (* The type of a circuit formatted for display in the GUI *)
 type formatted_circuit
 
