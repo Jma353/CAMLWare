@@ -39,7 +39,6 @@ let zeros n =
       | x -> false::(make (x - 1))
     in make n
 
-
 let ones n =
   if n < 0 then [] else
     let rec make = function
@@ -47,14 +46,11 @@ let ones n =
       | x -> true::(make (x - 1))
     in make n
 
-
 let one n =
   if n <= 0 then [] else true::(zeros (n - 1))
 
-
 let singleton b =
   [b]
-
 
 let bitstream_to_binstring b =
   let rec make lst =
@@ -63,7 +59,6 @@ let bitstream_to_binstring b =
     | true::t -> (make t) ^ "1"
     | false::t -> (make t) ^ "0"
   in "0b" ^ (make b)
-
 
 let bitstream_of_binstring s =
   let bin = if String.length s >= 3 && String.sub s 0 2 = "0b"
@@ -75,12 +70,10 @@ let bitstream_of_binstring s =
             else failwith "incorrect bitstream_of_binstring input"
   in make (Str.split (Str.regexp "") bin) |> List.rev
 
-
 (* flag .. unsigned or signed? *)
 let bitstream_of_hexstring s =
   let binary = binstring_of_hexstring s in
   bitstream_of_binstring binary
-
 
 let set b n value =
   (substream b 0 (n - 1)) @ [value] @ (substream b (n + 1) (List.length b))
@@ -169,15 +162,13 @@ let adder b1 b2 carryout=
 let add b1 b2 =
   let (new1, new2) = format_arithmetic b1 b2 in
   let added = adder new1 new2 false in
-  (* //TODO : check for overflow here*)
   if length added > max_bits then substream added 0 63 else added
 
 let negate b =
-  if length b < 3 then failwith "incorrect input for negate" else
-  add (bitwise_not b) (create [true; false])
+  if (length b = 1) then bitwise_not b
+  else (add (bitwise_not b) (create [true; false]))
 
 let subtract b1 b2 =
-  (* let carryout = negative b1 = negative b2 in *)
   let (new1, new2) = format_arithmetic b1 b2 in
   let added = adder new1 (bitwise_not new2) true in
   if length added > max_bits then substream added 0 63 else added
@@ -191,6 +182,15 @@ let bitstream_of_decimal d =
   in let bin = zero_extend max_bits (divide (Pervasives.abs d)) in
   if d < 0 then negate bin (* twos complement *)
   else bin
+
+let decimal_of_bitstream b =
+  let rec add_helper b total factor =
+    match b with
+    | [] -> total
+    | h::t ->
+      if (h) then add_helper t (total+factor) (factor*2)
+      else add_helper t total (factor*2)
+  in add_helper b 0 1
 
 let rec shift_left_helper (b: bitstream) n (fill_in: bool) =
   match n with
@@ -239,7 +239,6 @@ let greater_than b1 b2 =
               then (dec_of_binstring_signed (bitstream_to_binstring b2))
               else (dec_of_binstring_unsigned (bitstream_to_binstring b2)) in
   if dec_b1 > dec_b2 then ones 1 else zeros 1
-
 
 let equals b1 b2 =
   if List.length b1 != List.length b2 then zeros 1 else
