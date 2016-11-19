@@ -115,6 +115,23 @@ let eval_neg n b1 =
   | Neg_logical -> logical_not b1
   | Neg_arithmetic -> negate b1
 
+let eval_comp comp b1 b2 = 
+  match comp with 
+   | Lt -> less_than b1 b2
+   | Gt -> greater_than b1 b2
+   | Eq -> equals b1 b2
+   | Lte -> logical_binop or_bits (less_than b1 b2) (equals b1 b2)
+   | Gte -> logical_binop or_bits (greater_than b1 b2) (equals b1 b2)
+   | Neq -> logical_not (equals b1 b2)
+
+let eval_arith arth b1 b2 = 
+  match arth with 
+  | Add -> add b1 b2
+  | Subtract -> subtract b1 b2
+  | Sll -> shift_left b1 b2
+  | Srl -> shift_right_logical b1 b2
+  | Sra -> shift_right_arithmetic b1 b2
+
 let rec eval_hlpr circ comb env = 
    match comb with 
   | Const b -> b
@@ -130,14 +147,38 @@ let rec eval_hlpr circ comb env =
   | Reduce (g,c) -> let b1 = (eval_hlpr circ c env) in 
                     eval_reduce g b1
   | Neg (n,c) -> let b1 = (eval_hlpr circ c env) in eval_neg n b1
-  | Comp (comp,c1,c2) -> (match comp with 
-                          | Lt | Gt | Eq | Lte | Gte | Neq -> failwith "unimplemented")
-  | Arith (arth,c1,c2) -> (match arth with 
-                      | Add | Subtract | Sll | Srl | Sra -> failwith "unimplemented")
+  | Comp (comp,c1,c2) -> let b1 = (eval_hlpr circ c1 env) in 
+                      let b2 = (eval_hlpr circ c2 env) in 
+                      eval_comp comp b1 b2
+  | Arith (arth,c1,c2) -> let b1 = (eval_hlpr circ c1 env) in 
+                      let b2 = (eval_hlpr circ c2 env) in 
+                      eval_arith arth b1 b2
   | Concat (c1,c2) -> concat (eval_hlpr circ c1 env) (eval_hlpr circ c2 env)
-  | Mux2 (c1,c2,c3) -> failwith "unimplemented"
-  | Apply (id,clst) -> failwith "unimplemented"
+  | Mux2 (c1,c2,c3) -> let s = (eval_hlpr circ c1 env) in 
+                        if is_zero s 
+                        then eval_hlpr circ c2 env
+                        else eval_hlpr circ c3 env
+  | Apply (id,clst) -> let subcirc = StringMap.find id circ.comps in 
+                        let (nv, comb1) = eval_apply subcirc circ clst env in 
+                        eval_hlpr circ comb1 nv
 
+and 
+  
+  eval_apply_hlpr ids clst env circ = 
+     match (ids, clst) with 
+    | ([], []) -> env
+    | (i::is,c::cs) -> let b = (eval_hlpr circ c env) in 
+                (i, b)::(eval_apply_hlpr is cs env circ)
+    | _ -> failwith "incorrect sub circuit application"
+
+and 
+  
+  eval_apply subcirc circ clst env = (* returns (new_environment, comb) *)
+    match subcirc with 
+    | Subcirc (comb, ids) -> let nv = eval_apply_hlpr ids clst env circ in
+                              (nv, comb)
+    | _ -> failwith "incorrect sub circuit application"
+ 
 let rec evaluate circ comb =
   let env = StringMap.fold 
   (fun k v acc -> 
@@ -147,8 +188,6 @@ let rec evaluate circ comb =
   circ.comps [] in 
   (* env is a assoc list of RedID: bitstream ex: "A": 101011 *)
    eval_hlpr circ comb env 
-
- 
 
 
 let step circ =
