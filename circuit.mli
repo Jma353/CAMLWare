@@ -29,8 +29,8 @@ val input : int -> component
  * with update logic [logic] *)
 val output : int -> comb -> component
 
-(* [subcircuit logic] is a subcircuit with AST [logic] *)
-val subcircuit : comb -> component
+(* [subcircuit logic args] is a subcircuit with AST [logic] and args [args] *)
+val subcircuit : comb -> id list -> component
 
 (*
  * [circuit comps] is a circuit constructed from the components named in [comps]

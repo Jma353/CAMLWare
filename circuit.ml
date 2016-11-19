@@ -23,7 +23,7 @@ type register = {
 
 (* a circuit component is either a register or a subcircuit *)
 type component =
-  | Register of register | Subcirc of comb
+  | Register of register | Subcirc of comb * id list
 
 (* a type to represent the state of a circuit *)
 type circuit = {
@@ -51,8 +51,8 @@ let input length =
 let output length logic =
   make_register length (AST logic) Output
 
-let subcircuit logic =
-  Subcirc logic
+let subcircuit logic args =
+  Subcirc (logic, args)
 
 let circuit comps =
   {
@@ -65,6 +65,12 @@ let format_register_input f input =
   | User_input -> Format.fprintf f "User Input"
   | AST c -> Format.fprintf f "%a" (format_logic) c
 
+let rec format_args f args =
+  match args with
+  | [] -> ()
+  | h::[] -> Format.fprintf f "%s" h
+  | h::t -> Format.fprintf f "%s, %a" h (format_args) t
+
 let format_comp f comp =
   match comp with
   | Register reg ->
@@ -76,8 +82,8 @@ let format_comp f comp =
        | Output -> "Output")
       (format_bitstream) reg.value
       (format_register_input) reg.next
-  | Subcirc sub ->
-    Format.fprintf f "Subcircuit: %a" (format_logic) sub
+  | Subcirc (sub,args) ->
+    Format.fprintf f "(%a) -> %a" (format_args) args (format_logic) sub
 
 let format_circuit f circ =
   Format.fprintf f "Clock: %s\n\n" (if circ.clock then "1" else "0");
