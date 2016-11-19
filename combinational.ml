@@ -26,7 +26,8 @@ type comb =
   | Comp      of comparison * comb * comb
   | Arith     of arithmetic * comb * comb
   | Concat    of comb * comb
-  | In
+  | Mux2      of comb * comb * comb
+  | Apply     of id * comb list
 
 let string_of_gate g =
   match g with
@@ -89,4 +90,12 @@ let rec format_logic f comb =
                         (string_of_arithmetic a) (format_logic) c2
   | Concat (c1,c2) -> Format.fprintf f "{%a, %a}" (format_logic) c1
                         (format_logic) c2
-  | In -> Format.fprintf f "User Input"
+  | Mux2 (sel,c1,c2) -> Format.fprintf f "(if %a then %a else %a)"
+                          (format_logic) sel (format_logic) c1 (format_logic) c2
+  | Apply (id,args) -> Format.fprintf f "%s(%a)" id (format_args) args
+
+and format_args f args =
+  match args with
+  | [] -> ()
+  | h::[] -> Format.fprintf f "%a" (format_logic) h
+  | h::t -> Format.fprintf f "%a,%a" (format_logic) h (format_args) t

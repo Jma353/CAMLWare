@@ -52,6 +52,9 @@ let parse_error _ =
 %token LBRACE
 %token RBRACE
 %token SEMICOLON
+%token IF
+%token ELSE
+%token THEN
 %token <string> DEC
 %token <string> BIN
 %token <string> HEX
@@ -155,11 +158,19 @@ primary:
   | bitstream {Const ($1)}
   | LPAREN comb RPAREN {$2}
   | LBRACE concat_inside {$2}
+  | IF comb THEN comb ELSE comb {Mux2($2,$4,$6)}
+  | VAR LPAREN apply_inside {Apply($1,$3)}
+  | VAR LPAREN RPAREN {Apply($1,[])}
 ;
 
 concat_inside:
   | comb RBRACE {$1}
   | comb COMMA concat_inside {Concat ($1,$3)}
+;
+
+apply_inside:
+  | comb RPAREN {$1::[]}
+  | comb COMMA apply_inside {$1::$3}
 ;
 
 bitstream:

@@ -34,7 +34,8 @@ type arithmetic =
  * - [Comp comp b1 b2] represents [comp] applied to [b1] and [b2]
  * - [Arith op b1 b2] represents [op] applied to [b1] and [b2]
  * - [Concat b1 b2] represents [b1] concatenated to [b2]
- * - [In] represents a value that is controlled by a user
+ * - [Mux2 sel b1 b2] represents [b1] and [b2] multiplexed by [sel]
+ * - [Apply f args] represents [f] applied to [args]
  *)
 type comb =
   | Const     of bitstream
@@ -48,6 +49,7 @@ type comb =
   | Comp      of comparison * comb * comb
   | Arith     of arithmetic * comb * comb
   | Concat    of comb * comb
-  | In
+  | Mux2      of comb * comb * comb
+  | Apply     of id * comb list
 
 val format_logic : Format.formatter -> comb -> unit

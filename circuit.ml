@@ -10,22 +10,29 @@ type 'a map = 'a StringMap.t
 type reg_type =
   | Rising | Falling | Input | Output
 
+type register_input =
+  | User_input | AST of comb
+
 (* a digital state component *)
 type register = {
   reg_type : reg_type;
   length : int;
   value : bitstream;
-  next : comb;
+  next : register_input;
 }
+
+(* a circuit component is either a register or a subcircuit *)
+type component =
+  | Register of register | Subcirc of comb
 
 (* a type to represent the state of a circuit *)
 type circuit = {
-  registers : register map;
+  comps : component map;
   clock : bool;
 }
 
 let make_register length logic reg_type =
-  {
+  Register {
     reg_type = reg_type;
     length = length;
     value = zeros length;
@@ -33,38 +40,50 @@ let make_register length logic reg_type =
   }
 
 let rising_register length logic =
-  make_register length logic Rising
+  make_register length (AST logic) Rising
 
 let falling_register length logic =
-  make_register length logic Falling
+  make_register length (AST logic) Falling
 
 let input length =
-  make_register length In Input
+  make_register length User_input Input
 
 let output length logic =
-  make_register length logic Output
+  make_register length (AST logic) Output
 
-let circuit regs =
+let subcircuit logic =
+  Subcirc logic
+
+let circuit comps =
   {
-    registers = regs;
+    comps = comps;
     clock = false;
   }
 
-let format_register f reg =
-  Format.fprintf f "%s\nValue: %a\nNext: %a"
-    (match reg.reg_type with
-     | Rising -> "Rising Register"
-     | Falling -> "Falling Register"
-     | Input -> "Input"
-     | Output -> "Output")
-    (format_bitstream) reg.value
-    (format_logic) reg.next
+let format_register_input f input =
+  match input with
+  | User_input -> Format.fprintf f "User Input"
+  | AST c -> Format.fprintf f "%a" (format_logic) c
+
+let format_comp f comp =
+  match comp with
+  | Register reg ->
+    Format.fprintf f "%s\nValue: %a\nNext: %a"
+      (match reg.reg_type with
+       | Rising -> "Rising Register"
+       | Falling -> "Falling Register"
+       | Input -> "Input"
+       | Output -> "Output")
+      (format_bitstream) reg.value
+      (format_register_input) reg.next
+  | Subcirc sub ->
+    Format.fprintf f "Subcircuit: %a" (format_logic) sub
 
 let format_circuit f circ =
   Format.fprintf f "Clock: %s\n\n" (if circ.clock then "1" else "0");
   StringMap.iter
-    (fun id reg -> Format.fprintf f ("%s =\n%a\n\n") id (format_register) reg)
-    circ.registers
+    (fun id comp -> Format.fprintf f ("%s =\n%a\n\n") id (format_comp) comp)
+    circ.comps
 
 let evaluate circ comb =
   failwith "unimplemented"
