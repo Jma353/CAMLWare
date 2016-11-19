@@ -91,6 +91,8 @@ let format_circuit f circ =
     (fun id comp -> Format.fprintf f ("%s =\n%a\n\n") id (format_comp) comp)
     circ.comps
 
+(************************ eval ***********************)
+
 let rec eval_gates bin_op bin_not g b1 b2 = 
   match g with 
   | And -> bin_op and_bits b1 b2
@@ -164,20 +166,19 @@ let rec eval_hlpr circ comb env =
 
 and 
   
-  eval_apply_hlpr ids clst env circ = 
-     match (ids, clst) with 
-    | ([], []) -> env
-    | (i::is,c::cs) -> let b = (eval_hlpr circ c env) in 
-                (i, b)::(eval_apply_hlpr is cs env circ)
-    | _ -> failwith "incorrect sub circuit application"
+    eval_apply subcirc circ clst env = (* returns (new_environment, comb) *)
+      match subcirc with 
+      | Subcirc (comb, ids) -> let nv = eval_apply_hlpr ids clst env circ in
+                                (nv, comb)
+      | _ -> failwith "incorrect sub circuit application"
 
 and 
-  
-  eval_apply subcirc circ clst env = (* returns (new_environment, comb) *)
-    match subcirc with 
-    | Subcirc (comb, ids) -> let nv = eval_apply_hlpr ids clst env circ in
-                              (nv, comb)
-    | _ -> failwith "incorrect sub circuit application"
+    eval_apply_hlpr ids clst env circ = 
+       match (ids, clst) with 
+      | ([], []) -> env
+      | (i::is,c::cs) -> let b = (eval_hlpr circ c env) in 
+                  (i, b)::(eval_apply_hlpr is cs env circ)
+      | _ -> failwith "incorrect sub circuit application"
  
 let rec evaluate circ comb =
   let env = StringMap.fold 
@@ -186,9 +187,10 @@ let rec evaluate circ comb =
     | Register r -> (k, r.value)::acc
     | _ -> acc) 
   circ.comps [] in 
-  (* env is a assoc list of RedID: bitstream ex: "A": 101011 *)
+  (* env is a assoc list of RegID: bitstream ex: "A": 101011 *)
    eval_hlpr circ comb env 
 
+(************************ eval ***********************)
 
 let step circ =
   failwith "unimplemented"
