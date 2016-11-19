@@ -58,6 +58,9 @@ rule token = parse
   | "{" { LBRACE }
   | "}" { RBRACE }
   | ';' { SEMICOLON }
+  | "if" { IF }
+  | "else" { ELSE }
+  | "then" { THEN }
   | decimal as d {  DEC d }
   | binary as b { BIN b }
   | hex as h { HEX h }

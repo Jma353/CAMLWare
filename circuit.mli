@@ -8,32 +8,37 @@ open Combinational
 module StringMap : Map.S with type key = string
 type 'a map = 'a StringMap.t
 
-(* a type to represent a digital state component *)
-type register
+(* a type to represent a circuit component *)
+type component
 
 (* a type to represent the state of a circuit *)
 type circuit
 
 (* [rising_register length logic] is a rising register of length [length]
  * with update logic [logic] *)
-val rising_register : int -> comb -> register
+val rising_register : int -> comb -> component
 
 (* [falling_register length logic] is a falling register of length [length]
  * with update logic [logic] *)
-val falling_register : int -> comb -> register
+val falling_register : int -> comb -> component
 
 (* [input length] is a circuit input of length [length] *)
-val input : int -> register
+val input : int -> component
 
 (* [output length logic] is a circuit output of length [length]
  * with update logic [logic] *)
-val output : int -> comb -> register
+val output : int -> comb -> component
 
-(* [circuit regs] is a circuit constructed from the registers named in [regs] *)
-val circuit : register map -> circuit
+(* [subcircuit logic] is a subcircuit with AST [logic] *)
+val subcircuit : comb -> component
 
-(* formatting function for registers *)
-val format_register : Format.formatter -> register -> unit
+(*
+ * [circuit comps] is a circuit constructed from the components named in [comps]
+ *)
+val circuit : component map -> circuit
+
+(* formatting function for circuit components *)
+val format_comp : Format.formatter -> component -> unit
 
 (* formatting function for circuits *)
 val format_circuit : Format.formatter -> circuit -> unit
