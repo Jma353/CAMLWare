@@ -66,8 +66,26 @@ let format_circuit f circ =
     (fun id reg -> Format.fprintf f ("%s =\n%a\n\n") id (format_register) reg)
     circ.registers
 
-let evaluate circ comb =
-  failwith "unimplemented"
+let rec evaluate circ comb =
+  match comb with 
+  | Const b -> b
+  | Reg id -> (StringMap.find id circ.registers).value    
+  | Sub_seq (n1,n2,c) -> substream (evaluate circ c) n1 n2  
+  | Nth (i,c) -> nth (evaluate circ c) i
+  | Gate (g,c1,c2) -> (match g with 
+                      | And | Or | Xor | Nand | Nor | Nxor -> failwith "unimplemented")
+  | Logical (g,c1,c2) -> (match g with 
+                      | And | Or | Xor | Nand | Nor | Nxor -> failwith "unimplemented")
+  | Reduce (g,c) -> (match g with 
+                      | And | Or | Xor | Nand | Nor | Nxor -> failwith "unimplemented")
+  | Neg (n,c) -> (match n with 
+                | Neg_bitwise | Neg_logical | Neg_arithmetic -> failwith "unimplemented")
+  | Comp (comp,c1,c2) -> (match comp with 
+                          | Lt | Gt | Eq | Lte | Gte | Neq -> failwith "unimplemented")
+  | Arith (arth,c1,c2) -> (match arth with 
+                      | Add | Subtract | Sll | Srl | Sra -> failwith "unimplemented")
+  | Concat (c1,c2) -> concat (evaluate circ c1) (evaluate circ c2)
+
 
 let step circ =
   failwith "unimplemented"
