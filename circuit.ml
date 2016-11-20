@@ -172,6 +172,8 @@ let rec eval_hlpr circ comb env =
                         let (nv, comb1) = eval_apply subcirc circ clst env in 
                         eval_hlpr circ comb1 nv
   | Let (id,c1,c2) -> let b1 = (eval_hlpr circ c1 env) in
+                      if List.mem_assoc id env then 
+                      failwith "Cannot use variable twice" else 
                       let nv = (id, b1)::env in eval_hlpr circ c2 nv
 
 and 
@@ -202,11 +204,44 @@ let rec evaluate circ comb =
 
 (************************ eval ***********************)
 
-let step circ =
-  failwith "unimplemented"
+let eval_regs r circ =
+  match r.next with 
+  | User_input -> Register r
+  | AST comb -> if (r.reg_type = Falling && not circ.clock) 
+                || (r.reg_type = Rising && circ.clock) 
+                then let new_val = evaluate circ comb in 
+                Register {r with value = new_val; length = length new_val}
+              else Register r
 
-let step_n circ n =
-  failwith "unimplemented"
+let update_rising_falling circ c = 
+  match c with 
+    | Register r -> eval_regs r circ
+    | _ -> c
+
+let update_outputs circ c = 
+  match c with 
+    | Register r -> (match (r.next, r.reg_type) with 
+                    |(AST comb, Output) -> let new_val = evaluate circ comb in 
+                                            Register {r with value = new_val; 
+                                            length = length new_val}
+                    | _ -> c)
+    | _ -> c 
+
+let step circ =
+  let new_comps = StringMap.map (update_rising_falling circ) circ.comps in 
+  let new_circ = {comps = new_comps; clock = not circ.clock} in 
+  let comps_new = StringMap.map (update_outputs new_circ) new_circ.comps in 
+  {comps = comps_new; clock = new_circ.clock}
+
+let rec step_n circ n =
+  match n with 
+  | 0 -> circ 
+  | i -> let new_circ = step circ in step_n new_circ (i - 1)
 
 let change_input circ id value =
-  failwith "unimplemented"
+  let Register r = StringMap.find id circ.comps in 
+  let new_comps = 
+    StringMap.add id (Register {r with value = value}) circ.comps in 
+  let new_circ = {comps = new_comps; clock = circ.clock} in 
+  let comps_new = StringMap.map (update_outputs new_circ) new_circ.comps in 
+  {comps = comps_new; clock = new_circ.clock}
