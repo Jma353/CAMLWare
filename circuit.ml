@@ -143,7 +143,7 @@ let eval_arith arth b1 b2 =
 let rec eval_hlpr circ comb env = 
    match comb with 
   | Const b -> b
-  | Reg id -> List.assoc id env    
+  | Var id -> List.assoc id env    
   | Sub_seq (n1,n2,c) -> substream (eval_hlpr circ c env) n1 n2  
   | Nth (i,c) -> nth (eval_hlpr circ c env) i
   | Gate (g,c1,c2) -> let b1 = (eval_hlpr circ c1 env) in 
@@ -161,7 +161,9 @@ let rec eval_hlpr circ comb env =
   | Arith (arth,c1,c2) -> let b1 = (eval_hlpr circ c1 env) in 
                       let b2 = (eval_hlpr circ c2 env) in 
                       eval_arith arth b1 b2
-  | Concat (c1,c2) -> concat (eval_hlpr circ c1 env) (eval_hlpr circ c2 env)
+  | Concat (clst) -> List.fold_left 
+                    (fun acc c -> 
+                      concat (eval_hlpr circ c env) acc) (create []) clst
   | Mux2 (c1,c2,c3) -> let s = (eval_hlpr circ c1 env) in 
                         if is_zero s 
                         then eval_hlpr circ c2 env
@@ -169,6 +171,8 @@ let rec eval_hlpr circ comb env =
   | Apply (id,clst) -> let subcirc = StringMap.find id circ.comps in 
                         let (nv, comb1) = eval_apply subcirc circ clst env in 
                         eval_hlpr circ comb1 nv
+  | Let (id,c1,c2) -> let b1 = (eval_hlpr circ c1 env) in
+                      let nv = (id, b1)::env in eval_hlpr circ c2 nv
 
 and 
   
