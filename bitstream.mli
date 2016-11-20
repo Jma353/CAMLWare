@@ -77,8 +77,8 @@ val concat : bitstream -> bitstream -> bitstream
 val reduce : (bool -> bool -> bool) -> bitstream -> bitstream
 
 (* [bitwise_binop op b1 b2] is a bitstream [s] with the same number of bits
- * as [b1] and [b2] where each bit [s_i] is [op b1_i b2_i]
- * Requires: [length b1] equals [length b2] *)
+ * as [b1] and [b2] where each bit [s_i] is [b1_i op b2_i]. 
+ * Requires: [length b1] equals [length b2] and op is a special op ex: (+).. 1 + 1 *)
 val bitwise_binop : (bool -> bool -> bool) -> bitstream -> bitstream -> bitstream
 
 (* [logical_binop op b1 b2] is a bitstream [s] with the same number of bits
@@ -153,6 +153,15 @@ val greater_than : bitstream -> bitstream -> bitstream
  * [b2], otherwise [zeros 1]
  * Requires: [length b1] equals [length b2] *)
 val equals : bitstream -> bitstream -> bitstream
+
+(* [and_bits b1 b2] is b1 && b2 *)
+val and_bits: bool -> bool -> bool
+
+(* [or_bits b1 b2] is b1 || b2 *)
+val or_bits: bool -> bool -> bool
+
+(* [xor_bits b1 b2] is true if b1 = not b2 false otherwise *)
+val xor_bits: bool -> bool -> bool
 
 (* formatter for bitstreams *)
 val format_bitstream : Format.formatter -> bitstream -> unit

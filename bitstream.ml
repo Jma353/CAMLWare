@@ -127,7 +127,7 @@ let format_arithmetic input1 input2 =
   else if (l1 = l2) then (input1, input2)
   else ((sign_extend l2 input1), input2)
 
-let bitwise_binop op b1 b2 =
+let bitwise_binop (op: bool -> bool -> bool) (b1: bitstream) (b2: bitstream) =
   let rec make l1 l2 = match (l1, l2) with
     | ([], []) -> []
     | (y::ys, x::xs) -> (op y x)::(make ys xs)
@@ -245,9 +245,20 @@ let greater_than b1 b2 =
 
 let equals b1 b2 =
   if List.length b1 != List.length b2 then zeros 1 else
-    if (bitwise_binop (fun x y -> x = y) b1 b2) |> List.for_all (fun x -> x)
+    if (bitwise_binop (=) b1 b2) |> List.for_all (fun x -> x)
       then ones 1
     else zeros 1
+
+let xor_bits b1 b2 = 
+  match b1 with 
+  | true when b2 -> false
+  | true when not b2 -> true
+  | false when b2 -> true
+  | false when not b2 -> false
+
+let and_bits b1 b2 = b1 && b2
+
+let or_bits b1 b2 = b1 || b2
 
 let rec format_bitstream_helper f b =
   match b with

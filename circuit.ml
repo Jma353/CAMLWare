@@ -97,8 +97,106 @@ let format_circuit f circ =
     (fun id comp -> Format.fprintf f ("%s =\n%a\n\n") id (format_comp) comp)
     circ.comps
 
-let evaluate circ comb =
-  failwith "unimplemented"
+(************************ eval ***********************)
+
+let rec eval_gates bin_op bin_not g b1 b2 = 
+  match g with 
+  | And -> bin_op and_bits b1 b2
+  | Or -> bin_op or_bits b1 b2
+  | Xor -> bin_op xor_bits b1 b2 
+  | Nand -> bin_not (bin_op and_bits b1 b2)
+  | Nor -> bin_not (bin_op or_bits b1 b2)
+  | Nxor -> bin_not (bin_op xor_bits b1 b2)
+
+let rec eval_reduce g b1 = 
+  match g with 
+  | And -> reduce and_bits b1 
+  | Or -> reduce or_bits b1 
+  | Xor -> reduce xor_bits b1  
+  | Nand -> bitwise_not (reduce and_bits b1)
+  | Nor ->  bitwise_not (reduce or_bits b1)
+  | Nxor -> bitwise_not (reduce xor_bits b1)
+
+let eval_neg n b1 = 
+  match n with 
+  | Neg_bitwise -> bitwise_not b1
+  | Neg_logical -> logical_not b1
+  | Neg_arithmetic -> negate b1
+
+let eval_comp comp b1 b2 = 
+  match comp with 
+   | Lt -> less_than b1 b2
+   | Gt -> greater_than b1 b2
+   | Eq -> equals b1 b2
+   | Lte -> logical_binop or_bits (less_than b1 b2) (equals b1 b2)
+   | Gte -> logical_binop or_bits (greater_than b1 b2) (equals b1 b2)
+   | Neq -> logical_not (equals b1 b2)
+
+let eval_arith arth b1 b2 = 
+  match arth with 
+  | Add -> add b1 b2
+  | Subtract -> subtract b1 b2
+  | Sll -> shift_left b1 b2
+  | Srl -> shift_right_logical b1 b2
+  | Sra -> shift_right_arithmetic b1 b2
+
+let rec eval_hlpr circ comb env = 
+   match comb with 
+  | Const b -> b
+  | Reg id -> List.assoc id env    
+  | Sub_seq (n1,n2,c) -> substream (eval_hlpr circ c env) n1 n2  
+  | Nth (i,c) -> nth (eval_hlpr circ c env) i
+  | Gate (g,c1,c2) -> let b1 = (eval_hlpr circ c1 env) in 
+                      let b2 = (eval_hlpr circ c2 env) in 
+                      eval_gates bitwise_binop bitwise_not g b1 b2
+  | Logical (g,c1,c2) -> let b1 = (eval_hlpr circ c1 env) in 
+                      let b2 = (eval_hlpr circ c2 env) in 
+                      eval_gates logical_binop logical_not g b1 b2 
+  | Reduce (g,c) -> let b1 = (eval_hlpr circ c env) in 
+                    eval_reduce g b1
+  | Neg (n,c) -> let b1 = (eval_hlpr circ c env) in eval_neg n b1
+  | Comp (comp,c1,c2) -> let b1 = (eval_hlpr circ c1 env) in 
+                      let b2 = (eval_hlpr circ c2 env) in 
+                      eval_comp comp b1 b2
+  | Arith (arth,c1,c2) -> let b1 = (eval_hlpr circ c1 env) in 
+                      let b2 = (eval_hlpr circ c2 env) in 
+                      eval_arith arth b1 b2
+  | Concat (c1,c2) -> concat (eval_hlpr circ c1 env) (eval_hlpr circ c2 env)
+  | Mux2 (c1,c2,c3) -> let s = (eval_hlpr circ c1 env) in 
+                        if is_zero s 
+                        then eval_hlpr circ c2 env
+                        else eval_hlpr circ c3 env
+  | Apply (id,clst) -> let subcirc = StringMap.find id circ.comps in 
+                        let (nv, comb1) = eval_apply subcirc circ clst env in 
+                        eval_hlpr circ comb1 nv
+
+and 
+  
+    eval_apply subcirc circ clst env = (* returns (new_environment, comb) *)
+      match subcirc with 
+      | Subcirc (comb, ids) -> let nv = eval_apply_hlpr ids clst env circ in
+                                (nv, comb)
+      | _ -> failwith "incorrect sub circuit application"
+
+and 
+    eval_apply_hlpr ids clst env circ = 
+       match (ids, clst) with 
+      | ([], []) -> env
+      | (i::is,c::cs) -> let b = (eval_hlpr circ c env) in 
+                  (i, b)::(eval_apply_hlpr is cs env circ)
+      | _ -> failwith "incorrect sub circuit application"
+ 
+let rec evaluate circ comb =
+  let env = StringMap.fold 
+  (fun k v acc -> 
+    match v with 
+    | Register r -> (k, r.value)::acc
+    | _ -> acc) 
+  circ.comps [] in 
+  (* env is a assoc list of RegID: bitstream ex: "A": 101011 *)
+   eval_hlpr circ comb env 
+
+(************************ eval ***********************)
 
 let step circ =
   failwith "unimplemented"
