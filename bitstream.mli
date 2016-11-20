@@ -56,6 +56,8 @@ val bitstream_of_hexstring : string -> bitstream
  * returns l length bitstream *)
 val bitstream_of_decimal : int -> bitstream
 
+val bitstream_of_decstring : string -> bitstream
+
 val decimal_of_bitstream : bitstream -> int
 
 (* [set b n value] is a bitstream [s] with the same number of bits as [b]

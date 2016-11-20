@@ -60,6 +60,9 @@ let bitstream_to_binstring b =
     | false::t -> (make t) ^ "0"
   in "0b" ^ (make b)
 
+let bitstream_of_decstring d =
+  failwith "TODO"
+
 let bitstream_of_binstring s =
   let bin = if String.length s >= 3 && String.sub s 0 2 = "0b"
             then String.sub s 2 (String.length s - 2) else s in

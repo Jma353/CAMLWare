@@ -18,5 +18,5 @@ open Parse;;
 
 (* install defined printers*)
 #install_printer format_bitstream;;
-#install_printer format_register;;
+#install_printer format_comp;;
 #install_printer format_circuit;;

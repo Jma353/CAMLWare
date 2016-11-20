@@ -16,7 +16,7 @@ type arithmetic =
 
 type comb =
   | Const     of bitstream
-  | Reg       of id
+  | Var       of id
   | Sub_seq   of int * int * comb
   | Nth       of int * comb
   | Gate      of gate * comb * comb
@@ -25,9 +25,10 @@ type comb =
   | Neg       of negation * comb
   | Comp      of comparison * comb * comb
   | Arith     of arithmetic * comb * comb
-  | Concat    of comb * comb
+  | Concat    of comb list
   | Mux2      of comb * comb * comb
   | Apply     of id * comb list
+  | Let       of id * comb * comb
 
 let string_of_gate g =
   match g with
@@ -73,7 +74,7 @@ let string_of_arithmetic a =
 let rec format_logic f comb =
   match comb with
   | Const b -> format_bitstream f b
-  | Reg id -> Format.fprintf f "%s" id
+  | Var id -> Format.fprintf f "%s" id
   | Sub_seq (n1,n2,c) -> Format.fprintf f "%a[%i-%i]" (format_logic) c n1 n2
   | Nth (n,c) -> Format.fprintf f "%a[%i]" (format_logic) c n
   | Gate (g,c1,c2) -> Format.fprintf f "(%a) %s (%a)" (format_logic) c1
@@ -88,14 +89,15 @@ let rec format_logic f comb =
                         (string_of_comparison comp) (format_logic) c2
   | Arith (a,c1,c2) -> Format.fprintf f "(%a) %s (%a)" (format_logic) c1
                         (string_of_arithmetic a) (format_logic) c2
-  | Concat (c1,c2) -> Format.fprintf f "{%a, %a}" (format_logic) c1
-                        (format_logic) c2
+  | Concat args -> Format.fprintf f "{%a}" (format_args) args
   | Mux2 (sel,c1,c2) -> Format.fprintf f "(if %a then %a else %a)"
-                          (format_logic) sel (format_logic) c1 (format_logic) c2
+                        (format_logic) sel (format_logic) c1 (format_logic) c2
   | Apply (id,args) -> Format.fprintf f "%s(%a)" id (format_args) args
+  | Let (x,def,eval) -> Format.fprintf f "let %s = %a in %a" x (format_logic)
+                        def (format_logic) eval
 
 and format_args f args =
   match args with
   | [] -> ()
   | h::[] -> Format.fprintf f "%a" (format_logic) h
-  | h::t -> Format.fprintf f "%a,%a" (format_logic) h (format_args) t
+  | h::t -> Format.fprintf f "%a, %a" (format_logic) h (format_args) t

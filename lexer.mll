@@ -3,6 +3,7 @@
 {
 open Parser
 open Printf
+open Bitstream
 exception Eof
 
 let incr_linenum lexbuf =
@@ -13,16 +14,25 @@ let incr_linenum lexbuf =
     }
 }
 
+let decdigit   = ['0'-'9']
+let bindigit   = '0' | '1'
+let hexdigit   = ['0'-'9''a'-'f''A'-'F']
 let ident      = (['a'-'z'] | ['A'-'Z'] | ['0'-'9'] | '_' | '\'')+
-let decimal    = (['0'-'9'])*("'d'")['0'-'9']+
-let hex        = (['0'-'9'])*("'x")(['0'-'9''A'-'F'])+
-let binary     = (['0'-'9'])*("'b")(['0' '1'])+
+let decnum     = decdigit+
+let hexnum     = hexdigit+
+let binnum     = bindigit+
+let decstream  = decnum? "'d" decnum
+let hexstream  = decnum? "'x" hexnum
+let binstream  = decnum? "'b" binnum
+let newline    = '\r' | '\n' | "\r\n"
 let whitespace = [' ' '\t']
 
 rule token = parse
   | whitespace { token lexbuf }
-  | ['\n'] { incr_linenum lexbuf; token lexbuf }
+  | newline { incr_linenum lexbuf; token lexbuf }
+  | "fun" { FUN }
   | "let" { LET }
+  | "in" { IN }
   | "register" { REGISTER }
   | "falling" { FALLING }
   | "rising" { RISING }
@@ -49,7 +59,7 @@ rule token = parse
   | "<<" { SLL }
   | ">>" { SRL }
   | ">>>" { SRA }
-  | "-" { DASH }
+  | "-" { MINUS }
   | "," { COMMA }
   | '(' { LPAREN }
   | ')' { RPAREN }
@@ -57,12 +67,12 @@ rule token = parse
   | ']' { RBRACKET }
   | "{" { LBRACE }
   | "}" { RBRACE }
-  | ';' { SEMICOLON }
   | "if" { IF }
-  | "else" { ELSE }
   | "then" { THEN }
-  | decimal as d {  DEC d }
-  | binary as b { BIN b }
-  | hex as h { HEX h }
-  | ident as id { VAR id }
+  | "else" { ELSE }
+  | decnum as d { NUM (int_of_string d) }
+  | decstream as d { STREAM (bitstream_of_decstring d) }
+  | hexstream as h { STREAM (bitstream_of_hexstring h) }
+  | binstream as b { STREAM (bitstream_of_binstring b) }
   | eof { EOF }
+  | ident as id { VAR id }

@@ -37,6 +37,8 @@ val subcircuit : comb -> id list -> component
  *)
 val circuit : component map -> circuit
 
+val circuit_from_list : (id * component) list -> circuit
+
 (* formatting function for circuit components *)
 val format_comp : Format.formatter -> component -> unit
 

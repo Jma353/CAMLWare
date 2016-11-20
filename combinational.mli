@@ -23,7 +23,7 @@ type arithmetic =
 
 (* values of type [comb] represent combinational logic circuits.
  * - [Const b] represents a constant value containing bitstream [b]
- * - [Reg id] represents the value of the register with id [id]
+ * - [Var id] represents the value with id [id]
  * - [Sub_seq from to b] represents the subsequence of bitstream [b] from index
  * - [Nth n b] represents the [n]th bit of [b]
  *   [from] to index [to]
@@ -36,10 +36,11 @@ type arithmetic =
  * - [Concat b1 b2] represents [b1] concatenated to [b2]
  * - [Mux2 sel b1 b2] represents [b1] and [b2] multiplexed by [sel]
  * - [Apply f args] represents [f] applied to [args]
+ * - [Let x def eval] represents [eval] with [x] bound to [def]
  *)
 type comb =
   | Const     of bitstream
-  | Reg       of id
+  | Var       of id
   | Sub_seq   of int * int * comb
   | Nth       of int * comb
   | Gate      of gate * comb * comb
@@ -48,8 +49,9 @@ type comb =
   | Neg       of negation * comb
   | Comp      of comparison * comb * comb
   | Arith     of arithmetic * comb * comb
-  | Concat    of comb * comb
+  | Concat    of comb list
   | Mux2      of comb * comb * comb
   | Apply     of id * comb list
+  | Let       of id * comb * comb
 
 val format_logic : Format.formatter -> comb -> unit

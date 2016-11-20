@@ -31,6 +31,9 @@ type circuit = {
   clock : bool;
 }
 
+let map_of_assoclist l =
+  List.fold_left (fun acc (k,v) -> StringMap.add k v acc) StringMap.empty l
+
 let make_register length logic reg_type =
   Register {
     reg_type = reg_type;
@@ -59,6 +62,9 @@ let circuit comps =
     comps = comps;
     clock = false;
   }
+
+let circuit_from_list l =
+  l |> map_of_assoclist |> circuit
 
 let format_register_input f input =
   match input with

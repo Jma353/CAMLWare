@@ -16,171 +16,142 @@ let parse_error _ =
   failwith ("Parse error: ("^start_line^"."^start_char^"-"^end_line^"."^end_char)
 %}
 
-%token LET
-%token REGISTER
-%token FALLING
-%token RISING
-%token INPUT
-%token OUTPUT
-%token ASSIGN
-%token EQ
-%token NEQ
-%token GTE
-%token LTE
-%token GT
-%token LT
-%token LAND
-%token LOR
-%token LNOT
-%token NAND
-%token NOR
-%token NXOR
-%token AND
-%token OR
-%token XOR
-%token NOT
-%token PLUS
-%token SLL
-%token SRL
-%token SRA
-%token DASH
+%token FUN ASSIGN
+%token LET IN
+%token REGISTER FALLING RISING INPUT OUTPUT
+%token EQ NEQ GTE LTE GT LT
+%token AND OR XOR NAND NOR NXOR NOT
+%token LAND LOR LNOT
+%token PLUS MINUS SLL SRL SRA
+%token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET
 %token COMMA
-%token LPAREN
-%token RPAREN
-%token LBRACKET
-%token RBRACKET
-%token LBRACE
-%token RBRACE
-%token SEMICOLON
-%token IF
-%token ELSE
-%token THEN
-%token <string> DEC
-%token <string> BIN
-%token <string> HEX
+%token IF THEN ELSE
 %token <string> VAR
+%token <int> NUM
+%token <Bitstream.bitstream> STREAM
 %token EOF
 
-%start comb
-%type <Combinational.comb> comb
+%nonassoc IF LET
+%left AND OR XOR NAND NOR NXOR LAND LOR
+%left EQ NEQ GTE LTE GT LT
+%left PLUS MINUS
+%left SLL SRL SRA
 
-%start circuit
-%type <Circuit.circuit> circuit
+%start <Circuit.circuit> circuit
+
+%start <Combinational.comb> logic
 
 %%
 
 circuit:
-  | registers {circuit $1}
+  | comps = list(component); EOF
+  { circuit_from_list comps }
 ;
 
-registers:
-  | register {let reg = $1 in StringMap.singleton (fst reg) (snd reg)}
-  | register registers {let reg = $1 in StringMap.add (fst reg) (snd reg) $2}
+component:
+  | r = register   { r }
+  | s = subcircuit { s }
 ;
 
-register:
-  | REGISTER VAR LBRACKET number RBRACKET ASSIGN comb SEMICOLON
-    {($2, rising_register $4 $7)}
-  | RISING REGISTER VAR LBRACKET number RBRACKET ASSIGN comb SEMICOLON
-    {($3, rising_register $5 $8)}
-  | FALLING REGISTER VAR LBRACKET number RBRACKET ASSIGN comb SEMICOLON
-    {($3, falling_register $5 $8)}
-  | INPUT VAR LBRACKET number RBRACKET SEMICOLON
-    {($2, input $4)}
-  | OUTPUT VAR LBRACKET number RBRACKET ASSIGN comb SEMICOLON
-    {($2, output $4 $7)}
+%inline register:
+  | RISING?; REGISTER; id = VAR; LBRACKET; l = NUM; RBRACKET; ASSIGN; ast = comb
+    { (id, rising_register l ast) }
+  | FALLING; REGISTER; id = VAR; LBRACKET; l = NUM; RBRACKET; ASSIGN; ast = comb
+    { (id, falling_register l ast) }
+  | OUTPUT; id = VAR; LBRACKET; l = NUM; RBRACKET; ASSIGN; ast = comb
+    { (id, output l ast) }
+  | INPUT; id = VAR; LBRACKET; l = NUM; RBRACKET;
+    { (id, input l) }
+;
+
+%inline subcircuit:
+  | FUN; id = VAR; LPAREN; args = separated_list(COMMA, arg);
+    RPAREN; ASSIGN; ast = comb
+    { (id, subcircuit ast args) }
+;
+
+arg:
+  | id = VAR { id }
+;
+
+logic:
+  c = comb; EOF { c }
 ;
 
 comb:
-  | add_expr {$1}
-;
-
-add_expr:
-  | shift_expr {$1}
-  | add_expr PLUS shift_expr {Arith (Add,$1,$3)}
-  | add_expr DASH shift_expr {Arith (Subtract,$1,$3)}
-;
-
-shift_expr:
-  | comp_expr {$1}
-  | shift_expr SLL or_expr {Arith (Sll,$1,$3)}
-  | shift_expr SRL or_expr {Arith (Srl,$1,$3)}
-  | shift_expr SRA or_expr {Arith (Sra,$1,$3)}
-;
-
-or_expr:
-  | and_expr {$1}
-  | or_expr OR and_expr {Gate (Or,$1,$3)}
-  | or_expr XOR and_expr {Gate (Xor,$1,$3)}
-  | or_expr NOR and_expr {Gate (Nor,$1,$3)}
-  | or_expr NXOR and_expr {Gate (Nxor,$1,$3)}
-  | or_expr LOR and_expr {Logical (Or,$1,$3)}
-;
-
-and_expr:
-  | unary {$1}
-  | and_expr AND comp_expr {Gate (And,$1,$3)}
-  | and_expr NAND comp_expr {Gate (Nand,$1,$3)}
-  | and_expr LAND comp_expr {Logical (And,$1,$3)}
-;
-
-comp_expr:
-  | unary {$1}
-  | comp_expr EQ unary {Comp (Eq,$1,$3)}
-  | comp_expr NEQ unary {Comp (Neq,$1,$3)}
-  | comp_expr LT unary {Comp (Lt,$1,$3)}
-  | comp_expr GT unary {Comp (Gt,$1,$3)}
-  | comp_expr LTE unary {Comp (Lte,$1,$3)}
-  | comp_expr GTE unary {Comp (Gte,$1,$3)}
+  | c = unary
+    { c }
+  | LET; x = VAR; ASSIGN; def = comb; IN; eval = comb %prec LET
+    { Let (x, def, eval) }
+  | IF; cond = comb; THEN; then_expr = comb; ELSE; else_expr = comb %prec IF
+    { Mux2 (cond, else_expr, then_expr) }
+  | f = VAR; LPAREN; args = separated_list(COMMA, comb); RPAREN
+    { Apply (f, args) }
+  | c1 = comb; op = arith_op; c2 = comb
+    { Arith (op, c1, c2) }
+  | c1 = comb; op = gate; c2 = comb
+    { Gate (op, c1, c2) }
+  | c1 = comb; op = logic_op; c2 = comb
+    { Logical (op, c1, c2) }
+  | c1 = comb; op = relation; c2 = comb
+    { Comp (op, c1, c2) }
 ;
 
 unary:
-  | array_access {$1}
-  | NOT unary {Neg (Neg_bitwise,$2)}
-  | LNOT unary {Neg (Neg_logical,$2)}
-  | DASH unary {Neg (Neg_arithmetic,$2)}
-  | AND unary {Reduce (And,$2)}
-  | OR unary {Reduce (Or,$2)}
-  | XOR unary {Reduce (Xor,$2)}
-  | NAND unary {Reduce (Nand,$2)}
-  | NOR unary {Reduce (Nor,$2)}
-  | NXOR unary {Reduce (Nxor,$2)}
+  | c = array_access          { c }
+  | neg = negation; c = unary { Neg (neg, c) }
+  | r = gate; c = unary       { Reduce (r, c) }
 ;
 
 array_access:
-  | primary {$1}
-  | primary LBRACKET number RBRACKET {Nth ($3,$1)}
-  | primary LBRACKET number DASH number RBRACKET {Sub_seq ($3,$5,$1)}
+  | c = primary
+    { c }
+  | c = array_access; LBRACKET; n = NUM; RBRACKET
+    { Nth (n, c) }
+  | c = array_access; LBRACKET; n1 = NUM; MINUS; n2 = NUM; RBRACKET
+    { Sub_seq (n1, n2, c) }
 ;
 
 primary:
-  | VAR {Reg $1}
-  | bitstream {Const ($1)}
-  | LPAREN comb RPAREN {$2}
-  | LBRACE concat_inside {$2}
-  | IF comb THEN comb ELSE comb {Mux2($2,$4,$6)}
-  | VAR LPAREN apply_inside {Apply($1,$3)}
-  | VAR LPAREN RPAREN {Apply($1,[])}
+  | id = VAR                                                    { Var id }
+  | n = STREAM                                                  { Const n }
+  | LPAREN; c = comb; RPAREN                                    { c }
+  | LBRACE; args = separated_nonempty_list(COMMA, comb); RBRACE { Concat args }
 ;
 
-concat_inside:
-  | comb RBRACE {$1}
-  | comb COMMA concat_inside {Concat ($1,$3)}
+%inline arith_op:
+  | PLUS  { Add }
+  | MINUS { Subtract }
+  | SLL   { Sll }
+  | SRL   { Srl }
+  | SRA   { Sra }
 ;
 
-apply_inside:
-  | comb RPAREN {$1::[]}
-  | comb COMMA apply_inside {$1::$3}
+%inline gate:
+  | AND  { And }
+  | OR   { Or }
+  | XOR  { Xor }
+  | NAND { Nand }
+  | NOR  { Nor }
+  | NXOR { Nxor }
 ;
 
-bitstream:
-  | DEC {bitstream_of_decimal (int_of_string $1)}
-  | HEX {bitstream_of_hexstring $1}
-  | BIN {bitstream_of_binstring $1}
+%inline logic_op:
+  | LAND { And }
+  | LOR  { Or }
 ;
 
-number:
-  | DEC {int_of_string $1}
-  | HEX {dec_of_hexstring_unsigned $1}
-  | BIN {dec_of_binstring_unsigned $1}
+%inline relation:
+  | EQ  { Eq }
+  | NEQ { Neq }
+  | GT  { Gt }
+  | LT  { Lt }
+  | GTE { Gte }
+  | LTE { Lte }
+;
+
+%inline negation:
+  | NOT   { Neg_bitwise }
+  | LNOT  { Neg_logical }
+  | MINUS { Neg_arithmetic }
 ;
