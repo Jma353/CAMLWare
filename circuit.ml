@@ -204,11 +204,12 @@ let rec evaluate circ comb =
 
 (************************ eval ***********************)
 
+(*[eval_regs r circ] evaluates the rising / falling registers *)
 let eval_regs r circ =
   match r.next with 
   | User_input -> Register r
-  | AST comb -> if (r.reg_type = Falling && not circ.clock) 
-                || (r.reg_type = Rising && circ.clock) 
+  | AST comb -> if (r.reg_type = Falling && circ.clock)  
+                || (r.reg_type = Rising && not circ.clock)             
                 then let new_val = evaluate circ comb in 
                 Register {r with value = new_val; length = length new_val}
               else Register r
