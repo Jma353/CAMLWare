@@ -235,15 +235,15 @@ let bitstream_to_decstring_unsigned b =
 
 let shift_left b1 b2 =
   let n = bitstream_to_integer_unsigned b2 in
-  concat (zeros n) (Array.sub b1 n (length b1 - n))
+  concat (zeros n) (Array.sub b1 0 (length b1 - n))
 
 let shift_right_logical b1 b2 =
   let n = bitstream_to_integer_unsigned b2 in
-  concat (Array.sub b1 0 n) (zeros n)
+  concat (Array.sub b1 n (length b1 - n)) (zeros n)
 
 let shift_right_arithmetic b1 b2 =
   let n = bitstream_to_integer_unsigned b2 in
-  concat (Array.sub b1 0 n) (Array.make n (is_negative b1))
+  concat (Array.sub b1 n (length b1 - n)) (Array.make n (is_negative b1))
 
 let relation comparator b1 b2 =
   let n1 = bitstream_to_integer_signed b1 in
@@ -257,4 +257,4 @@ let greater_than = relation (>)
 let equals = relation (=)
 
 let format_bitstream f b =
-  Format.fprintf f "%s" (bitstream_to_hexstring b)
+  Format.fprintf f "%s" (bitstream_to_binstring b)
