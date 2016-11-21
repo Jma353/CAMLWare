@@ -1,271 +1,260 @@
-open Base_conversions
 
-(* Temporary implementation so the parser is testable *)
+(* RI: Except within constructors, this type is treated as IMMUTABLE *)
+type bitstream = bool array
 
-type bitstream = bool list
+let max_length = 32
 
-let max_bits = 64
+let and_bits b1 b2 =
+  b1 && b2
 
-let length b =
-  List.length b
+let or_bits b1 b2 =
+  b1 || b2
 
-let create bs =
-  bs
+let xor_bits b1 b2 =
+  (b1 && (not b2)) || ((not b1) && b2)
 
-let nth (b: bitstream) (n: int) =
-  (List.nth b n)::[]
+let length = Array.length
 
-let substream b n1 n2 =
-  let rec make lst i =
-    match lst with
-      | [] -> []
-      | h::t -> if i >= n1 && i <= n2 then h::(make t (i + 1))
-                else make t (i + 1)
-    in make b 0
+let create = Array.of_list
 
+let singleton (b:bool) : bitstream = Array.make 1 b
 
-let is_zero b =
-  List.for_all (fun x -> x = false) b
+let nth (b:bitstream) (n:int) : bitstream = singleton (Array.get b n)
 
+let substream b n1 n2 = Array.sub b n1 (n2 - n1)
 
-let negative b =
-  List.nth b ((List.length b) - 1) (* most significant bit is the last bit *)
+let is_zero = Array.for_all (fun x -> x = false)
 
+let is_negative b = b.(length b - 1)
 
-let zeros n =
-  if n < 0 then [] else
-    let rec make = function
-      | 0 -> []
-      | x -> false::(make (x - 1))
-    in make n
+let zeros n = Array.make n false
 
-let ones n =
-  if n < 0 then [] else
-    let rec make = function
-      | 0 -> []
-      | x -> true::(make (x - 1))
-    in make n
+let ones n = Array.make n true
 
 let one n =
-  if n <= 0 then [] else true::(zeros (n - 1))
-
-let singleton b =
-  [b]
-
-let bitstream_to_binstring b =
-  let rec make lst =
-    match lst with
-    | [] -> ""
-    | true::t -> (make t) ^ "1"
-    | false::t -> (make t) ^ "0"
-  in "0b" ^ (make b)
-
-let bitstream_of_decstring d =
-  failwith "TODO"
-
-let bitstream_of_binstring s =
-  let bin = if String.length s >= 3 && String.sub s 0 2 = "0b"
-            then String.sub s 2 (String.length s - 2) else s in
-  let rec make = function
-  | [] -> []
-  | h::t -> if h = "1" then true::(make t) else if h = "0"
-            then false::(make t)
-            else failwith "incorrect bitstream_of_binstring input"
-  in make (Str.split (Str.regexp "") bin) |> List.rev
-
-(* flag .. unsigned or signed? *)
-let bitstream_of_hexstring s =
-  let binary = binstring_of_hexstring s in
-  bitstream_of_binstring binary
-
-let set b n value =
-  (substream b 0 (n - 1)) @ [value] @ (substream b (n + 1) (List.length b))
-
-let replicate b n =
-  let rec make = function
-    | 0 -> []
-    | x -> b @ (make (x - 1))
-  in make n
-
-let concat b1 b2 =
-  b1 @ b2
-
-let reduce (op: bool -> bool -> bool) (b: bitstream) =
-  if b = [] then []
-  else (List.fold_left (fun x acc -> op x acc) (List.hd b) (List.tl b))::[]
-
-let zero_extend n bitstream =
-  let r = List.rev bitstream in
-  let rec make needs lst =
-    match needs with
-    | 0 -> lst
-    | x -> (false::(make (x - 1) lst))
-  in List.rev (make (n - (length bitstream)) r)
+  let z = zeros n in
+  z.(0) <- true; z
 
 let sign_extend n b =
-  let r = List.rev b in
-  let sign = List.hd r in
-  let rec make needs lst =
-    match needs with
-    | 0 -> lst
-    | x -> (sign::(make (x - 1) lst))
-  in List.rev (make (n - (length b)) r)
+  Array.append b (Array.make (n - length b) (is_negative b))
 
-let format_logical input1 input2 =
-  let l1 = length input1 in
-  let l2 = length input2 in
-  if (l1 > l2)
-  then (input1, (zero_extend l1 input2))
-  else if (l1 = l2) then (input1, input2)
-  else ((zero_extend l2 input1), input2)
+let zero_extend n b =
+  Array.append b (Array.make (n - length b) false)
 
-let format_arithmetic input1 input2 =
-  let l1 = length input1 in
-  let l2 = length input2 in
-  if (l1 > l2)
-  then (input1, (sign_extend l1 input2))
-  else if (l1 = l2) then (input1, input2)
-  else ((sign_extend l2 input1), input2)
+let extend_matching extender b1 b2 =
+  let resized1 = extender (max (length b1) (length b2)) b1 in
+  let resized2 = extender (max (length b1) (length b2)) b2 in
+  (resized1,resized2)
 
-let bitwise_binop (op: bool -> bool -> bool) (b1: bitstream) (b2: bitstream) =
-  let rec make l1 l2 = match (l1, l2) with
-    | ([], []) -> []
-    | (y::ys, x::xs) -> (op y x)::(make ys xs)
-    | _ -> failwith "incorrect bitwise_binop inputs"
-  in make b1 b2
+let set b n value =
+  let c = Array.copy b in
+  c.(n) <- value; c
 
-let logical_binop op (b1: bitstream) (b2: bitstream) =
-  let n = List.length b1 in
-  match (op (not (is_zero b1)) (not (is_zero b2))) with
-  | true -> ones n
-  | false -> zeros n
+let concat = Array.append
 
-let bitwise_not b =
-  List.map (fun x -> not x) b
+let reduce op b =
+  if length b = 1 then b
+  else let rem = Array.sub b 1 (length b - 1) in
+    singleton (Array.fold_left (op) b.(0) rem)
+
+let rec bitwise_binop op b1 b2 =
+  if length b1 <> length b2 then
+    let (r1,r2) = extend_matching (zero_extend) b1 b2 in
+    bitwise_binop (op) r1 r2
+  else Array.map2 (op) b1 b2
+
+let logical_binop op b1 b2 =
+  let r1 = reduce (||) b1 in
+  let r2 = reduce (||) b2 in
+  singleton (op r1.(0) r2.(0))
+
+let bitwise_not =
+  Array.map (not)
 
 let logical_not b =
-  let n = List.length b in
-  if (is_zero b) then ones n else zeros n
+  let r = reduce (||) b in
+  singleton (not r.(0))
 
-let adder b1 b2 carryout=
-  let rec add_hlpr carry l1 l2 =
-  match (carry, l1, l2) with
-  | (x, [], []) -> []
-  | (false, false::l1s, false::l2s) -> false::(add_hlpr false l1s l2s)
-  | (true, false::l1s, false::l2s) -> true::(add_hlpr false l1s l2s)
-  | (true, true::l1s, false::l2s) -> false::(add_hlpr true l1s l2s)
-  | (true, true::l1s, true::l2s) -> true::(add_hlpr true l1s l2s)
-  | (true, false::l1s, true::l2s) -> false::(add_hlpr true l1s l2s)
-  | (false, true::l1s, true::l2s) -> false::(add_hlpr true l1s l2s)
-  | (false, true::l1s, false::l2s) -> true::(add_hlpr false l1s l2s)
-  | (false, false::l1s, true::l2s) -> true::(add_hlpr false l1s l2s)
-  | _ -> failwith "invalid input for add"
-  in add_hlpr carryout b1 b2
+let rec adder c_in b1 b2 n out =
+  if n = length out then out else
+    let x = xor_bits b1.(n) b2.(n) in
+    let s = xor_bits x c_in in
+    let c_out = c_in && x || b1.(n) && b2.(n) in
+    out.(n) <- s;
+    adder c_out b1 b2 (n+1) out
 
 let add b1 b2 =
-  let (new1, new2) = format_arithmetic b1 b2 in
-  let added = adder new1 new2 false in
-  if length added > max_bits then substream added 0 63 else added
-
-let negate b =
-  if (length b = 1) then bitwise_not b
-  else (add (bitwise_not b) (create [true; false]))
+  let (r1,r2) = extend_matching (sign_extend) b1 b2 in
+  let out = Array.make (length r1) false in
+  adder false r1 r2 0 out
 
 let subtract b1 b2 =
-  let (new1, new2) = format_arithmetic b1 b2 in
-  let added = adder new1 (bitwise_not new2) true in
-  if length added > max_bits then substream added 0 63 else added
+  let (r1,r2) = extend_matching (sign_extend) b1 b2 in
+  let out = Array.make (length r1) false in
+  adder true r1 (bitwise_not r2) 0 out
 
-let bitstream_of_decimal d =
-  let rec divide q =
-    if q / 2 = 0 then
-      if q mod 2 = 1 then [true] else [false]
-    else
-      if q mod 2 = 1 then true::(divide (q / 2)) else false::(divide (q / 2))
-  in let bin = zero_extend max_bits (divide (Pervasives.abs d)) in
-  if d < 0 then negate bin (* twos complement *)
-  else bin
+let negate b =
+  let out = Array.make (length b) false in
+  adder true (zeros (length b)) (bitwise_not b) 0 out
 
-let decimal_of_bitstream b =
-  let rec add_helper b total factor =
-    match b with
-    | [] -> total
-    | h::t ->
-      if (h) then add_helper t (total+factor) (factor*2)
-      else add_helper t total (factor*2)
-  in add_helper b 0 1
+let rev_string s =
+  String.init (String.length s)
+    (fun x -> String.get s (String.length s - 1 - x))
 
-let rec shift_left_helper (b: bitstream) n (fill_in: bool) =
-  match n with
-  | 0 -> b
-  | x -> fill_in::(shift_left_helper b (x - 1) fill_in)
+let rec bitstream_of_string_helper (s:Scanf.Scanning.in_channel) (arr:bitstream)
+    (n:int) (helper:Scanf.Scanning.in_channel -> char option -> bitstream -> int -> bitstream) : bitstream =
+  if (n >= Array.length arr) then arr else
+    let c = try Scanf.bscanf s "%c" (fun x -> Some x) with End_of_file -> None
+    in helper s c arr n
 
-let shift_left b n =
-  let shift = if negative n then failwith "incorrect input for shift_left"
-              else (dec_of_binstring_unsigned (bitstream_to_binstring n)) in
-  let shifted = shift_left_helper b shift false in
-  if length shifted > max_bits then substream shifted 0 63 else shifted
+let bitstream_of_string (s:string) (base:string)
+    (helper:Scanf.Scanning.in_channel -> char option -> bitstream -> int -> bitstream) : bitstream =
+  let split = Str.split (Str.regexp base) s in
+  let (l,str) = if List.length split = 2
+    then (int_of_string (List.hd split), List.hd (List.tl split))
+    else (max_length, List.hd split) in
+  let arr = Array.make l false in
+  let schan = Scanf.Scanning.from_string (rev_string str) in
+  bitstream_of_string_helper schan arr 0 (helper)
 
-let rec shift_right_helper (b: bitstream) n (fill_in: bool) =
-  List.rev (shift_left_helper (List.rev b) n fill_in)
+let bitstream_of_binstring s =
+  let rec helper =
+    fun schan c arr n -> match c with
+      | None -> arr
+      | Some '1' -> arr.(n) <- true;
+        bitstream_of_string_helper schan arr (n+1) (helper)
+      | _ -> bitstream_of_string_helper schan arr (n+1) (helper) in
+  bitstream_of_string s "'b" (helper)
 
-let shift_right_logical b n =
-  let shift = if negative n then failwith "incorrect input for shift_left"
-              else (dec_of_binstring_unsigned (bitstream_to_binstring n)) in
-  let shifted = shift_right_helper b shift false in
-  if length shifted > max_bits
-  then substream shifted (length shifted - max_bits) (length shifted) else shifted
+let bitstream_of_hexstring s =
+  let eval_hex =
+    fun h arr n ->
+      let l = length arr - 1 - n in
+      let setn0 = fun () -> arr.(n) <- true in
+      let setn1 = fun () -> if l >= 1 then arr.(n+1) <- true else () in
+      let setn2 = fun () -> if l >= 2 then arr.(n+2) <- true else () in
+      let setn3 = fun () -> if l >= 3 then arr.(n+3) <- true else () in
+      match h with
+      | '1' -> setn0()
+      | '2' -> setn1()
+      | '3' -> setn0(); setn1()
+      | '4' -> setn2()
+      | '5' -> setn0(); setn2()
+      | '6' -> setn1(); setn2()
+      | '7' -> setn0(); setn1(); setn2()
+      | '8' -> setn3()
+      | '9' -> setn0(); setn3()
+      | 'A' | 'a' -> setn1(); setn3()
+      | 'B' | 'b' -> setn0(); setn1(); setn3()
+      | 'C' | 'c' -> setn2(); setn3()
+      | 'D' | 'd' -> setn0(); setn2(); setn3()
+      | 'E' | 'e' -> setn1(); setn2(); setn3()
+      | 'F' | 'f' -> setn0(); setn1(); setn2(); setn3()
+      | _ -> ()
+  in
+  let rec helper =
+    fun schan c arr n -> match c with
+      | None -> arr
+      | Some h -> (eval_hex h arr n);
+        bitstream_of_string_helper schan arr (n+4) (helper)
+  in
+  bitstream_of_string s "'x" (helper)
 
-let shift_right_arithmetic b n =
-  let shift = if negative n then failwith "incorrect input for shift_left"
-              else (dec_of_binstring_unsigned (bitstream_to_binstring n)) in
-  let shifted = shift_right_helper b shift (negative b) in
-  if length shifted > max_bits
-  then substream shifted (length shifted - max_bits) (length shifted) else shifted
+let bitstream_of_decstring s =
+  let split = Str.split (Str.regexp "'d") s in
+  let (l,str) = if List.length split = 2
+    then (int_of_string (List.hd split), List.hd (List.tl split))
+    else (max_length, List.hd split) in
+  let dec = int_of_string str in
+  let abs_val = abs dec in
+  let hex = Format.sprintf "%i'x%X" l abs_val in
+  let bits = bitstream_of_hexstring hex in
+  if dec < 0 then negate bits else bits
 
+let bitstream_of_integer n =
+  bitstream_of_decstring (Format.sprintf "%i'd%i" max_length n)
 
-let less_than b1 b2 =
-  let dec_b1 = if negative b1
-              then (dec_of_binstring_signed (bitstream_to_binstring b1))
-              else (dec_of_binstring_unsigned (bitstream_to_binstring b1)) in
-  let dec_b2 = if negative b2
-              then (dec_of_binstring_signed (bitstream_to_binstring b2))
-              else (dec_of_binstring_unsigned (bitstream_to_binstring b2)) in
-  if dec_b1 < dec_b2 then ones 1 else zeros 1
+let bitstream_to_binstring b =
+  let bits = String.init (length b)
+      (fun i -> if b.(length b - 1 - i) then '1' else '0') in
+  Format.sprintf "%i'b%s" (length b) bits
 
+let bitstream_to_hexstring b =
+  let l = length b in
+  let ext =
+    if l mod 4 <> 0
+    then zero_extend (l + (4 - (l mod 4))) b
+    else b in
+  let new_l = length ext in
+  let bits = String.init (new_l/4)
+      (fun i ->
+         let index = new_l - 1 - 4*i in
+         let digit = (ext.(index),ext.(index-1),ext.(index-2),ext.(index-3)) in
+         match digit with
+         | (false,false,false,false) -> '0'
+         | (false,false,false,true)  -> '1'
+         | (false,false,true,false)  -> '2'
+         | (false,false,true,true)   -> '3'
+         | (false,true,false,false)  -> '4'
+         | (false,true,false,true)   -> '5'
+         | (false,true,true,false)   -> '6'
+         | (false,true,true,true)    -> '7'
+         | (true,false,false,false)  -> '8'
+         | (true,false,false,true)   -> '9'
+         | (true,false,true,false)   -> 'A'
+         | (true,false,true,true)    -> 'B'
+         | (true,true,false,false)   -> 'C'
+         | (true,true,false,true)    -> 'D'
+         | (true,true,true,false)    -> 'E'
+         | (true,true,true,true)     -> 'F') in
+  Format.sprintf "%i'x%s" l bits
 
-let greater_than b1 b2 =
-   let dec_b1 = if negative b1
-              then (dec_of_binstring_signed (bitstream_to_binstring b1))
-              else (dec_of_binstring_unsigned (bitstream_to_binstring b1)) in
-  let dec_b2 = if negative b2
-              then (dec_of_binstring_signed (bitstream_to_binstring b2))
-              else (dec_of_binstring_unsigned (bitstream_to_binstring b2)) in
-  if dec_b1 > dec_b2 then ones 1 else zeros 1
+let bitstream_to_integer_unsigned b =
+  fst (Array.fold_left
+         (fun (acc,power) bit ->
+            if bit
+            then (acc+power,2*power)
+            else (acc, 2*power)) (0,1) b)
 
-let equals b1 b2 =
-  if List.length b1 != List.length b2 then zeros 1 else
-    if (bitwise_binop (=) b1 b2) |> List.for_all (fun x -> x)
-      then ones 1
-    else zeros 1
+let bitstream_to_integer_signed b =
+  let (i,_,_) =
+    (Array.fold_left
+       (fun (acc,power,count) bit ->
+          if bit
+          then
+            if count = length b
+            then (acc-power,2*power,count+1)
+            else (acc+power,2*power,count+1)
+          else (acc,2*power,count+1)) (0,1,1) b) in i
 
-let xor_bits b1 b2 = 
-  match b1 with 
-  | true when b2 -> false
-  | true when not b2 -> true
-  | false when b2 -> true
-  | false when not b2 -> false
+let bitstream_to_decstring_signed b =
+  Format.sprintf "%i'd%i" (length b) (bitstream_to_integer_signed b)
 
-let and_bits b1 b2 = b1 && b2
+let bitstream_to_decstring_unsigned b =
+  Format.sprintf "%i'd%i" (length b) (bitstream_to_integer_unsigned b)
 
-let or_bits b1 b2 = b1 || b2
+let shift_left b1 b2 =
+  let n = bitstream_to_integer_unsigned b2 in
+  concat (zeros n) (Array.sub b1 n (length b1 - n))
 
-let rec format_bitstream_helper f b =
-  match b with
-  | [] -> ()
-  | h::t -> if h then Format.fprintf f "%s%a" "1"
-                        (format_bitstream_helper) t
-            else Format.fprintf f "%s%a" "0"
-                        (format_bitstream_helper) t
+let shift_right_logical b1 b2 =
+  let n = bitstream_to_integer_unsigned b2 in
+  concat (Array.sub b1 0 n) (zeros n)
+
+let shift_right_arithmetic b1 b2 =
+  let n = bitstream_to_integer_unsigned b2 in
+  concat (Array.sub b1 0 n) (Array.make n (is_negative b1))
+
+let relation comparator b1 b2 =
+  let n1 = bitstream_to_integer_signed b1 in
+  let n2 = bitstream_to_integer_signed b2 in
+  singleton (comparator n1 n2)
+
+let less_than = relation (<)
+
+let greater_than = relation (>)
+
+let equals = relation (=)
+
 let format_bitstream f b =
-  format_bitstream_helper f (List.rev b)
+  Format.fprintf f "%s" (bitstream_to_hexstring b)
