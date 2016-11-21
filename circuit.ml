@@ -166,8 +166,8 @@ let rec eval_hlpr circ comb env =
                       concat (eval_hlpr circ c env) acc) (create []) clst
   | Mux2 (c1,c2,c3) -> let s = (eval_hlpr circ c1 env) in 
                         if is_zero s 
-                        then eval_hlpr circ c2 env
-                        else eval_hlpr circ c3 env
+                        then eval_hlpr circ c3 env
+                        else eval_hlpr circ c2 env
   | Apply (id,clst) -> let subcirc = StringMap.find id circ.comps in 
                         let (nv, comb1) = eval_apply subcirc circ clst env in 
                         eval_hlpr circ comb1 nv
