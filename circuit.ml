@@ -218,14 +218,22 @@ module Simulator : CircuitSimulator = struct
 
   (************************ eval ***********************)
 
+  (* [register_len_check r new_val] zero eztends new_val or truncates new_val 
+      to be the same length as r *)
+  let register_len_check r new_val =
+    if (length new_val) < r.length 
+    then (zero_extend r.length new_val) 
+    else if (length new_val) > r.length then substream new_val 0 (r.length - 1)
+    else new_val
+
   (*[eval_regs r circ] evaluates the rising / falling registers *)
   let eval_regs r circ =
     match r.next with
     | User_input -> Register r
     | AST comb -> if (r.reg_type = Falling && circ.clock)
                   || (r.reg_type = Rising && not circ.clock)
-                  then let new_val = evaluate circ comb in
-                  Register {r with value = new_val; length = length new_val}
+                  then let new_val = register_len_check r (evaluate circ comb) in
+                  Register {r with value = new_val}
                 else Register r
 
   let update_rising_falling circ c =
@@ -236,11 +244,14 @@ module Simulator : CircuitSimulator = struct
   let update_outputs circ c =
     match c with
       | Register r -> (match (r.next, r.reg_type) with
-                      |(AST comb, Output) -> let new_val = evaluate circ comb in
-                                              Register {r with value = new_val;
-                                              length = length new_val}
+                      |(AST comb, Output) -> let new_val = 
+                                        register_len_check r 
+                                        (evaluate circ comb)
+                                            in 
+                                        Register {r with value = new_val}
                       | _ -> c)
       | _ -> c
+
 
   let step circ =
     let new_comps = StringMap.map (update_rising_falling circ) circ.comps in
