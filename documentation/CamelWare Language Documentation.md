@@ -3,17 +3,18 @@ Ocaml, bit by bit
 
 Documentation of the CamelWare language
 
-## Keywords
-## Supported Values
-## Registers, Inputs, and Outputs
-## Basic Hardware Gates 
-## Comparators 
-## Arithmetic Operations
-## Plexers
-## Defining Subcircuits 
-## CamelWare, Learn By Examples 
-
-### Keywords
+______________
+##### 1. Keywords
+##### 2. Supported Values
+##### 3. Registers, Inputs, and Outputs
+##### 4. Basic Hardware Gates 
+##### 5. Comparators 
+##### 6. Arithmetic Operations
+##### 7. Plexers
+##### 8. Defining Subcircuits 
+##### 9. CamelWare, Learn By Examples 
+______________
+### 1. Keywords
 1. input 
 2. output
 2. register
@@ -23,7 +24,7 @@ Documentation of the CamelWare language
 6. let ... in 
 7. if ... then ... else 
 
-### Supported values
+### 2. Supported values
 CamelWare supports inputs and outputs of hexidecimal, decimal, and binary. To define a constant of of these types, one specifies the length of the bitstream that will hold the values (CamelWare supports up to 32 bits), the base system, and the value of that constant in the base system. 
 *[length]'[base][value] where base is in b for binary, d for decimal, h for hexidecimal and 0 < length <= 32*
 ```
@@ -34,7 +35,7 @@ CamelWare supports inputs and outputs of hexidecimal, decimal, and binary. To de
 4'x4
 32'x384972311
 ```
-### Registers, Inputs, and Outputs 
+### 3. Registers, Inputs, and Outputs 
 
 1. **[falling, rising] register** [ rising register, falling register, register ]
 3. **input** [ input ] 
@@ -87,7 +88,7 @@ register A[4] = 4'b1101
 register B[4] = 4'b1111
 register C[7] = {A[0-2],B} -->* 7'b1011111
 ```
-### Basic Hardware Gates 
+### 4. Basic Hardware Gates 
 1. **logical and** [ && ] 
 2. **logical or** [ || ]
 3. **logical not** [ ! ]
@@ -197,7 +198,7 @@ register D[32] = A ~^ B -->* 32'b00000000000000000000000000001011
 ```
 
 
-### Comparators 
+### 5. Comparators 
 1. **equals** [ == ]
 2. **not equals** [ != ]
 3. **greater than or equal to** [ >= ]
@@ -277,7 +278,7 @@ A > C -->* 1'b1
 register D[32] = A > B -->* 32'b00000000000000000000000000000000
 ```
 
-### Arithmetic Operations 
+### 6. Arithmetic Operations 
 
 1. **shift left logically** [ << ]
 2. **shift right logically** [ >> ]
@@ -332,7 +333,7 @@ A - B -->* 4'b0001
 register D[32] = A - B -->* 32'b00000000000000000000000000000001
 ```
 
-### Plexers
+### 7. Plexers
 
 1. **multiplexer** [ if ... then ... else ... ]
 
@@ -349,7 +350,7 @@ register C[4] = 4'b0010
 if A < B then C[0] else C[1] -->* 1'b1
 register D[4] = if A < B then C[0] else C[1] -->* 32'b00000000000000000000000000000001
 ```
-### Defining Subcircuits
+### 8. Defining Subcircuits
 
 1. **subcircuit** [ fun f(x1,x2,...,xn) = ... ] 
 
@@ -368,7 +369,7 @@ register D[4] = f(A,B) -->* 4'b1101
 register F[4] = h(B,A) -->* 4'b0001
 ```
 
-### CamelWare, learn by Examples
+### 9. CamelWare, learn by Examples
 
 
 
