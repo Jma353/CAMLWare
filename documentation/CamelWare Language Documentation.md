@@ -3,6 +3,16 @@ Ocaml, bit by bit
 
 Documentation of the CamelWare language
 
+## Keywords
+## Supported Values
+## Registers, Inputs, and Outputs
+## Basic Hardware Gates 
+## Comparators 
+## Arithmetic Operations
+## Plexers
+## Defining Subcircuits 
+## CamelWare, Learn By Examples 
+
 ### Keywords
 1. input 
 2. output
