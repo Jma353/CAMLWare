@@ -6,7 +6,7 @@ Authors:     NA
 License:     Apache-2.0
 Plugins:     META (0.4), DevFiles (0.4)
 Executable gui
-  Path:         gui
+  Path:         .
   BuildTools:   ocamlbuild
   MainIs:       gui.ml
-  BuildDepends: d3, lwt, js_of_ocaml, yojson
+  BuildDepends: js_of_ocaml, js_of_ocaml.syntax, d3, lwt, yojson
