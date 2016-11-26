@@ -1,4 +1,5 @@
 open Circuit
+
 (* Indicates the scaled coordinate of a particular component -
  * e.g. (1.5, 47). *)
 type coord

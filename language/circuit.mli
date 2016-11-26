@@ -37,6 +37,8 @@ val subcircuit : comb -> id list -> component
  *)
 val circuit : component map -> circuit
 
+(* [circuit_from_list comps] is a circuit constructed from the components named
+ * in association list [comps] *)
 val circuit_from_list : (id * component) list -> circuit
 
 (* formatting function for circuit components *)
@@ -45,21 +47,43 @@ val format_comp : Format.formatter -> component -> unit
 (* formatting function for circuits *)
 val format_circuit : Format.formatter -> circuit -> unit
 
-(* [evaluate circ comb] is the bitstream that results from evaluating
- * [comb] in the context of circuit [circ] *)
-val evaluate : circuit -> comb -> bitstream
+module type CircuitSimulator = sig
+  (* [evaluate circ comb] is the bitstream that results from evaluating
+   * [comb] in the context of circuit [circ] *)
+  val evaluate : circuit -> comb -> bitstream
 
-(* [step circ] is the circuit that results from toggling the state of the clock
- * in [circ] and updating each clocked register *)
-val step : circuit -> circuit
+  (* [step circ] is the circuit that results from toggling the state of the clock
+   * in [circ] and updating each clocked register *)
+  val step : circuit -> circuit
 
-(* [step_n circ n] is the circuit that results from stepping [circ] [n] times *)
-val step_n : circuit -> int -> circuit
+  (* [step_n circ n] is the circuit that results from stepping [circ] [n] times *)
+  val step_n : circuit -> int -> circuit
 
-(* [change_input circ in value] is the circuit that results from replacing the
- * value of input [in] in [circ] with [value] and updating and dependent
- * outputs *)
-val change_input : circuit -> id -> bitstream -> circuit
+  (* [change_input circ in value] is the circuit that results from replacing the
+   * value of input [in] in [circ] with [value] and updating and dependent
+   * outputs *)
+  val change_input : circuit -> id -> bitstream -> circuit
+end
+
+module type StaticAnalyzer = sig
+  (* This module contains all of the static checking functionality involved
+   * in validating a circuit specification *)
+
+  (* this type represents a log of static errors *)
+  type error_log
+
+  (* [validate circ] produces a log of static errors in the circuit spec *)
+  val validate : circuit -> error_log
+
+  (* [valid log] returns whether a circuit with error log [log] is valid*)
+  val valid : error_log -> bool
+
+  (* [print_log log] formats an error log for printing *)
+  val format_log : Format.formatter -> error_log -> unit
+end
+
+module Analyzer : StaticAnalyzer
+module Simulator : CircuitSimulator
 
 type formatted_circuit
 
