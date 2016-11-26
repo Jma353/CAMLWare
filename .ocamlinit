@@ -15,8 +15,10 @@ open Combinational;;
 open Circuit;;
 open Base_conversions;;
 open Parse;;
+open Analyzer;;
 
 (* install defined printers*)
 #install_printer format_bitstream;;
 #install_printer format_comp;;
 #install_printer format_circuit;;
+#install_printer format_log

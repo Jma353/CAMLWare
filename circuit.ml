@@ -5,6 +5,9 @@ open Combinational
 module StringMap = Map.Make(String)
 type 'a map = 'a StringMap.t
 
+module StringSet = Set.Make(String)
+type set = StringSet.t
+
 (* since we internally represent inputs and outputs as registers, we need a
  * flag to specify their type *)
 type reg_type =
@@ -109,6 +112,17 @@ let format_circuit f circ =
   StringMap.iter
     (fun id comp -> Format.fprintf f ("%s =\n%a\n\n") id (format_comp) comp)
     circ.comps
+
+(* [is_subcirc comp] is true if [comp] is a subcircuit, false otherwise *)
+let is_subcirc _ = function
+  | Subcirc _ -> true
+  | _ -> false
+
+(* [is_reg_type t comp] is true if [comp] is a register of type [t], false
+ * otherwise *)
+let is_reg_type t _ = function
+  | Register r -> r.reg_type = t
+  | _ -> false
 
 (************************ eval ***********************)
 
@@ -218,11 +232,11 @@ module Simulator : CircuitSimulator = struct
 
   (************************ eval ***********************)
 
-  (* [register_len_check r new_val] zero eztends new_val or truncates new_val 
+  (* [register_len_check r new_val] zero eztends new_val or truncates new_val
       to be the same length as r *)
   let register_len_check r new_val =
-    if (length new_val) < r.length 
-    then (zero_extend r.length new_val) 
+    if (length new_val) < r.length
+    then (zero_extend r.length new_val)
     else if (length new_val) > r.length then substream new_val 0 (r.length - 1)
     else new_val
 
@@ -244,10 +258,10 @@ module Simulator : CircuitSimulator = struct
   let update_outputs circ c =
     match c with
       | Register r -> (match (r.next, r.reg_type) with
-                      |(AST comb, Output) -> let new_val = 
-                                        register_len_check r 
+                      |(AST comb, Output) -> let new_val =
+                                        register_len_check r
                                         (evaluate circ comb)
-                                            in 
+                                            in
                                         Register {r with value = new_val}
                       | _ -> c)
       | _ -> c
@@ -280,6 +294,8 @@ module Analyzer : StaticAnalyzer = struct
    * string descriptions of the errors in it *)
   type error_log = circuit * string list
 
+  exception Found_recursion of string list
+
   (* monadic return *)
   let make_log circ =
     (circ,[])
@@ -289,17 +305,163 @@ module Analyzer : StaticAnalyzer = struct
     let new_log = f (fst log) in
     (fst new_log, (snd new_log) @ (snd log))
 
+  (* [detect_ast_errors comps env id ast] recursively traverses [ast] detecting and
+   * logging errors in the context of overall component map [comps] and
+   * environment env  *)
+  let rec detect_ast_errors comps env id ast =
+    let template = Printf.sprintf "Error in definition for %s:\n" id in
+    match ast with
+    | Const _ -> []
+    | Var v ->
+      if StringSet.mem v env
+      then []
+      else [Printf.sprintf "%sUnbound variable %s" template v]
+    | Sub_seq (n1,n2,c) ->
+      let warning =
+        if n1 > n2
+        then [Printf.sprintf
+                "%sArray access [%i - %i] is in the wrong order" template n1 n2]
+        else [] in
+      warning @ (detect_ast_errors comps env id c)
+    | Nth (_,c) -> (detect_ast_errors comps env id c)
+    | Gate (_,c1,c2) | Logical (_,c1,c2) | Comp (_,c1,c2) | Arith (_,c1,c2) ->
+      (detect_ast_errors comps env id c1) @ (detect_ast_errors comps env id c2)
+    | Reduce (_,c) | Neg (_,c) -> detect_ast_errors comps env id c
+    | Concat cs -> cs |> (List.map (detect_ast_errors comps env id))
+                   |> (List.fold_left (@) [])
+    | Mux2 (c1,c2,c3) ->
+      (detect_ast_errors comps env id c1) @
+      (detect_ast_errors comps env id c2) @
+      (detect_ast_errors comps env id c3)
+    | Apply (f,cs) ->
+      let warning =
+        if not (StringMap.mem f comps)
+        then  [Printf.sprintf "%sUndefined subcircuit %s" template f]
+        else match StringMap.find f comps with
+          | Register _ -> [Printf.sprintf "%s%s is not a subcircuit" template f]
+          | Subcirc (_,args) ->
+            let expected = List.length args in
+            let found = List.length cs in
+            if expected <> found
+            then [Printf.sprintf
+                    "%sExpected %i %s to subcircuit %s but found %i"
+                    template expected
+                    (if expected = 1 then "input" else "inputs") f found]
+            else [] in
+      let arg_warnings = cs |> (List.map (detect_ast_errors comps env id))
+                         |> (List.fold_left (@) []) in
+      warning @ arg_warnings
+    | Let (x,c1,c2) ->
+      let warning =
+        if StringMap.mem x comps
+        then [Printf.sprintf "%sLocal variable %s shadows definition" template x]
+        else [] in
+      let new_env = StringSet.add x env in
+      warning @
+      (detect_ast_errors comps new_env id c1) @
+      (detect_ast_errors comps new_env id c1)
+
+  (* [detect_comp_errors comps id comp] detects and logs errors in the AST of
+   * [comp] given the context of overall component map [comps] *)
+  let detect_comp_errors comps id comp =
+    let bound = comps |> (StringMap.filter
+                (fun k v -> not (is_reg_type Output k v || is_subcirc k v))) in
+    let env = StringMap.fold
+                (fun k _ acc -> StringSet.add k acc) bound StringSet.empty in
+    match comp with
+    | Register r ->
+      (match r.next with
+       | User_input -> []
+       | AST ast -> detect_ast_errors comps env id ast)
+    | Subcirc (ast,args) ->
+      let binding_warnings =
+        args |>
+        (List.map (fun arg ->
+            if StringMap.mem arg comps
+            then Some (Printf.sprintf
+           "Error in definition for %s:\nArgument %s shadows definition" id arg)
+            else None))
+        |> (List.filter (fun w -> w <> None))
+        |> (List.map (function Some c -> c | None -> failwith "impossible")) in
+      let fun_env =
+        List.fold_left (fun acc arg -> StringSet.add arg acc) env args in
+      binding_warnings @ (detect_ast_errors comps fun_env id ast)
+
   (* [detect_variable_errors circ] detects and logs the following errors:
    * - binding a local variable that shadows a register name
    * - referring to the value of an output
-   * - using an unbound variable *)
-  let rec detect_variable_errors circ =
-    failwith "TODO"
+   * - using an unbound variable
+   * - accessing a substream with invalid indices
+   * - applying a subcircuit with the wrong number of arguments *)
+  let detect_variable_errors circ =
+    let warnings_map =
+      StringMap.mapi
+        (detect_comp_errors circ.comps) circ.comps in
+    let warnings_list =
+      StringMap.fold (fun _ v acc -> v @ acc) warnings_map [] in
+    (circ,warnings_list)
+
+
+  (* [contains acc ast] is a list of the ids of the subcircuits contained
+   * within [ast] *)
+  let rec contains = function
+    | Const _ | Var _ -> []
+    | Sub_seq (_,_,c) | Nth (_,c) | Reduce (_,c) | Neg (_,c) ->
+      contains c
+    | Gate (_,c1,c2) | Logical (_,c1,c2) | Comp (_,c1,c2)
+    | Arith (_,c1,c2) | Let (_,c1,c2) ->
+      (contains c1) @ (contains c2)
+    | Mux2 (c1,c2,c3) ->
+      (contains c1) @ (contains c2) @ (contains c3)
+    | Concat cs ->
+      cs |> (List.map (contains)) |> (List.fold_left (@) [])
+    | Apply (f,cs) ->
+      f::(cs |> (List.map (contains)) |> (List.fold_left (@) []))
+
+(* [detect_cycles graph] performs depth first search on directed graph [graph]
+ * and raises [Found_recursion path] if it encouters a cycle with path [path]
+ * It ignores edges pointing to nodes that do not exist *)
+  let detect_cycles graph =
+    let rec dfs_helper path visited node =
+      if List.mem node path then raise (Found_recursion (node::path)) else
+      if StringSet.mem node visited then visited else
+      if not (StringMap.mem node graph) then (StringSet.add node visited) else
+        let new_path = node::path in
+        let new_visited = StringSet.add node visited in
+        let edges = StringMap.find node graph in
+        List.fold_left
+          (fun acc edge -> dfs_helper new_path acc edge) new_visited edges in
+    let nodes = graph |> StringMap.bindings |> (List.map (fst)) in
+    List.fold_left
+      (fun acc node -> dfs_helper [] acc node) StringSet.empty nodes
+
+  (* [make_graph circ] constructs a directed graph from [circ] where each node
+   * is a subcircuit and an edge is a contains relation *)
+  let make_graph circ =
+    circ.comps |> (StringMap.filter (is_subcirc))
+    |> (StringMap.map
+          (function | Subcirc (c,_) -> c
+                    | _ -> failwith "impossible"))
+    |> (StringMap.map (contains))
+
+  (* [format_path_warning path] is a string representation of a recursion error
+   * with path [path] *)
+  let format_path_warning path =
+    let rec format_path_helper _ = function
+      | [] -> ""
+      | h::[] -> Printf.sprintf "%s" h
+      | h::t -> Printf.sprintf "%s contains %a" h (format_path_helper) t in
+    Printf.sprintf
+      "Recursion Detected:\n%a" (format_path_helper) (List.rev path)
 
   (* [detect_recursion circ] detects and logs any potentially recursive function
    * calls. These are not a valid construct in hardware implementation *)
-  let rec detect_recursion circ =
-    failwith "TODO"
+  let rec detect_recursion (circ:circuit) : error_log =
+    let g = make_graph circ in
+    let warnings =
+      try ignore (detect_cycles g); []
+      with Found_recursion path -> [format_path_warning path] in
+    (circ,warnings)
 
   (* validate pipes the circuit through several error checking functions *)
   let validate circ =
