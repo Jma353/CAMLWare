@@ -1,4 +1,4 @@
-Open Circuit
+open Circuit
 
 type coord = float * float
 type column = register list

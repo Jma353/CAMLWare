@@ -1,0 +1,21 @@
+OASISFormat: 0.4
+Name:        camlware
+Version:     1.0
+Synopsis:    Functional, hardware description language
+Authors:     CAMLWare
+License:     Apache-2.0
+Plugins:     META (0.4), DevFiles (0.4)
+
+BuildTools:           ocamlbuild 
+
+Library main
+  Path:             language
+  Findlibname:      main
+  Modules:          Main
+  CompiledObject:   byte
+  BuildDepends:     str
+
+Executable gui
+  Path:         .
+  MainIs:       gui.ml
+  BuildDepends: js_of_ocaml, js_of_ocaml.syntax, d3, lwt, yojson, main

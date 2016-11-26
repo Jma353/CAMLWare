@@ -1,5 +1,6 @@
 open D3
 open Extensions
+open Circuit
 
 (* Dimensions of the window *)
 type dims =
