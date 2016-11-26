@@ -1,5 +1,5 @@
-open D3
-open Extensions
+open Extensions.D3Extended
+open Utils
 open Components
 open Circuit
 
