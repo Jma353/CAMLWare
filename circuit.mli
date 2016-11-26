@@ -60,3 +60,8 @@ val step_n : circuit -> int -> circuit
  * value of input [in] in [circ] with [value] and updating and dependent
  * outputs *)
 val change_input : circuit -> id -> bitstream -> circuit
+
+type formatted_circuit
+
+val format : circuit -> formatted_circuit
+val format_format_circuit : Format.formatter -> formatted_circuit -> unit
