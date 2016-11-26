@@ -494,6 +494,7 @@ type display_info = {
   parents : int list;
 }
 
+let fot (x, _, _) = x
 
 let tree_to_list ast reg_id reg_list =
   (* ast:comb - what we are analyzing
@@ -505,7 +506,7 @@ let tree_to_list ast reg_id reg_list =
   let rec list_helper ast parents lets reg_list reg_parents =
     match ast with
     | Id_Const (id, b) ->
-      [{y_coord=0.; id=id; node = Const b; parents = parents}]
+      ([{y_coord=0.; id=id; node = Const b; parents = parents}], lets, reg_list)
     | Id_Var (id, v) ->
       let new_reg_list =
         if (StringMap.mem v reg_list)
@@ -520,53 +521,64 @@ let tree_to_list ast reg_id reg_list =
         else
           let (p, comb) = StringMap.find v lets in
           StringMap.add v (parents@p, comb) lets in
-      [{y_coord = 0.; id=id; node = (Let v); parents = parents}]
+      ([{y_coord = 0.; id=id; node = (Let v); parents = parents}], lets, reg_list)
     | Id_Sub_seq(id, i1, i2, comb) ->
-      {y_coord = 0.; id=id; node = Sub (i1, i2); parents=parents}
-      ::(list_helper comb [id] lets reg_list reg_parents)
+      ({y_coord = 0.; id=id; node = Sub (i1, i2); parents=parents}
+      ::(fot (list_helper comb [id] lets reg_list reg_parents)), lets, reg_list)
     | Id_Nth (id, n, comb) ->
-      {y_coord = 0.; id=id; node = Nth n; parents=parents}
-      ::(list_helper comb [id] lets reg_list reg_parents)
+      ({y_coord = 0.; id=id; node = Nth n; parents=parents}
+      ::(fot (list_helper comb [id] lets reg_list reg_parents)), lets, reg_list)
     | Id_Gate (id, g, c1, c2) ->
-      {y_coord = 0.; id=id; node = B g; parents = parents}
-      ::((list_helper c1 [id] lets reg_list reg_parents)
-      @ (list_helper c2 [id] lets reg_list reg_parents))
+      ({y_coord = 0.; id=id; node = B g; parents = parents}
+      ::(( fot (list_helper c1 [id] lets reg_list reg_parents))
+      @ (fot (list_helper c2 [id] lets reg_list reg_parents))) , lets, reg_list)
     | Id_Logical (id, l, c1, c2) ->
-      {y_coord = 0.; id=id; node = L l; parents = parents}
-      ::((list_helper c1 [id] lets reg_list reg_parents)
-      @ (list_helper c2 [id] lets reg_list reg_parents))
+      ({y_coord = 0.; id=id; node = L l; parents = parents}
+      ::(( fot (list_helper c1 [id] lets reg_list reg_parents))
+      @ (fot (list_helper c2 [id] lets reg_list reg_parents))) , lets, reg_list)
     | Id_Reduce ( id, g, comb ) ->
-      {y_coord = 0.; id=id; node = Red g; parents=parents}
-      ::(list_helper comb [id] lets reg_list reg_parents)
+      ({y_coord = 0.; id=id; node = Red g; parents=parents}
+      ::(fot (list_helper comb [id] lets reg_list reg_parents)), lets, reg_list)
     | Id_Neg (id, n, comb) ->
-      {y_coord = 0.; id=id; node = N n; parents=parents}
-      ::(list_helper comb [id] lets reg_list reg_parents)
+      ({y_coord = 0.; id=id; node = N n; parents=parents}
+      ::(fot (list_helper comb [id] lets reg_list reg_parents)), lets, reg_list)
     | Id_Comp(id, c, c1, c2) ->
-      {y_coord = 0.; id=id; node = C c; parents = parents}
-      ::((list_helper c1 [id] lets reg_list reg_parents)
-      @ (list_helper c2 [id] lets reg_list reg_parents))
+      ({y_coord = 0.; id=id; node = C c; parents = parents}
+        ::(( fot (list_helper c1 [id] lets reg_list reg_parents))
+        @ (fot (list_helper c2 [id] lets reg_list reg_parents))) , lets, reg_list)
     | Id_Arith (id, o, c1, c2) ->
-      {y_coord = 0.; id=id; node = A o; parents = parents}
-      ::((list_helper c1 [id] lets reg_list reg_parents)
-      @ (list_helper c2 [id] lets reg_list reg_parents))
+      ({y_coord = 0.; id=id; node = A o; parents = parents}
+        ::(( fot (list_helper c1 [id] lets reg_list reg_parents))
+        @ (fot (list_helper c2 [id] lets reg_list reg_parents))) , lets, reg_list)
     | Id_Concat (id, c_list) ->
       let ids = List.fold_left (fun acc x -> (get_ids x)::acc) [] c_list in
-      {y_coord = 0.; id=id; node=(Concat (List.rev ids)); parents=parents}
-      ::List.flatten((List.fold_right(fun x acc -> (list_helper x [id] lets reg_list reg_parents)::acc) c_list []))
+      ({y_coord = 0.; id=id; node=(Concat (List.rev ids)); parents=parents}
+      ::List.flatten((List.fold_right(fun x acc -> (fot (list_helper x [id] lets reg_list reg_parents))::acc) c_list []))
+      , lets, reg_list)
     | Id_Mux2 (id, c1, c2, c3) ->
-      {y_coord = 0.; id=id; node = (Mux (get_ids c1, get_ids c2, get_ids c3) ); parents=parents}
-      :: ((list_helper c1 [id] lets reg_list reg_parents)
-      @ (list_helper c2 [id] lets reg_list reg_parents)
-      @ (list_helper c3 [id] lets reg_list reg_parents))
+      ({y_coord = 0.; id=id; node = (Mux (get_ids c1, get_ids c2, get_ids c3) ); parents=parents}
+      :: ((fot (list_helper c1 [id] lets reg_list reg_parents))
+      @ (fot (list_helper c2 [id] lets reg_list reg_parents))
+      @ (fot (list_helper c3 [id] lets reg_list reg_parents))), lets, reg_list)
     | Id_Apply (id, var, c_list) ->
-      {y_coord = 0.; id = id; node = (Subcirc var); parents = parents}
-      ::List.flatten ((List.fold_right (fun x acc -> (list_helper x [id] lets reg_list reg_parents)::acc) c_list []))
+      ({y_coord = 0.; id = id; node = (Subcirc var); parents = parents}
+      ::List.flatten ((List.fold_right (fun x acc -> (fot (list_helper x [id] lets reg_list reg_parents))::acc) c_list []))
+      , lets, reg_list)
     | Id_Let (id, var, c1, c2) ->
       let new_lets = StringMap.add var ([], c1) lets in
       let inputs = list_dependencies c1 reg_list in
-      {y_coord = 0.; id = id; node = Let (var); parents = parents}
-      ::(list_helper c1 [id] new_lets reg_list reg_parents)
+      ({y_coord = 0.; id = id; node = Let (var); parents = parents}
+      ::(fot (list_helper c1 [id] new_lets reg_list reg_parents)), lets, reg_list)
     in (list_helper ast [reg_id] StringMap.empty reg_list StringMap.empty)
 
 
 let format circ = assign_columns circ
+
+let format_format_circuit f circ =
+  Format.fprintf f "Columns : %s\n\n" (string_of_int (List.length circ));
+  List.iter (fun x -> (
+    print_string "\n";
+    StringMap.iter
+      (fun k v -> print_string (k^", ") ) x
+    )
+  ) circ
