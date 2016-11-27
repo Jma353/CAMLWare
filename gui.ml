@@ -37,13 +37,15 @@ let view dims padding =
   (* Test gates *)
   let one = red_nxor 0. 50. 60. in
   let two = mux2_c 0. 150. 60. in
+  let three = sub_seq_c 0. 250. 60. 4 27 in
+  let four = nth_c 0. 350. 60. 8 in
 
   (* Construct our view *)
   (container
     |> one
-    |> two)
-
-
+    |> two
+    |> three
+    |> four)
 
 
 ;;

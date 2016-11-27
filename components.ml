@@ -5,10 +5,10 @@ open Extensions
  * single line. *)
 let line_comp x1 y1 x2 y2 stroke_width stroke =
   append "line"
-  |. int attr "x1" x1
-  |. int attr "y1" y1
-  |. int attr "x2" x2
-  |. int attr "y2" y2
+  |. flt attr "x1" x1
+  |. flt attr "y1" y1
+  |. flt attr "x2" x2
+  |. flt attr "y2" y2
   |. int style "stroke-width" stroke_width
   |. str style "stroke" stroke
 
@@ -209,14 +209,14 @@ let register b (x:float) (y:float) (edge:float) svg =
     |. str style "stroke" "black"
     |. str style "fill" "transparent"
     |. int style "stroke-width" 1) in
-  let line1 = (line_comp 0
-    (int_of_float (0.75 *. edge))
-    (int_of_float (0.15 *. edge))
-    (int_of_float (0.80 *. edge)) 1 "black") in
+  let line1 = (line_comp 0.
+    (0.75 *. edge)
+    (0.15 *. edge)
+    (0.80 *. edge) 1 "black") in
   let line2 = (line_comp
-    (int_of_float (0.15 *. edge))
-    (int_of_float (0.80 *. edge)) 0
-    (int_of_float (0.85 *. edge)) 1 "black") in
+    (0.15 *. edge)
+    (0.80 *. edge) 0.
+    (0.85 *. edge) 1 "black") in
   ((svg |- frame) |- line1) |- line2
 
 (* MUX2 Component *)
@@ -232,25 +232,33 @@ let mux2_c (x:float) (y:float) (edge:float) svg =
 
 (* Nth Bit Component *)
 let nth_c (x:float) (y:float) (edge:float) (n:int) svg =
-  (sub_bits edge
-            (0.4 *. edge)
-            (0.4 *. edge)
-            (0.3 *. edge +. x)
-            (0.3 *. edge +. y)
-            (x +. edge /. 2.)
-            (y +. edge *. 0.15)
-            (string_of_int n) svg)
+  let in_line = (line_comp x (y +. edge /. 2.)
+    (0.3 *. edge +. x) (y +. edge /. 2.) 1 "black") in
+  let out_line = (line_comp (x +. edge *. 0.7) (y +. edge /. 2.)
+    (x +. edge) (y +. edge /. 2.)  1 "black") in
+  ((sub_bits edge
+    (0.4 *. edge)
+    (0.4 *. edge)
+    (0.3 *. edge +. x)
+    (0.3 *. edge +. y)
+    (x +. edge /. 2.)
+    (y +. edge *. 0.15)
+    (string_of_int n) svg) |- in_line) |- out_line
 
 (* Sebsequence of bits Component *)
 let sub_seq_c (x:float) (y:float) (edge:float) (n1: int) (n2: int) svg =
-  (sub_bits edge
-            (0.7 *. edge)
-            (0.4 *. edge)
-            (0.15 *. edge +. x)
-            (0.3 *. edge +. y)
-            (x +. edge /. 2.)
-            (y +. edge *. 0.15)
-            ((string_of_int n1) ^ "-" ^ (string_of_int n2)) svg)
+  let in_line = (line_comp x (y +. edge /. 2.)
+    (0.15 *. edge +. x) (y +. edge /. 2.) 1 "black") in
+  let out_line = (line_comp (x +. edge *. 0.85) (y +. edge /. 2.)
+    (x +. edge) (y +. edge /. 2.)  1 "black") in
+  ((sub_bits edge
+    (0.7 *. edge)
+    (0.4 *. edge)
+    (0.15 *. edge +. x)
+    (0.3 *. edge +. y)
+    (x +. edge /. 2.)
+    (y +. edge *. 0.15)
+    ((string_of_int n1) ^ "-" ^ (string_of_int n2)) svg) |- in_line) |- out_line
 
 (* Arithmetic NOT Component *)
 let arith_not (x:float) (y:float) (edge:float) svg =
