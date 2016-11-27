@@ -33,7 +33,7 @@ let path d x_scale y_scale fill stroke width interp svg =
   svg |- path_comp
 
 (* [and_helper x y edge svg] assists in the creation of the shape of an AND
- * gate. *)
+* gate *)
 let and_helper x y edge svg =
   let scale = linear (0,100) (0,100) in (* 1:1 ratio *)
   let tl = (x, y +. 0.1 *. edge) in
@@ -42,9 +42,28 @@ let and_helper x y edge svg =
   let bm = (x +. 0.5 *. edge, y +. 0.9 *. edge) in
   let bl = (x, y +. 0.9 *. edge) in
   let d_1 = list_to_coord_js_array [tl;tm;mr;bm;bl] in
-  let modded_svg = path d_1 scale scale "none" "black" 1 "basis" svg in
+  let path_1 = path d_1 scale scale "none" "black" 1 "basis" in
   let d_2 = list_to_coord_js_array [tl;bl] in
-  path d_2 scale scale "none" "black" 1 "linear" modded_svg
+  let path_2 = path d_2 scale scale "none" "black" 1 "linear" in
+  svg |> path_1 |> path_2
+
+(* [or_helper x y edge svg] assists in the creation of the shape of an OR
+ * gate *)
+let or_helper x y edge svg =
+  let scale = linear (0,100) (0,100) in (* 1:1 ratio *)
+  let tl = (x, y +. 0.1 *. edge) in
+  let tm = (x +. 0.5 *. edge, y +. 0.1 *. edge) in
+  let mr = (x +. edge, y +. 0.5 *. edge) in
+  let bm = (x +. 0.5 *. edge, y +. 0.9 *. edge) in
+  let bl = (x, y +. 0.9 *. edge) in
+  let mm = (x +. 0.2 *. edge, y +. 0.5 *. edge) in
+  let d_1 = list_to_coord_js_array [tl;tm;mr] in
+  let path_1 = path d_1 scale scale "none" "black" 1 "basis" in
+  let d_2 = list_to_coord_js_array [mr;bm;bl] in
+  let path_2 = path d_2 scale scale "none" "black" 1 "basis" in
+  let d_3 = list_to_coord_js_array [tl;mm;bl] in
+  let path_3 = path d_3 scale scale "none" "black" 1 "basis" in
+  svg |> path_1 |> path_2 |> path_3
 
 (* Constant Component *)
 let constant b x y edge svg =
@@ -97,3 +116,6 @@ let register x y edge svg =
 
 (* Arithmetic And Component *)
 let and_c x y edge svg = svg |> and_helper x y edge
+
+(* Arithmetic Or Component *)
+let or_c x y edge svg = svg |> or_helper x y edge

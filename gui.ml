@@ -39,8 +39,11 @@ let view dims padding =
   (* Add Arith. And *)
   let with_and = and_c 0. 180. 60. in
 
+  (* Add Arith. Or *)
+  let with_or = or_c 0. 280. 60. in
+
   (* Construct our view *)
-  container |> with_reg |> with_path |> with_constant |> with_and
+  container |> with_reg |> with_path |> with_constant |> with_and |> with_or
 
 
 ;;
