@@ -21,19 +21,26 @@ let view dims padding =
     |. str attr "transform" (translate padding padding)
   in
 
-  let container = svg <.> g in                 (* Base container *)
-  let with_reg = register 50 75 container in   (* Add a register *)
+  (* Base container *)
+  let container = svg <.> g in
 
-  (* Setup a path *)
+  (* Add a register *)
+  let with_reg = register 0 0 50 75 in
+
+  (* Add a path *)
   let scale = linear (0,100) (0,100) in
   let d = list_to_coord_js_array [(40.,40.);(70.,10.)] in
-  path d scale scale "none" "black" 1 with_reg
+  let with_path = path d scale scale "none" "black" 1 in
+
+  (* Add a constant *)
+  let b = Bitstream.ones 32 in
+  let with_constant = constant b 0 100 60. in
 
 
-
+  container |> with_reg |> with_path |> with_constant
 
 
 ;;
 
 let _ =
-  run ~node:(Dom_html.document##body) (view { width = 300; height = 300 } 50) ()
+  run ~node:(Dom_html.document##body) (view { width = 700; height = 700 } 50) ()

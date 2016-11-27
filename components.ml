@@ -12,7 +12,6 @@ let line_comp x1 y1 x2 y2 stroke_width stroke =
   |. int style "stroke-width" stroke_width
   |. str style "stroke" stroke
 
-
 (* Path Component *)
 let path d x_scale y_scale fill stroke width svg =
   let line_fun = line x_scale y_scale in
@@ -24,15 +23,41 @@ let path d x_scale y_scale fill stroke width svg =
     |. int style "stroke-width" width) in
   svg |- path_comp
 
+(* Constant Component *)
+let constant b x y w svg =
+  let hex_str = Bitstream.bitstream_to_hexstring b in
+  let h = w *. 0.3 in
+  let g = append "g" |. str attr "transform" (translate x y) in
+  let frame =
+    (append "rect"
+      |. flt attr "width" w
+      |. flt attr "height" h
+      |. int attr "x" 0
+      |. int attr "y" 0
+      |. str style "stroke" "black"
+      |. str style "fill" "transparent"
+      |. int style "stroke-width" 1) in
+  let words =
+    (append "text"
+      |. flt attr "x" (w *. 0.5)
+      |. flt attr "y" (h *. 0.5)
+      |. str attr "text-anchor" "middle"
+      |. str attr "alignment-baseline" "middle"
+      |. str attr "font-family" "Courier"
+      |. str attr "font-size" ((string_of_float (w /. 7.5)) ^ "px")
+      |. str attr "fill" "black"
+      |. text (fun _ _ _ -> hex_str)) in
+  let gnode = (g |- frame) |- words in
+  svg |- gnode
 
 (* Register Component *)
-let register w h svg =
+let register x y w h svg =
   let frame =
     (append "rect"
     |. int attr "width" w
     |. int attr "height" h
-    |. int attr "x" 0
-    |. int attr "y" 0
+    |. int attr "x" x
+    |. int attr "y" y
     |. str style "stroke" "black"
     |. str style "fill" "transparent"
     |. int style "stroke-width" 1) in
