@@ -34,21 +34,15 @@ let view dims padding =
   (* Base container *)
   let container = (svg |- border_rect) <.> g in
 
+  (* Test gates *)
   let one = arith_nxor 0. 50. 60. in
-  let two = arith_nxor 0. 150. 40. in
-  let logic_and = logical_and 0. 250. 60. in
-  let logic_or = logical_or 0. 350. 40. in
-  let nottt = arith_not 0. 450. 60. in
-  let sub_seq_lol = sub_seq_c 0. 550. 40. 1 24 in
 
   (* Construct our view *)
   (container
-    |> one
-    |> two
-    |> logic_and
-    |> logic_or
-    |> nottt
-    |> sub_seq_lol)
+    |> one)
+
+
+
 
 ;;
 

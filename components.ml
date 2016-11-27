@@ -297,3 +297,23 @@ let greater_than_or_equal_to (x:float) (y:float) (edge:float) svg =
 (* != Component *)
 let not_equal_to (x:float) (y:float) (edge:float) svg =
   svg |> box_with_symbol x y edge "!="
+
+(* Add Component *)
+let add_c (x:float) (y:float) (edge:float) svg =
+  svg |> box_with_symbol x y edge "+"
+
+(* Subtract Component *)
+let subtract_c (x:float) (y:float) (edge:float) svg =
+  svg |> box_with_symbol x y edge "-"
+
+(* Shift Left Logical Component *)
+let shift_left_logical (x:float) (y:float) (edge:float) svg =
+  svg |> box_with_symbol x y edge "<<"
+
+(* Shift Right Logical Component *)
+let shift_right_logical (x:float) (y:float) (edge:float) svg =
+  svg |> box_with_symbol x y edge ">>"
+
+(* Shift Right Arithmetic Component *)
+let shift_right_arithmetic (x:float) (y:float) (edge:float) svg =
+  svg |> box_with_symbol x y edge ">>>"
