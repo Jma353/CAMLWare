@@ -24,6 +24,9 @@ let container (x: float) (y: float) =
   let x_i = i_of_f x in let y_i = i_of_f y in
   append "g" |. str attr "transform" (translate x_i y_i)
 
+(* Soft gray color used in some components *)
+let soft_gray = "#eff2ed"
+
 (* [txt_c x y font_size sym] assists in the creation of text SVG component *)
 let txt_c x y font_size sym =
   append "text"
@@ -152,6 +155,25 @@ let box_with_symbol (x:float) (y:float) (edge:float) sym svg =
   let gnode = (g |- frame) |- sym_c in
   svg |- gnode
 
+(* [sub_bits width height x y txt_x txt_y msg svg] assists in the creation of a
+ * component that expresses curation of bits (either nth, sub_seq, etc.) *)
+let sub_bits edge width height x y txt_x txt_y msg svg =
+  let box =
+    (append "rect"
+    |. flt attr "width"  width
+    |. flt attr "height" height
+    |. flt attr "x" x
+    |. flt attr "y" y
+    |. int attr "rx" 2
+    |. int attr "ry" 2
+    |. str style "stroke" "black"
+    |. str style "fill" soft_gray
+    |. int style "stroke-width" 1) in
+  let num_bits =
+    (txt_c txt_x txt_y
+           (edge /. 3.) msg) in
+  (svg |- box) |- num_bits
+
 (* Constant Component *)
 let constant b (x:float) (y:float) (edge:float) svg =
   let hex_str = Bitstream.bitstream_to_hexstring b in
@@ -195,24 +217,26 @@ let register (x:float) (y:float) (edge:float) svg =
   ((svg |- frame) |- line1) |- line2
 
 (* Nth Bit Component *)
-let nth (x:float) (y:float) (edge:float) num svg =
-  let box =
-    (append "rect"
-    |. flt attr "width"  (0.4 *. edge)
-    |. flt attr "height" (0.4 *. edge)
-    |. flt attr "x" (0.3 *. edge +. x)
-    |. flt attr "y" (0.3 *. edge +. y)
-    |. int attr "rx" 2
-    |. int attr "ry" 2
-    |. str style "stroke" "black"
-    |. str style "fill" "#eff2ed"
-    |. int style "stroke-width" 1) in
-  let num_bit =
-    (txt_c (x +. edge /. 2.)
-           (y +. edge *. 0.15)
-           (edge /. 3.)
-           (string_of_int num)) in
-  (svg |- box) |- num_bit
+let nth_c (x:float) (y:float) (edge:float) (n:int) svg =
+  (sub_bits edge
+            (0.4 *. edge)
+            (0.4 *. edge)
+            (0.3 *. edge +. x)
+            (0.3 *. edge +. y)
+            (x +. edge /. 2.)
+            (y +. edge *. 0.15)
+            (string_of_int n) svg)
+
+(* Sebsequence of bits Component *)
+let sub_seq_c (x:float) (y:float) (edge:float) (n1: int) (n2: int) svg =
+  (sub_bits edge
+            (0.7 *. edge)
+            (0.4 *. edge)
+            (0.15 *. edge +. x)
+            (0.3 *. edge +. y)
+            (x +. edge /. 2.)
+            (y +. edge *. 0.15)
+            ((string_of_int n1) ^ "-" ^ (string_of_int n2)) svg)
 
 (* Arithmetic NOT Component *)
 let arith_not (x:float) (y:float) (edge:float) svg = svg |> not_helper x y edge

@@ -39,7 +39,7 @@ let view dims padding =
   let logic_and = logical_and 0. 250. 60. in
   let logic_or = logical_or 0. 350. 40. in
   let nottt = arith_not 0. 450. 60. in
-  let nth_lol = nth 0. 550. 60. 5 in
+  let sub_seq_lol = sub_seq_c 0. 550. 40. 1 24 in
 
   (* Construct our view *)
   (container
@@ -48,7 +48,7 @@ let view dims padding =
     |> logic_and
     |> logic_or
     |> nottt
-    |> nth_lol)
+    |> sub_seq_lol)
 
 ;;
 
