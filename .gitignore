@@ -20,7 +20,7 @@ setup.data
 setup.log
 
 
-# All extra stuff 
-*.js
+# All extra stuff
+gui.js
 language/main.*lib
 language/META
