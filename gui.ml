@@ -28,8 +28,8 @@ let view dims padding =
   let two = arith_nxor 0. 150. 40. in
   let three = arith_nxor 0. 250. 100. in
   let logic_and = logical_and 0. 350. 60. in
-  let logic_or = logical_or 0. 450. 100. in
-  let logic_not = logical_not 0. 600. 40. in
+  let logic_or = logical_or 0. 450. 40. in
+  let nottt = arith_not 0. 550. 60. in
 
   (* Construct our view *)
   (container
@@ -38,7 +38,7 @@ let view dims padding =
     |> three
     |> logic_and
     |> logic_or
-    |> logic_not)
+    |> nottt)
 
 ;;
 

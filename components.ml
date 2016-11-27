@@ -36,6 +36,16 @@ let txt_c x y font_size sym =
   |. str attr "fill" "black"
   |. text (fun _ _ _ -> sym)
 
+(* [circ_c cx cy r] assists in the creation of a white circle SVG component *)
+let circ_c cx cy r =
+  append "circle"
+  |. flt attr "cx" cx
+  |. flt attr "cy" cy
+  |. flt attr "r" r
+  |. str style "fill" "white"
+  |. str style "stroke" "black"
+  |. int style "stroke-width" 1
+
 (* Path Component *)
 let path d x_scale y_scale fill stroke width interp svg =
   let line_fun = line x_scale y_scale interp in
@@ -53,15 +63,23 @@ let neg_dot (x:float) (y:float) (edge:float) svg =
   let r = 0.07 *. edge in
   let cx = (x +. edge *. 0.83 +. r) in
   let cy = (y +. 0.5 *. edge) in
-  let circ =
-    (append "circle"
-    |. flt attr "cx" cx
-    |. flt attr "cy" cy
-    |. flt attr "r" r
-    |. str style "fill" "white"
-    |. str style "stroke" "black"
-    |. int style "stroke-width" 1) in
+  let circ = circ_c cx cy r in
   svg |- circ
+
+(* [not_helper] x y edge svg] assists in the creation of the shape of a NOT
+* gate *)
+let not_helper (x:float) (y:float) (edge:float) svg =
+  let scale = linear (0,100) (0,100) in (* 1:1 ratio *)
+  let tl = (x +. edge *. 0.2, y +. edge *. 0.2) in
+  let mr = (x +. edge *. 0.7, y +. edge *. 0.5) in
+  let bl = (x +. edge *. 0.2, y +. edge *. 0.8) in
+  let d = list_to_coord_js_array [tl;mr;bl;tl] in
+  let my_path = path d scale scale "none" "black" 1 "linear" in
+  let r = 0.1 *. edge in
+  let cx = (x +. edge *. 0.7 +. r) in
+  let cy = (y +. 0.5 *. edge) in
+  let circ = circ_c cx cy r in
+  (svg |> my_path) |- circ
 
 (* [and_helper x y edge svg] assists in the creation of the shape of an AND
 * gate *)
@@ -175,6 +193,9 @@ let register (x:float) (y:float) (edge:float) svg =
     (int_of_float (0.80 *. edge)) 0
     (int_of_float (0.85 *. edge)) 1 "black") in
   ((svg |- frame) |- line1) |- line2
+
+(* Arithmetic NOT Component *)
+let arith_not (x:float) (y:float) (edge:float) svg = svg |> not_helper x y edge
 
 (* Arithmetic AND Component *)
 let arith_and (x:float) (y:float) (edge:float) svg = svg |> and_helper x y edge
