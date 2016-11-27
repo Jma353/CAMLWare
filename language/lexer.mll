@@ -4,7 +4,6 @@
 open Parser
 open Printf
 open Bitstream
-exception Eof
 
 let incr_linenum lexbuf =
   let pos = lexbuf.Lexing.lex_curr_p in
