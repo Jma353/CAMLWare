@@ -25,19 +25,22 @@ let view dims padding =
   let container = svg <.> g in
 
   (* Add a register *)
-  let with_reg = register 0 0 50 75 in
+  let with_reg = register 0 0 50. in
 
   (* Add a path *)
   let scale = linear (0,100) (0,100) in
   let d = list_to_coord_js_array [(40.,40.);(70.,10.)] in
-  let with_path = path d scale scale "none" "black" 1 in
+  let with_path = path d scale scale "none" "black" 1 "linear" in
 
   (* Add a constant *)
   let b = Bitstream.ones 32 in
   let with_constant = constant b 0 100 60. in
 
+  (* Add Arith. And *)
+  let with_and = and_c 0. 180. 60. in
 
-  container |> with_reg |> with_path |> with_constant
+  (* Construct our view *)
+  container |> with_reg |> with_path |> with_constant |> with_and
 
 
 ;;

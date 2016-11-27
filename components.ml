@@ -12,9 +12,18 @@ let line_comp x1 y1 x2 y2 stroke_width stroke =
   |. int style "stroke-width" stroke_width
   |. str style "stroke" stroke
 
+(* [px x] expresses a float metric in terms of pixels *)
+let px (x:float) = ((string_of_int (int_of_float x)) ^ "px")
+
+(* [i_of_f x] int_of_float alias *)
+let i_of_f x = int_of_float x
+
+let border_radius tl tr br bl =
+  (px tl) ^ " " ^ (px tr) ^ " " ^ (px br) ^ " " ^ (px bl)
+
 (* Path Component *)
-let path d x_scale y_scale fill stroke width svg =
-  let line_fun = line x_scale y_scale in
+let path d x_scale y_scale fill stroke width interp svg =
+  let line_fun = line x_scale y_scale interp in
   let path_comp =
     (append "path"
     |. str attr "d" (use_line line_fun d)
@@ -23,9 +32,24 @@ let path d x_scale y_scale fill stroke width svg =
     |. int style "stroke-width" width) in
   svg |- path_comp
 
+(* [and_helper x y edge svg] assists in the creation of the shape of an AND
+ * gate. *)
+let and_helper x y edge svg =
+  let scale = linear (0,100) (0,100) in (* 1:1 ratio *)
+  let tl = (x, y +. 0.1 *. edge) in
+  let tm = (x +. 0.5 *. edge, y +. 0.1 *. edge) in
+  let mr = (x +. edge, y +. 0.5 *. edge) in
+  let bm = (x +. 0.5 *. edge, y +. 0.9 *. edge) in
+  let bl = (x, y +. 0.9 *. edge) in
+  let d_1 = list_to_coord_js_array [tl;tm;mr;bm;bl] in
+  let modded_svg = path d_1 scale scale "none" "black" 1 "basis" svg in
+  let d_2 = list_to_coord_js_array [tl;bl] in
+  path d_2 scale scale "none" "black" 1 "linear" modded_svg
+
 (* Constant Component *)
-let constant b x y w svg =
+let constant b x y edge svg =
   let hex_str = Bitstream.bitstream_to_hexstring b in
+  let w = edge in
   let h = w *. 0.3 in
   let g = append "g" |. str attr "transform" (translate x y) in
   let frame =
@@ -51,22 +75,25 @@ let constant b x y w svg =
   svg |- gnode
 
 (* Register Component *)
-let register x y w h svg =
+let register x y edge svg =
   let frame =
     (append "rect"
-    |. int attr "width" w
-    |. int attr "height" h
+    |. int attr "width" (i_of_f edge)
+    |. int attr "height" (i_of_f edge)
     |. int attr "x" x
     |. int attr "y" y
     |. str style "stroke" "black"
     |. str style "fill" "transparent"
     |. int style "stroke-width" 1) in
   let line1 = (line_comp 0
-    (int_of_float (0.75 *. float_of_int h))
-    (int_of_float (0.15 *. float_of_int w))
-    (int_of_float (0.80 *. float_of_int h)) 1 "black") in
-  let line2 = (line_comp (int_of_float (0.15 *. float_of_int w))
-    (int_of_float (0.80 *. float_of_int h)) 0
-    (int_of_float (0.85 *. float_of_int h)) 1 "black") in
-
+    (int_of_float (0.75 *. edge))
+    (int_of_float (0.15 *. edge))
+    (int_of_float (0.80 *. edge)) 1 "black") in
+  let line2 = (line_comp
+    (int_of_float (0.15 *. edge))
+    (int_of_float (0.80 *. edge)) 0
+    (int_of_float (0.85 *. edge)) 1 "black") in
   ((svg |- frame) |- line1) |- line2
+
+(* Arithmetic And Component *)
+let and_c x y edge svg = svg |> and_helper x y edge
