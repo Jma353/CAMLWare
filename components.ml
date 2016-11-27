@@ -243,7 +243,9 @@ let mux2_c (x:float) (y:float) (edge:float) svg =
   let i0_label = txt_c (edge *. 0.2) (edge *. 0.3) (edge /. 7.5) "i_0" in
   let i1_label = txt_c (edge *. 0.2) (edge *. 0.5) (edge /. 7.5) "i_1" in
   let sel_label = txt_c (edge *. 0.2) (edge *. 0.7) (edge /. 7.5) "sel" in
-  svg |- ((((g |> my_path) |- i0_label) |- i1_label) |- sel_label)
+  let out_wire = (line_comp (edge *. 0.6) (edge /. 2.) edge
+    (edge /. 2.) 1 "black") in
+  svg |- (((((g |> my_path) |- i0_label) |- i1_label) |- sel_label) |- out_wire)
 
 (* Nth Bit Component *)
 let nth_c (x:float) (y:float) (edge:float) (n:int) svg =
@@ -382,3 +384,11 @@ let shift_right_logical (x:float) (y:float) (edge:float) svg =
 (* Shift Right Arithmetic Component *)
 let shift_right_arithmetic (x:float) (y:float) (edge:float) svg =
   svg |> box_with_symbol x y edge ">>>"
+
+(* Let-statement Component *)
+let let_c v (x:float) (y:float) (edge:float) svg =
+  svg |> box_with_symbol x y edge v
+
+(* Sub-circuit Component *)
+let sub_circ_c v (x:float) (y:float) (edge:float) svg =
+  svg |> box_with_symbol x y edge v
