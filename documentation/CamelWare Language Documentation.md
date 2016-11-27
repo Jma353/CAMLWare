@@ -1,51 +1,59 @@
 # CamelWare
 Ocaml, bit by bit
 
-Documentation of the CamelWare language
+Documentation of the `CamelWare` language
 
-______________
-##### 1. Keywords
-##### 2. Supported Values
-##### 3. Registers, Inputs, and Outputs
-##### 4. Basic Hardware Gates 
-##### 5. Comparators 
-##### 6. Arithmetic Operations
-##### 7. Plexers
-##### 8. Defining Subcircuits 
-##### 9. CamelWare, Learn By Examples 
-______________
-### 1. Keywords
-1. input 
-2. output
-2. register
-3. falling
-4. rising
-5. fun
-6. let ... in 
-7. if ... then ... else 
+## Table of Contents
+1. [Overview](#overview)
 
-### 2. Supported values
-CamelWare supports inputs and outputs of hexidecimal, decimal, and binary. To define a constant of of these types, one specifies the length of the bitstream that will hold the values (CamelWare supports up to 32 bits), the base system, and the value of that constant in the base system. 
-*[length]'[base][value] where base is in b for binary, d for decimal, h for hexidecimal and 0 < length <= 32*
+## Overview
+`CamelWare` is a functional hardware description language for digital logic. It provides syntactical constructs that make it easy to compactly describe the construction of small to medium scale digital circuits and an interactive simulator for examining their behavior.
+
+### Keywords
+1. `input`
+2. `output`
+2. `register`
+3. `falling`
+4. `rising`
+5. `fun`
+6. `let ... in ...`
+7. `if ... then ... else ...`
+
+## Structure of a `CamelWare` program
+A `CamelWare` program consists of a set of component definitions. These fall into four categories:
+
+* Registers
+* Inputs
+* Outputs
+* Subcircuits
+
+The order of definitions does not matter to the compiler except in that if multiple definitions are given the same name then only the last one will be used.
+
+## Registers, Inputs, and Outputs
+
+### Declaration Syntax
+
+The definition syntax has the same general form for registers, and outputs. It is:
+
 ```
-2'b10
-32'b000000000000000000000111010111000
-32'd10
-10'd1
-4'x4
-32'x384972311
+definition := type name[length] = transition_function
+
+type := [rising | falling] register | output
 ```
-### 3. Registers, Inputs, and Outputs 
+
+Rising registers step to the result of applying their transition function when the clock changes from `0` to `1`. Falling registers step when the clock changes from `1` to `0`. Outputs reevaluate their transition function whenever anything else in the circuit changes. Although you can specify `rising` if you wish, registers are assumed to be rising by default - you must add the optional `falling` keyword to their declaration to make them so.
+
+Defining an input is simply:
+
+```
+input name[length]
+```
+
+### Example Usage
 
 1. **[falling, rising] register** [ rising register, falling register, register ]
-3. **input** [ input ] 
-4. **output** [ output ]
-5. **substream** [ [  ] ]
-6. **concat** [ { } ]
-
-**name** [token]
-*defintion*
-example usage - meta syntax [ -->* means steps to ]
+2. **input** [ input ]
+3. **output** [ output ]
 
 **[falling, rising] register** [ rising register, falling register, register ]
 *[ falling register A[length] ] defines a register referred to by A that recomputes its values on the falling edge of the clock with bit # length
@@ -58,9 +66,9 @@ falling register C[1] = 1'b1
 register D[1] = C
 ```
 
-**input** [ input ] 
+**input** [ input ]
 *[ input A[length] ] defines an input referred to by A with bit # length.
-Inputs are assigned values by the programmer via the gui*
+Inputs are assigned values by the programmer via the simulator gui*
 ```
 input A[10]
 input B[32]
@@ -68,7 +76,7 @@ input B[32]
 **output** [ output ]
 *[ output A[length] ] defines an output referred to by A with bit # length.*
 ```
-input A[10] 
+input A[10]
 output B[32] = A
 ```
 
@@ -88,8 +96,37 @@ register A[4] = 4'b1101
 register B[4] = 4'b1111
 register C[7] = {A[0-2],B} -->* 7'b1011111
 ```
-### 4. Basic Hardware Gates 
-1. **logical and** [ && ] 
+
+## Transition Functions
+`CamelWare` models circuits at the register transfer level. That is, circuit definitions don't consist of lists of individual gates - instead they consist of lists of registers and how they relate to each other. Each register is defined with a transition function, which specifies how its next value is computed each time it steps. A transition function can be thought of as implicitly defining the wires and gates n eccesary to actually implement the computation in question in hardware. Each transition function is simply a logical expression defined in terms of the registers and inputs in the current state of the circuit
+
+## Constants
+
+### Syntax
+`CamelWare` allows referring to constants as hexadecimal, binary, and decimal numbers. The syntax for these is:
+```
+constant := [length]`base value
+base: = d | x | b
+```
+
+If the length is left unspecifed then the maximum possible length (32 bits) will be assumed. If the length is larger than the number of digits actually specified then the remaining digits will be assumed to be zero. If it is smaller then the most significant digits will be cut off to make it fit
+
+#### Example Usage
+*[length]'[base][value] where base is in b for binary, d for decimal, x for hexidecimal and 0 < length <= 32*
+```
+2'b10
+32'b000000000000000000000111010111000
+32'd10
+10'd1
+4'x4
+32'x384972311
+```
+
+## Referring to Registers and Inputs
+Referring to registers and inputs is easy - you simply use their name in your transition function. Since each register consists of many bits 
+
+### 4. Basic Hardware Gates
+1. **logical and** [ && ]
 2. **logical or** [ || ]
 3. **logical not** [ ! ]
 4. **and** [ & ]
@@ -113,7 +150,7 @@ register B[4] = 2'b11
 register C[4] = 2'b11
 A && B -->* 1'b0
 B && C -->* 1'b1
-register D[32] = A && B -->* 32'b00000000000000000000000000000000 
+register D[32] = A && B -->* 32'b00000000000000000000000000000000
 ```
 
 **logical or** [ || ]
@@ -124,7 +161,7 @@ register B[2] = 2'b11
 register C[2] = 2'b00
 A || B -->* 1'b1
 A || C -->* 1'b0
-register D[32] = A || B -->* 32'b00000000000000000000000000000001 
+register D[32] = A || B -->* 32'b00000000000000000000000000000001
 ```
 
 **logical not** [ ! ]
@@ -154,7 +191,7 @@ A & B -->* 4'b0001
 register D[32] = A & B -->* 32'b00000000000000000000000000000001
 ```
 
-**or** [ | ] 
+**or** [ | ]
 *[ A | B ] is the OR gate applied to each bit in A with each bit in B*
 ```
 register A[4] = 4'b0001
@@ -198,7 +235,7 @@ register D[32] = A ~^ B -->* 32'b00000000000000000000000000001011
 ```
 
 
-### 5. Comparators 
+### 5. Comparators
 1. **equals** [ == ]
 2. **not equals** [ != ]
 3. **greater than or equal to** [ >= ]
@@ -219,7 +256,7 @@ register B[32] = 32'd13
 register C[32] = 32'd10
 A == B -->* 1'b0
 A == C -->* 1'b1
-register D[32] = A == C -->* 32'b00000000000000000000000000000001 
+register D[32] = A == C -->* 32'b00000000000000000000000000000001
 #zero extended to match registers length
 ```
 
@@ -231,7 +268,7 @@ register B[2] = 2'b00
 register C[2] = 2'b01
 A != B -->* 1'b1
 A != C -->* 1'b0
-register D[32] = A != B -->* 32'b00000000000000000000000000000001 
+register D[32] = A != B -->* 32'b00000000000000000000000000000001
 ```
 
 **greater than or equal to** [ >= ]
@@ -242,7 +279,7 @@ register B[32] = 32'd9
 register C[32] = 32'd11
 A >= B -->* 1'b1
 A >= C -->* 1'b0
-register D[32] = A >= B -->* 32'b00000000000000000000000000000001 
+register D[32] = A >= B -->* 32'b00000000000000000000000000000001
 ```
 
 **less than or equal to** [ <= ]
@@ -278,17 +315,17 @@ A > C -->* 1'b1
 register D[32] = A > B -->* 32'b00000000000000000000000000000000
 ```
 
-### 6. Arithmetic Operations 
+### 6. Arithmetic Operations
 
 1. **shift left logically** [ << ]
 2. **shift right logically** [ >> ]
 3. **shift right arithmatically** [ >>> ]
 4. **plus** [ + ]
-5. **minus** [ - ] 
+5. **minus** [ - ]
 
 **name** [token]
 *defintion*
-example usage - meta syntax [ -->* means steps to ] 
+example usage - meta syntax [ -->* means steps to ]
 
 **shift left logically** [ << ]
 *[A << B] is A shifted left by the unsigned number B represents*
@@ -324,7 +361,7 @@ A + B -->* 4'b1101
 register D[32] = A + B -->* 32'b00000000000000000000000000001101
 ```
 
-**minus** [ - ] 
+**minus** [ - ]
 *[A + B] is the two's complement subtraction of B from A*
 ```
 register A[4] = 4'b0011
@@ -339,7 +376,7 @@ register D[32] = A - B -->* 32'b00000000000000000000000000000001
 
 **name** [token]
 *defintion*
-example usage - meta syntax [ -->* means steps to ] 
+example usage - meta syntax [ -->* means steps to ]
 
 **multiplexer** [ if ... then ... else ... ]
 *[if ___ then A else B] is the multiplexed A, B inputs with the selector __ represents. If __ evaluates to true (0'b1) A is the value of the operation else B is the value of the operation.*
@@ -352,13 +389,13 @@ register D[4] = if A < B then C[0] else C[1] -->* 32'b00000000000000000000000000
 ```
 ### 8. Defining Subcircuits
 
-1. **subcircuit** [ fun f(x1,x2,...,xn) = ... ] 
+1. **subcircuit** [ fun f(x1,x2,...,xn) = ... ]
 
 **name** [token]
 *defintion*
-example usage - meta syntax [ -->* means steps to ] 
+example usage - meta syntax [ -->* means steps to ]
 
-**subcircuit** [ fun f(x1,x2,...,xn) = ... ] 
+**subcircuit** [ fun f(x1,x2,...,xn) = ... ]
 *[ fun f(x1,x2,...,xn) = ... ]  represents the subcircuit defined by f that can be used by expressing f on registers or inputs*
 ```
 register A[4] = 4'b0101
@@ -370,8 +407,3 @@ register F[4] = h(B,A) -->* 4'b0001
 ```
 
 ### 9. CamelWare, learn by Examples
-
-
-
-
-

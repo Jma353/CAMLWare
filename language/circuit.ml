@@ -90,7 +90,7 @@ let format_register_input f input =
 let rec format_args f args =
   match args with
   | [] -> ()
-  | h::[] -> Format.fprintf f "%s" (fst h) 
+  | h::[] -> Format.fprintf f "%s" (fst h)
   | h::t -> Format.fprintf f "%s, %a" (fst h) (format_args) t
 
 let format_comp f comp =
@@ -374,8 +374,9 @@ module Analyzer : StaticAnalyzer = struct
        | User_input -> []
        | AST ast -> detect_ast_errors comps env id ast)
     | Subcirc (ast,args) ->
+      let ids = List.map (fst) args in
       let binding_warnings =
-        args |>
+        ids |>
         (List.map (fun arg ->
             if StringMap.mem arg comps
             then Some (Printf.sprintf
@@ -384,7 +385,7 @@ module Analyzer : StaticAnalyzer = struct
         |> (List.filter (fun w -> w <> None))
         |> (List.map (function Some c -> c | None -> failwith "impossible")) in
       let fun_env =
-        List.fold_left (fun acc arg -> StringSet.add arg acc) env args in
+        List.fold_left (fun acc arg -> StringSet.add arg acc) env ids in
       binding_warnings @ (detect_ast_errors comps fun_env id ast)
 
   (* [detect_variable_errors circ] detects and logs the following errors:
