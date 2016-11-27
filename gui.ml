@@ -34,18 +34,22 @@ let view dims padding =
   (* Base container *)
   let container = (svg |- border_rect) <.> g in
 
+  let lol = Bitstream.ones 32 in
+
   (* Test gates *)
   let one = red_nxor 0. 50. 60. in
   let two = mux2_c 0. 150. 60. in
   let three = sub_seq_c 0. 250. 60. 4 27 in
   let four = nth_c 0. 350. 60. 8 in
+  let five = d_register lol 0. 450. 60. in
 
   (* Construct our view *)
   (container
     |> one
     |> two
     |> three
-    |> four)
+    |> four
+    |> five)
 
 
 ;;
