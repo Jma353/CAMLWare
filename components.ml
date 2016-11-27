@@ -219,6 +219,17 @@ let register (x:float) (y:float) (edge:float) svg =
     (int_of_float (0.85 *. edge)) 1 "black") in
   ((svg |- frame) |- line1) |- line2
 
+(* MUX2 Component *)
+let mux2_c (x:float) (y:float) (edge:float) svg =
+  let scale = linear (0,100) (0,100) in (* 1:1 ratio *)
+  let one   = (x +. edge *. 0.2, y) in
+  let two   = (x +. edge *. 0.6, y +. edge *. 0.2) in
+  let three = (x +. edge *. 0.6, y +. edge *. 0.8) in
+  let four  = (x +. edge *. 0.2, y +. edge) in
+  let d = list_to_coord_js_array [one;two;three;four;one] in
+  let my_path = path d scale scale "none" "black" 1 "linear" in
+  svg |> my_path
+
 (* Nth Bit Component *)
 let nth_c (x:float) (y:float) (edge:float) (n:int) svg =
   (sub_bits edge
