@@ -54,6 +54,12 @@ module type StaticAnalyzer = sig
   val format_log : Format.formatter -> error_log -> unit
 end
 
+module type CircuitFormatter = sig
+  type formatted_circuit
+  val format : circuit -> formatted_circuit
+  val format_format_circuit : Format.formatter -> formatted_circuit -> unit
+end
+
 let make_register length logic reg_type =
   Register {
     reg_type = reg_type;
@@ -549,280 +555,284 @@ module Analyzer : StaticAnalyzer = struct
 
 end
 
-type comb_id =
-  | Id_Const     of int * bitstream
-  | Id_Var       of int * id
-  | Id_Sub_seq   of int * int * int * comb_id
-  | Id_Nth       of int * int * comb_id
-  | Id_Gate      of int * gate * comb_id * comb_id
-  | Id_Logical   of int * gate * comb_id * comb_id
-  | Id_Reduce    of int * gate * comb_id
-  | Id_Neg       of int * negation * comb_id
-  | Id_Comp      of int * comparison * comb_id * comb_id
-  | Id_Arith     of int * arithmetic * comb_id * comb_id
-  | Id_Concat    of int * comb_id list
-  | Id_Mux2      of int * comb_id * comb_id * comb_id
-  | Id_Apply     of int * id * comb_id list
-  | Id_Let       of int * id * comb_id * comb_id
+module Formatter : CircuitFormatter = struct
+
+  type comb_id =
+    | Id_Const     of int * bitstream
+    | Id_Var       of int * id
+    | Id_Sub_seq   of int * int * int * comb_id
+    | Id_Nth       of int * int * comb_id
+    | Id_Gate      of int * gate * comb_id * comb_id
+    | Id_Logical   of int * gate * comb_id * comb_id
+    | Id_Reduce    of int * gate * comb_id
+    | Id_Neg       of int * negation * comb_id
+    | Id_Comp      of int * comparison * comb_id * comb_id
+    | Id_Arith     of int * arithmetic * comb_id * comb_id
+    | Id_Concat    of int * comb_id list
+    | Id_Mux2      of int * comb_id * comb_id * comb_id
+    | Id_Apply     of int * id * comb_id list
+    | Id_Let       of int * id * comb_id * comb_id
 
 
-type id_comb = int * comb
-let new_id = ref 0
+  type id_comb = int * comb
+  let new_id = ref 0
 
-(** generate an unused type variable *)
-let newvar =
-  new_id := 1 + !(new_id);
-  !new_id
+  (** generate an unused type variable *)
+  let newvar =
+    new_id := 1 + !(new_id);
+    !new_id
 
-let attach_ids ast =
-  let rec id_helper ast =
-    match ast with
-    | Const b -> Id_Const (newvar, b)
-    | Var v -> Id_Var (newvar, v)
-    | Sub_seq(i1, i2, comb) -> Id_Sub_seq (newvar, i1, i2, id_helper comb)
-    | Nth (n, comb) -> Id_Nth (newvar, n, id_helper comb)
-    | Gate (g, c1, c2) ->  Id_Gate (newvar, g, id_helper c1, id_helper c2)
-    | Logical(l, c1, c2) -> Id_Logical(newvar, l, id_helper c1, id_helper c2)
-    | Reduce (g, comb) -> Id_Reduce (newvar, g, id_helper comb)
-    | Neg (n, comb) -> Id_Neg (newvar, n, id_helper comb)
-    | Comp(c, c1, c2) -> Id_Comp (newvar, c, id_helper c1, id_helper c2)
-    | Arith (o, c1, c2) -> Id_Arith (newvar, o, id_helper c1, id_helper c2)
-    | Concat (c_list) -> Id_Concat (newvar, (List.map (function x -> id_helper x) c_list))
-    | Mux2 (c1, c2, c3) -> Id_Mux2 (newvar, id_helper c1, id_helper c2, id_helper c3)
-    | Apply (id, c_list) -> Id_Apply (newvar, id, (List.map (function x -> id_helper x) c_list))
-    | Let (id, c1, c2) -> Id_Let (newvar, id, id_helper c1, id_helper c2)
-  in id_helper ast
+  let attach_ids ast =
+    let rec id_helper ast =
+      match ast with
+      | Const b -> Id_Const (newvar, b)
+      | Var v -> Id_Var (newvar, v)
+      | Sub_seq(i1, i2, comb) -> Id_Sub_seq (newvar, i1, i2, id_helper comb)
+      | Nth (n, comb) -> Id_Nth (newvar, n, id_helper comb)
+      | Gate (g, c1, c2) ->  Id_Gate (newvar, g, id_helper c1, id_helper c2)
+      | Logical(l, c1, c2) -> Id_Logical(newvar, l, id_helper c1, id_helper c2)
+      | Reduce (g, comb) -> Id_Reduce (newvar, g, id_helper comb)
+      | Neg (n, comb) -> Id_Neg (newvar, n, id_helper comb)
+      | Comp(c, c1, c2) -> Id_Comp (newvar, c, id_helper c1, id_helper c2)
+      | Arith (o, c1, c2) -> Id_Arith (newvar, o, id_helper c1, id_helper c2)
+      | Concat (c_list) -> Id_Concat (newvar, (List.map (function x -> id_helper x) c_list))
+      | Mux2 (c1, c2, c3) -> Id_Mux2 (newvar, id_helper c1, id_helper c2, id_helper c3)
+      | Apply (id, c_list) -> Id_Apply (newvar, id, (List.map (function x -> id_helper x) c_list))
+      | Let (id, c1, c2) -> Id_Let (newvar, id, id_helper c1, id_helper c2)
+    in id_helper ast
 
-let get_all_registers circ =
-let reg =
-  (StringMap.filter (fun k v -> match v with |Register _ -> true | _ -> false) circ.comps)
-  in
-(StringMap.map
-  (fun v ->
-    match v with
-    | Register r -> r
-    | _ -> failwith "invalid map")
-  reg)
-
-
-let id_comp = fun x y ->  0
-
-let list_dependencies ast reg_list =
-let rec dependency_helper ast dep =
-match ast with
-| Id_Const (_, b) -> dep
-| Id_Var (_, v) -> if (StringMap.mem v reg_list) then v::dep else dep
-| Id_Sub_seq (_,_, _, comb) -> (dependency_helper comb dep)
-| Id_Nth (_,_, comb) -> (dependency_helper comb dep)
-| Id_Gate (_,_, c1, c2) -> (dependency_helper c1 dep)@(dependency_helper c2 dep)
-| Id_Logical(_,_, c1, c2) -> (dependency_helper c1 dep)@(dependency_helper c2 dep)
-| Id_Reduce (_,_, comb) -> (dependency_helper comb dep)
-| Id_Neg (_,_, comb) -> (dependency_helper comb dep)
-| Id_Comp(_,_, c1, c2) -> (dependency_helper c1 dep)@(dependency_helper c2 dep)
-| Id_Arith (_,_, c1, c2) -> (dependency_helper c1 dep)@(dependency_helper c2 dep)
-| Id_Concat (_,c_list) -> List.fold_left
-  (fun acc c -> acc@(dependency_helper c acc)) dep c_list
-| Id_Mux2 (_,c1, c2, c3) ->
-  (dependency_helper c1 dep)@(dependency_helper c2 dep)@(dependency_helper c3 dep)
-| Id_Apply (_,_, c_list) -> List.fold_left
-  (fun acc c -> acc@(dependency_helper c acc)) dep c_list
-| Id_Let (_,_, c1, c2) -> (dependency_helper c1 dep)@(dependency_helper c2 dep)
-in List.sort_uniq id_comp (dependency_helper ast [])
-
-let no_inputs reg_list =
-StringMap.filter
-(fun k v -> match v.reg_type with |Input -> false | _ -> true) reg_list
-
-let find_inputs reg_list =
-StringMap.filter
-(fun k v -> match v.reg_type with |Input -> true | _ -> false) reg_list
-
-let no_outputs reg_list =
-StringMap.filter
-(fun k v -> match v.reg_type with |Output -> false | _ -> true) reg_list
-
-let find_outputs reg_list =
-StringMap.filter
-(fun k v -> match v.reg_type with |Output -> true | _ -> false) reg_list
-
-type formatted_circuit = register StringMap.t list
-
-let assign_columns circ =
-  let reg = get_all_registers circ in
-  let inputs = find_inputs reg in
-  let p = print_string (string_of_int (StringMap.cardinal inputs)) in
-  let outputs = find_outputs reg in
-  let asts = (no_outputs (no_inputs reg)) in
-
-  let p2 = print_string (string_of_int (StringMap.cardinal asts)) in
-  let list_dep_of_register r =
-    (match r.reg_type with
-    | Rising | Falling -> (
-      match r.next with
-      | AST ast -> list_dependencies (attach_ids ast) reg
-      | _ -> []
-    )
-    | _ -> []) in
-  let reg_deps = (StringMap.map (fun v -> list_dep_of_register v) (no_inputs reg)) in
-  let p2 = print_string (string_of_int (StringMap.cardinal reg_deps)) in
-  let rec dep_helper not_done d cols =
-    (match (StringMap.is_empty not_done) with
-    | true -> cols
-    | false ->
-      let resolved k v =
-        (List.for_all (fun x -> StringMap.mem x d) (StringMap.find k reg_deps)) in
-      let new_col = StringMap.filter resolved not_done in
-      let new_done = StringMap.union (fun k v1 v2 -> Some v2) d new_col in
-      let new_not_done = StringMap.filter (fun k v -> not (StringMap.mem k new_done)) not_done in
-
-      dep_helper new_not_done new_done (new_col::cols))
-
-  in
-    if (StringMap.is_empty outputs)
-    then (List.rev ((dep_helper asts inputs [inputs])))
-    else List.rev (outputs::(dep_helper asts inputs [inputs]))
+  let get_all_registers circ =
+  let reg =
+    (StringMap.filter (fun k v -> match v with |Register _ -> true | _ -> false) circ.comps)
+    in
+  (StringMap.map
+    (fun v ->
+      match v with
+      | Register r -> r
+      | _ -> failwith "invalid map")
+    reg)
 
 
-let get_ids ast =
-match ast with
-| Id_Const (id, _ ) -> id
-| Id_Var (id, _ ) -> id
-| Id_Sub_seq(id, _, _, _ ) -> id
-| Id_Nth (id, _, _ ) -> id
-| Id_Gate (id, _ , _, _ ) -> id
-| Id_Logical(id, _, _, _ ) -> id
-| Id_Reduce (id, _, _ ) -> id
-| Id_Neg (id, _, _ ) -> id
-| Id_Comp(id, _, _, _ ) -> id
-| Id_Arith (id, _, _, _ ) -> id
-| Id_Concat (id, _ ) -> id
-| Id_Mux2 (id, _, _, _ ) -> id
-| Id_Apply (id, _, _ ) -> id
-| Id_Let (id, _, _, _ ) -> id
+  let id_comp = fun x y ->  0
+
+  let list_dependencies ast reg_list =
+  let rec dependency_helper ast dep =
+  match ast with
+  | Id_Const (_, b) -> dep
+  | Id_Var (_, v) -> if (StringMap.mem v reg_list) then v::dep else dep
+  | Id_Sub_seq (_,_, _, comb) -> (dependency_helper comb dep)
+  | Id_Nth (_,_, comb) -> (dependency_helper comb dep)
+  | Id_Gate (_,_, c1, c2) -> (dependency_helper c1 dep)@(dependency_helper c2 dep)
+  | Id_Logical(_,_, c1, c2) -> (dependency_helper c1 dep)@(dependency_helper c2 dep)
+  | Id_Reduce (_,_, comb) -> (dependency_helper comb dep)
+  | Id_Neg (_,_, comb) -> (dependency_helper comb dep)
+  | Id_Comp(_,_, c1, c2) -> (dependency_helper c1 dep)@(dependency_helper c2 dep)
+  | Id_Arith (_,_, c1, c2) -> (dependency_helper c1 dep)@(dependency_helper c2 dep)
+  | Id_Concat (_,c_list) -> List.fold_left
+    (fun acc c -> acc@(dependency_helper c acc)) dep c_list
+  | Id_Mux2 (_,c1, c2, c3) ->
+    (dependency_helper c1 dep)@(dependency_helper c2 dep)@(dependency_helper c3 dep)
+  | Id_Apply (_,_, c_list) -> List.fold_left
+    (fun acc c -> acc@(dependency_helper c acc)) dep c_list
+  | Id_Let (_,_, c1, c2) -> (dependency_helper c1 dep)@(dependency_helper c2 dep)
+  in List.sort_uniq id_comp (dependency_helper ast [])
+
+  let no_inputs reg_list =
+  StringMap.filter
+  (fun k v -> match v.reg_type with |Input -> false | _ -> true) reg_list
+
+  let find_inputs reg_list =
+  StringMap.filter
+  (fun k v -> match v.reg_type with |Input -> true | _ -> false) reg_list
+
+  let no_outputs reg_list =
+  StringMap.filter
+  (fun k v -> match v.reg_type with |Output -> false | _ -> true) reg_list
+
+  let find_outputs reg_list =
+  StringMap.filter
+  (fun k v -> match v.reg_type with |Output -> true | _ -> false) reg_list
+
+  type formatted_circuit = register StringMap.t list
+
+  let assign_columns circ =
+    let reg = get_all_registers circ in
+    let inputs = find_inputs reg in
+    let p = print_string (string_of_int (StringMap.cardinal inputs)) in
+    let outputs = find_outputs reg in
+    let asts = (no_outputs (no_inputs reg)) in
+
+    let p2 = print_string (string_of_int (StringMap.cardinal asts)) in
+    let list_dep_of_register r =
+      (match r.reg_type with
+      | Rising | Falling -> (
+        match r.next with
+        | AST ast -> list_dependencies (attach_ids ast) reg
+        | _ -> []
+      )
+      | _ -> []) in
+    let reg_deps = (StringMap.map (fun v -> list_dep_of_register v) (no_inputs reg)) in
+    let p2 = print_string (string_of_int (StringMap.cardinal reg_deps)) in
+    let rec dep_helper not_done d cols =
+      (match (StringMap.is_empty not_done) with
+      | true -> cols
+      | false ->
+        let resolved k v =
+          (List.for_all (fun x -> StringMap.mem x d) (StringMap.find k reg_deps)) in
+        let new_col = StringMap.filter resolved not_done in
+        let new_done = StringMap.union (fun k v1 v2 -> Some v2) d new_col in
+        let new_not_done = StringMap.filter (fun k v -> not (StringMap.mem k new_done)) not_done in
+
+        dep_helper new_not_done new_done (new_col::cols))
+
+    in
+      if (StringMap.is_empty outputs)
+      then (List.rev ((dep_helper asts inputs [inputs])))
+      else List.rev (outputs::(dep_helper asts inputs [inputs]))
 
 
-(* type unique = Register of id | Let of id
+  let get_ids ast =
+  match ast with
+  | Id_Const (id, _ ) -> id
+  | Id_Var (id, _ ) -> id
+  | Id_Sub_seq(id, _, _, _ ) -> id
+  | Id_Nth (id, _, _ ) -> id
+  | Id_Gate (id, _ , _, _ ) -> id
+  | Id_Logical(id, _, _, _ ) -> id
+  | Id_Reduce (id, _, _ ) -> id
+  | Id_Neg (id, _, _ ) -> id
+  | Id_Comp(id, _, _, _ ) -> id
+  | Id_Arith (id, _, _, _ ) -> id
+  | Id_Concat (id, _ ) -> id
+  | Id_Mux2 (id, _, _, _ ) -> id
+  | Id_Apply (id, _, _ ) -> id
+  | Id_Let (id, _, _, _ ) -> id
 
-type non_unique =
- B of gate | L of gate | A of arithmetic | N of negation | C of comparison
- | Sub of int*int | Nth of int | Subcirc of id | Red of gate | Concat of int list
- | Mux of int *int * int | Const of b | Apply of id * int list *)
 
-type node = Register of id | Let of id | B of gate | L of gate | A of arithmetic
-| N of negation | C of comparison | Sub of int*int | Nth of int | Subcirc of id |
-Red of gate | Concat of int list | Mux of int *int * int | Const of bitstream | Apply of id * int list
+  (* type unique = Register of id | Let of id
 
-type display_info = {
-  y_coord : float;
-  id : int;
-  node : node;
-  parents : int list;
-}
+  type non_unique =
+   B of gate | L of gate | A of arithmetic | N of negation | C of comparison
+   | Sub of int*int | Nth of int | Subcirc of id | Red of gate | Concat of int list
+   | Mux of int *int * int | Const of b | Apply of id * int list *)
 
-let fot (x, _, _) = x
+  type node = Register of id | Let of id | B of gate | L of gate | A of arithmetic
+  | N of negation | C of comparison | Sub of int*int | Nth of int | Subcirc of id |
+  Red of gate | Concat of int list | Mux of int *int * int | Const of bitstream | Apply of id * int list
 
-let tree_to_list ast reg_id reg_list =
-  (* ast:comb - what we are analyzing
-   * parents : [int] - the parents of the current node
-   * lets : Map: string -> ([int], comb) - a map from each variable name to its
-   *        parents as well as its combinational logic
-   * reg_list : the reg map we throw around everywhere
-   * reg_parents : Map id -> [int]*)
-  let rec list_helper ast parents lets reg_list reg_parents =
-    match ast with
-    | Id_Const (id, b) ->
-      ([{y_coord=0.; id=id; node = Const b; parents = parents}], lets, reg_list)
-    | Id_Var (id, v) ->
-      let new_reg_list =
-        if (StringMap.mem v reg_list)
-        then
-          if (StringMap.mem v reg_parents)
-          then StringMap.add v (parents@(StringMap.find v reg_parents)) reg_parents
-          else StringMap.add v parents reg_parents
-        else reg_list in
-      let new_lets =
-        if (StringMap.mem v reg_list)
-        then lets
-        else
-          let (p, comb) = StringMap.find v lets in
-          StringMap.add v (parents@p, comb) lets in
-      ([{y_coord = 0.; id=id; node = (Let v); parents = parents}], lets, reg_list)
-    | Id_Sub_seq(id, i1, i2, comb) ->
-      ({y_coord = 0.; id=id; node = Sub (i1, i2); parents=parents}
-      ::(fot (list_helper comb [id] lets reg_list reg_parents)), lets, reg_list)
-    | Id_Nth (id, n, comb) ->
-      ({y_coord = 0.; id=id; node = Nth n; parents=parents}
-      ::(fot (list_helper comb [id] lets reg_list reg_parents)), lets, reg_list)
-    | Id_Gate (id, g, c1, c2) ->
-      ({y_coord = 0.; id=id; node = B g; parents = parents}
-      ::(( fot (list_helper c1 [id] lets reg_list reg_parents))
-      @ (fot (list_helper c2 [id] lets reg_list reg_parents))) , lets, reg_list)
-    | Id_Logical (id, l, c1, c2) ->
-      ({y_coord = 0.; id=id; node = L l; parents = parents}
-      ::(( fot (list_helper c1 [id] lets reg_list reg_parents))
-      @ (fot (list_helper c2 [id] lets reg_list reg_parents))) , lets, reg_list)
-    | Id_Reduce ( id, g, comb ) ->
-      ({y_coord = 0.; id=id; node = Red g; parents=parents}
-      ::(fot (list_helper comb [id] lets reg_list reg_parents)), lets, reg_list)
-    | Id_Neg (id, n, comb) ->
-      ({y_coord = 0.; id=id; node = N n; parents=parents}
-      ::(fot (list_helper comb [id] lets reg_list reg_parents)), lets, reg_list)
-    | Id_Comp(id, c, c1, c2) ->
-      ({y_coord = 0.; id=id; node = C c; parents = parents}
+  type display_info = {
+    y_coord : float;
+    id : int;
+    node : node;
+    parents : int list;
+  }
+
+  let fot (x, _, _) = x
+
+  let tree_to_list ast reg_id reg_list =
+    (* ast:comb - what we are analyzing
+     * parents : [int] - the parents of the current node
+     * lets : Map: string -> ([int], comb) - a map from each variable name to its
+     *        parents as well as its combinational logic
+     * reg_list : the reg map we throw around everywhere
+     * reg_parents : Map id -> [int]*)
+    let rec list_helper ast parents lets reg_list reg_parents =
+      match ast with
+      | Id_Const (id, b) ->
+        ([{y_coord=0.; id=id; node = Const b; parents = parents}], lets, reg_list)
+      | Id_Var (id, v) ->
+        let new_reg_list =
+          if (StringMap.mem v reg_list)
+          then
+            if (StringMap.mem v reg_parents)
+            then StringMap.add v (parents@(StringMap.find v reg_parents)) reg_parents
+            else StringMap.add v parents reg_parents
+          else reg_list in
+        let new_lets =
+          if (StringMap.mem v reg_list)
+          then lets
+          else
+            let (p, comb) = StringMap.find v lets in
+            StringMap.add v (parents@p, comb) lets in
+        ([{y_coord = 0.; id=id; node = (Let v); parents = parents}], lets, reg_list)
+      | Id_Sub_seq(id, i1, i2, comb) ->
+        ({y_coord = 0.; id=id; node = Sub (i1, i2); parents=parents}
+        ::(fot (list_helper comb [id] lets reg_list reg_parents)), lets, reg_list)
+      | Id_Nth (id, n, comb) ->
+        ({y_coord = 0.; id=id; node = Nth n; parents=parents}
+        ::(fot (list_helper comb [id] lets reg_list reg_parents)), lets, reg_list)
+      | Id_Gate (id, g, c1, c2) ->
+        ({y_coord = 0.; id=id; node = B g; parents = parents}
         ::(( fot (list_helper c1 [id] lets reg_list reg_parents))
         @ (fot (list_helper c2 [id] lets reg_list reg_parents))) , lets, reg_list)
-    | Id_Arith (id, o, c1, c2) ->
-      ({y_coord = 0.; id=id; node = A o; parents = parents}
+      | Id_Logical (id, l, c1, c2) ->
+        ({y_coord = 0.; id=id; node = L l; parents = parents}
         ::(( fot (list_helper c1 [id] lets reg_list reg_parents))
         @ (fot (list_helper c2 [id] lets reg_list reg_parents))) , lets, reg_list)
-    | Id_Concat (id, c_list) ->
-      let ids = List.fold_left (fun acc x -> (get_ids x)::acc) [] c_list in
-      ({y_coord = 0.; id=id; node=(Concat (List.rev ids)); parents=parents}
-      ::List.flatten((List.fold_right(fun x acc -> (fot (list_helper x [id] lets reg_list reg_parents))::acc) c_list []))
-      , lets, reg_list)
-    | Id_Mux2 (id, c1, c2, c3) ->
-      ({y_coord = 0.; id=id; node = (Mux (get_ids c1, get_ids c2, get_ids c3) ); parents=parents}
-      :: ((fot (list_helper c1 [id] lets reg_list reg_parents))
-      @ (fot (list_helper c2 [id] lets reg_list reg_parents))
-      @ (fot (list_helper c3 [id] lets reg_list reg_parents))), lets, reg_list)
-    | Id_Apply (id, var, c_list) ->
-      ({y_coord = 0.; id = id; node = (Subcirc var); parents = parents}
-      ::List.flatten ((List.fold_right (fun x acc -> (fot (list_helper x [id] lets reg_list reg_parents))::acc) c_list []))
-      , lets, reg_list)
-    | Id_Let (id, var, c1, c2) ->
-      let new_lets = StringMap.add var ([], c1) lets in
-      let inputs = list_dependencies c1 reg_list in
-      ({y_coord = 0.; id = id; node = Let (var); parents = parents}
-      ::(fot (list_helper c1 [id] new_lets reg_list reg_parents)), lets, reg_list)
-    in (list_helper ast [reg_id] StringMap.empty reg_list StringMap.empty)
+      | Id_Reduce ( id, g, comb ) ->
+        ({y_coord = 0.; id=id; node = Red g; parents=parents}
+        ::(fot (list_helper comb [id] lets reg_list reg_parents)), lets, reg_list)
+      | Id_Neg (id, n, comb) ->
+        ({y_coord = 0.; id=id; node = N n; parents=parents}
+        ::(fot (list_helper comb [id] lets reg_list reg_parents)), lets, reg_list)
+      | Id_Comp(id, c, c1, c2) ->
+        ({y_coord = 0.; id=id; node = C c; parents = parents}
+          ::(( fot (list_helper c1 [id] lets reg_list reg_parents))
+          @ (fot (list_helper c2 [id] lets reg_list reg_parents))) , lets, reg_list)
+      | Id_Arith (id, o, c1, c2) ->
+        ({y_coord = 0.; id=id; node = A o; parents = parents}
+          ::(( fot (list_helper c1 [id] lets reg_list reg_parents))
+          @ (fot (list_helper c2 [id] lets reg_list reg_parents))) , lets, reg_list)
+      | Id_Concat (id, c_list) ->
+        let ids = List.fold_left (fun acc x -> (get_ids x)::acc) [] c_list in
+        ({y_coord = 0.; id=id; node=(Concat (List.rev ids)); parents=parents}
+        ::List.flatten((List.fold_right(fun x acc -> (fot (list_helper x [id] lets reg_list reg_parents))::acc) c_list []))
+        , lets, reg_list)
+      | Id_Mux2 (id, c1, c2, c3) ->
+        ({y_coord = 0.; id=id; node = (Mux (get_ids c1, get_ids c2, get_ids c3) ); parents=parents}
+        :: ((fot (list_helper c1 [id] lets reg_list reg_parents))
+        @ (fot (list_helper c2 [id] lets reg_list reg_parents))
+        @ (fot (list_helper c3 [id] lets reg_list reg_parents))), lets, reg_list)
+      | Id_Apply (id, var, c_list) ->
+        ({y_coord = 0.; id = id; node = (Subcirc var); parents = parents}
+        ::List.flatten ((List.fold_right (fun x acc -> (fot (list_helper x [id] lets reg_list reg_parents))::acc) c_list []))
+        , lets, reg_list)
+      | Id_Let (id, var, c1, c2) ->
+        let new_lets = StringMap.add var ([], c1) lets in
+        let inputs = list_dependencies c1 reg_list in
+        ({y_coord = 0.; id = id; node = Let (var); parents = parents}
+        ::(fot (list_helper c1 [id] new_lets reg_list reg_parents)), lets, reg_list)
+      in (list_helper ast [reg_id] StringMap.empty reg_list StringMap.empty)
 
-let columnize_ast ast_list lets =
-  let rec column_helper finished not_done cols =
-    if (List.length not_done = 0)
-    then []
-    else
-      let find_register x =
-        (match x.node with
-        |Register _-> true
-        | _ -> false) in
-      let find_finished parent_list =
-        List.for_all
-        (fun x -> List.exists (fun y -> x = y.id) finished) parent_list in
-      let new_col = (List.filter (fun x -> (find_register x || find_finished x.parents)) not_done) in
-      let new_done = new_col@finished in
-      let new_cols = new_col :: cols in
-      let new_not_done = List.filter (fun x -> not (List.mem x new_done)) not_done in
-      column_helper new_done new_not_done new_cols
-    in column_helper [] ast_list []
+  let columnize_ast ast_list lets =
+    let rec column_helper finished not_done cols =
+      if (List.length not_done = 0)
+      then []
+      else
+        let find_register x =
+          (match x.node with
+          |Register _-> true
+          | _ -> false) in
+        let find_finished parent_list =
+          List.for_all
+          (fun x -> List.exists (fun y -> x = y.id) finished) parent_list in
+        let new_col = (List.filter (fun x -> (find_register x || find_finished x.parents)) not_done) in
+        let new_done = new_col@finished in
+        let new_cols = new_col :: cols in
+        let new_not_done = List.filter (fun x -> not (List.mem x new_done)) not_done in
+        column_helper new_done new_not_done new_cols
+      in column_helper [] ast_list []
 
 
-let format circ = assign_columns circ
+  let format circ = assign_columns circ
 
-let format_format_circuit f circ =
-  Format.fprintf f "Columns : %s\n\n" (string_of_int (List.length circ));
-  List.iter (fun x -> (
-    print_string "\n";
-    StringMap.iter
-      (fun k v -> print_string (k^", ") ) x
-    )
-  ) circ
+  let format_format_circuit f circ =
+    Format.fprintf f "Columns : %s\n\n" (string_of_int (List.length circ));
+    List.iter (fun x -> (
+      print_string "\n";
+      StringMap.iter
+        (fun k v -> print_string (k^", ") ) x
+      )
+      ) circ
+
+end

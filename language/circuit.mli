@@ -82,14 +82,25 @@ module type StaticAnalyzer = sig
   (* [valid log] returns whether a circuit with error log [log] is valid*)
   val valid : error_log -> bool
 
-  (* [print_log log] formats an error log for printing *)
+  (* [print_log lf og] formats an error log for printing *)
   val format_log : Format.formatter -> error_log -> unit
+end
+
+module type CircuitFormatter = sig
+  (* This module contains the functions for formatting a circuit in preparation
+   * for rendering it *)
+
+  (* This type represents a circuit with attached coordinate information *)
+  type formatted_circuit
+
+  (* [format circ] is a representation of [circ] with coordinate information
+   * attached for rendering *)
+  val format : circuit -> formatted_circuit
+
+  (* [format_format_circuit f circ] format a formatted circuit for printing *)
+  val format_format_circuit : Format.formatter -> formatted_circuit -> unit
 end
 
 module Analyzer : StaticAnalyzer
 module Simulator : CircuitSimulator
-
-type formatted_circuit
-
-val format : circuit -> formatted_circuit
-val format_format_circuit : Format.formatter -> formatted_circuit -> unit
+module Formatter : CircuitFormatter
