@@ -26,7 +26,7 @@ type register = {
 
 (* a circuit component is either a register or a subcircuit *)
 type component =
-  | Register of register | Subcirc of comb * id list
+  | Register of register | Subcirc of comb * (id * int) list
 
 (* a type to represent the state of a circuit *)
 type circuit = {
@@ -90,8 +90,8 @@ let format_register_input f input =
 let rec format_args f args =
   match args with
   | [] -> ()
-  | h::[] -> Format.fprintf f "%s" h
-  | h::t -> Format.fprintf f "%s, %a" h (format_args) t
+  | h::[] -> Format.fprintf f "%s" (fst h) 
+  | h::t -> Format.fprintf f "%s, %a" (fst h) (format_args) t
 
 let format_comp f comp =
   match comp with
@@ -208,8 +208,8 @@ module Simulator : CircuitSimulator = struct
 
       eval_apply subcirc circ clst env = (* returns (new_environment, comb) *)
         match subcirc with
-        | Subcirc (comb, ids) -> let nv = eval_apply_hlpr ids clst env circ in
-                                  (nv, comb)
+        | Subcirc (comb, ids_len) -> let nv = eval_apply_hlpr ids_len
+                                   clst env circ in (nv, comb)
         | _ -> failwith "incorrect sub circuit application"
 
   and
@@ -217,7 +217,7 @@ module Simulator : CircuitSimulator = struct
          match (ids, clst) with
         | ([], []) -> env
         | (i::is,c::cs) -> let b = (eval_hlpr circ c env) in
-                    (i, b)::(eval_apply_hlpr is cs env circ)
+                    (fst i, b)::(eval_apply_hlpr is cs env circ)
         | _ -> failwith "incorrect sub circuit application"
 
   let rec evaluate circ comb =
