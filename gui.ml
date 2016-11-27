@@ -24,36 +24,15 @@ let view dims padding =
   (* Base container *)
   let container = svg <.> g in
 
-  (* Add a register *)
-  let with_reg = register 0. 0. 50. in
-
-  (* Add a path *)
-  let scale = linear (0,100) (0,100) in
-  let d = list_to_coord_js_array [(40.,40.);(70.,10.)] in
-  let with_path = path d scale scale "none" "black" 1 "linear" in
-
-  (* Add a constant *)
-  let b = Bitstream.ones 32 in
-  let with_constant = constant b 0. 100. 60. in
-
-  (* Add Arith. And *)
-  let with_and = and_c 0. 180. 60. in
-
-  (* Add Arith. Or *)
-  let with_or = or_c 0. 280. 60. in
-
-  (* Add Xor *)
-  let with_xor = xor_c 0. 380. 60. in
-
+  let one = nxor_c 0. 50. 60. in
+  let two = nxor_c 0. 150. 40. in
+  let three = nxor_c 0. 250. 100. in
 
   (* Construct our view *)
   (container
-    |> with_reg
-    |> with_path
-    |> with_constant
-    |> with_and
-    |> with_or
-    |> with_xor)
+    |> one
+    |> two
+    |> three)
 
 
 ;;

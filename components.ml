@@ -32,6 +32,22 @@ let path d x_scale y_scale fill stroke width interp svg =
     |. int style "stroke-width" width) in
   svg |- path_comp
 
+(* [neg_dot x y edge svg] assists in the creation of a negation dot at the end
+ * of a particular logic gate *)
+let neg_dot (x:float) (y:float) (edge:float) svg =
+  let r = 0.07 *. edge in
+  let cx = (x +. edge *. 0.83 +. r) in
+  let cy = (y +. 0.5 *. edge) in
+  let circ =
+    (append "circle"
+    |. flt attr "cx" cx
+    |. flt attr "cy" cy
+    |. flt attr "r" r
+    |. str style "fill" "white"
+    |. str style "stroke" "black"
+    |. int style "stroke-width" 1) in
+  svg |- circ
+
 (* [and_helper x y edge svg] assists in the creation of the shape of an AND
 * gate *)
 let and_helper (x:float) (y:float) (edge:float) svg =
@@ -42,9 +58,9 @@ let and_helper (x:float) (y:float) (edge:float) svg =
   let bm = (x +. 0.5 *. edge, y +. 0.9 *. edge) in
   let bl = (x, y +. 0.9 *. edge) in
   let d_1 = list_to_coord_js_array [tl;tm;mr;bm;bl] in
-  let path_1 = path d_1 scale scale "white" "black" 1 "basis" in
+  let path_1 = path d_1 scale scale "none" "black" 1 "basis" in
   let d_2 = list_to_coord_js_array [tl;bl] in
-  let path_2 = path d_2 scale scale "white" "black" 1 "linear" in
+  let path_2 = path d_2 scale scale "none" "black" 1 "linear" in
   svg |> path_1 |> path_2
 
 (* [or_helper x y edge svg] assists in the creation of the shape of an OR
@@ -58,9 +74,9 @@ let or_helper (x:float) (y:float) (edge:float) svg =
   let bl = (x, y +. 0.9 *. edge) in
   let mm = (x +. 0.2 *. edge, y +. 0.5 *. edge) in
   let d_1 = list_to_coord_js_array [tl;tm;mr;bm;bl] in
-  let path_1 = path d_1 scale scale "white" "black" 1 "basis" in
+  let path_1 = path d_1 scale scale "none" "black" 1 "basis" in
   let d_2 = list_to_coord_js_array [tl;mm;bl] in
-  let path_2 = path d_2 scale scale "white" "black" 1 "basis" in
+  let path_2 = path d_2 scale scale "none" "black" 1 "basis" in
   svg |> path_1 |> path_2
 
 (* [xor_helper x y edge svg] assists in the creation of the shape of an XOR
@@ -74,9 +90,9 @@ let xor_helper (x:float) (y:float) (edge:float) svg =
   let bl = (x +. 0.1 *. edge, y +. 0.9 *. edge) in
   let mm = (x +. 0.2 *. edge, y +. 0.5 *. edge) in
   let d_1 = list_to_coord_js_array [tl;tm;mr;bm;bl] in
-  let path_1 = path d_1 scale scale "white" "black" 1 "basis" in
+  let path_1 = path d_1 scale scale "none" "black" 1 "basis" in
   let d_2 = list_to_coord_js_array [tl;mm;bl] in
-  let path_2 = path d_2 scale scale "white" "black" 1 "basis" in
+  let path_2 = path d_2 scale scale "none" "black" 1 "basis" in
   let xor_tl = (x, y +. 0.1 *. edge) in
   let xor_mm = (x +. 0.1 *. edge, y +. 0.5 *. edge) in
   let xor_bl = (x, y +. 0.9 *. edge) in
@@ -93,23 +109,23 @@ let constant b (x:float) (y:float) (edge:float) svg =
   let g = append "g" |. str attr "transform" (translate x_i y_i) in
   let frame =
     (append "rect"
-      |. flt attr "width" w
-      |. flt attr "height" h
-      |. int attr "x" 0
-      |. int attr "y" 0
-      |. str style "stroke" "black"
-      |. str style "fill" "transparent"
-      |. int style "stroke-width" 1) in
+    |. flt attr "width" w
+    |. flt attr "height" h
+    |. int attr "x" 0
+    |. int attr "y" 0
+    |. str style "stroke" "black"
+    |. str style "fill" "transparent"
+    |. int style "stroke-width" 1) in
   let words =
     (append "text"
-      |. flt attr "x" (w *. 0.5)
-      |. flt attr "y" (h *. 0.5)
-      |. str attr "text-anchor" "middle"
-      |. str attr "alignment-baseline" "middle"
-      |. str attr "font-family" "Courier"
-      |. str attr "font-size" ((string_of_float (w /. 7.5)) ^ "px")
-      |. str attr "fill" "black"
-      |. text (fun _ _ _ -> hex_str)) in
+    |. flt attr "x" (w *. 0.5)
+    |. flt attr "y" (h *. 0.5)
+    |. str attr "text-anchor" "middle"
+    |. str attr "alignment-baseline" "middle"
+    |. str attr "font-family" "Courier"
+    |. str attr "font-size" ((string_of_float (w /. 7.5)) ^ "px")
+    |. str attr "fill" "black"
+    |. text (fun _ _ _ -> hex_str)) in
   let gnode = (g |- frame) |- words in
   svg |- gnode
 
@@ -137,8 +153,20 @@ let register (x:float) (y:float) (edge:float) svg =
 (* Arithmetic AND Component *)
 let and_c (x:float) (y:float) (edge:float) svg = svg |> and_helper x y edge
 
+(* Arithmetic NAND Component *)
+let nand_c (x:float) (y:float) (edge:float) svg =
+  svg |> and_c x y edge |> neg_dot x y edge
+
 (* Arithmetic OR Component *)
 let or_c (x:float) (y:float) (edge:float) svg = svg |> or_helper x y edge
 
+(* Arithmetic NOR Component *)
+let nor_c (x:float) (y:float) (edge:float) svg =
+  svg |> or_c x y edge |> neg_dot x y edge
+
 (* XOR Component *)
 let xor_c (x:float) (y:float) (edge:float) svg = svg |> xor_helper x y edge
+
+(* NXOR Component *)
+let nxor_c (x:float) (y:float) (edge:float) svg =
+  svg |> xor_c x y edge |> neg_dot x y edge
