@@ -64,9 +64,9 @@ component:
 ;
 
 %inline subcircuit:
-  | FUN; id = VAR; LPAREN; args = separated_list(COMMA, arg);
-    RPAREN; ASSIGN; ast = comb
-    { (id, subcircuit ast args) }
+  | FUN; id = VAR; LPAREN; args = separated_list(COMMA, arg); RPAREN;
+    LBRACKET; l = NUM; RBRACKET; ASSIGN; ast = comb
+    { (id, subcircuit ast l args) }
 ;
 
 arg:

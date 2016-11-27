@@ -24,9 +24,15 @@ type register = {
   next : register_input;
 }
 
+type subcircuit = {
+  ast : comb;
+  length : int;
+  args : (id * int) list;
+}
+
 (* a circuit component is either a register or a subcircuit *)
 type component =
-  | Register of register | Subcirc of comb * (id * int) list
+  | Register of register | Subcirc of subcircuit
 
 (* a type to represent the state of a circuit *)
 type circuit = {
@@ -68,8 +74,12 @@ let input length =
 let output length logic =
   make_register length (AST logic) Output
 
-let subcircuit logic args =
-  Subcirc (logic, args)
+let subcircuit logic length args =
+  Subcirc {
+    ast = logic;
+    length = length;
+    args = args;
+  }
 
 let circuit comps =
   {
@@ -104,8 +114,8 @@ let format_comp f comp =
        | Output -> "Output")
       (format_bitstream) reg.value
       (format_register_input) reg.next
-  | Subcirc (sub,args) ->
-    Format.fprintf f "(%a) -> %a" (format_args) args (format_logic) sub
+  | Subcirc s ->
+    Format.fprintf f "(%a) -> %a" (format_args) s.args (format_logic) s.ast
 
 let format_circuit f circ =
   Format.fprintf f "Clock: %s\n\n" (if circ.clock then "1" else "0");
@@ -208,8 +218,8 @@ module Simulator : CircuitSimulator = struct
 
       eval_apply subcirc circ clst env = (* returns (new_environment, comb) *)
         match subcirc with
-        | Subcirc (comb, ids_len) -> let nv = eval_apply_hlpr ids_len
-                                   clst env circ in (nv, comb)
+        | Subcirc s -> let nv = eval_apply_hlpr s.args
+                                   clst env circ in (nv, s.ast)
         | _ -> failwith "incorrect sub circuit application"
 
   and
@@ -234,7 +244,7 @@ module Simulator : CircuitSimulator = struct
 
   (* [register_len_check r new_val] zero eztends new_val or truncates new_val
       to be the same length as r *)
-  let register_len_check r new_val =
+  let register_len_check (r:register) new_val =
     if (length new_val) < r.length
     then (zero_extend r.length new_val)
     else if (length new_val) > r.length then substream new_val 0 (r.length - 1)
@@ -305,15 +315,48 @@ module Analyzer : StaticAnalyzer = struct
     let new_log = f (fst log) in
     (fst new_log, (snd new_log) @ (snd log))
 
-  (* [detect_ast_errors comps env id ast] recursively traverses [ast] detecting and
-   * logging errors in the context of overall component map [comps] and
-   * environment env  *)
-  let rec detect_ast_errors comps env id ast =
+  (* [ast_length comps env ast] is the length of [ast] evaluated in environment
+   * [env] or [None] if [ast] is invalid *)
+  let rec ast_length (comps:component map) env = function
+    | Const c -> Some (length c)
+    | Var v -> (try (StringMap.find v env) with Not_found -> None)
+    | Sub_seq (n1,n2,_) -> if n1 <= n2 then Some (n2 - n1 + 1) else None
+    | Nth _ | Reduce _ -> Some 1
+    | Gate (_,c1,c2) | Logical (_,c1,c2) | Comp (_,c1,c2)
+    | Arith (_,c1,c2) | Mux2 (_,c1,c2) ->
+      (match ast_length comps env c1 with
+       | Some l1 -> (match ast_length comps env c2 with
+           | Some l2 -> Some (l1 + l2)
+           | None -> None)
+       | None -> None)
+    | Neg (_,c) -> ast_length comps env c
+    | Concat cs ->
+      let ls = List.map (ast_length comps env) cs in
+      List.fold_left (fun acc -> function
+          | None -> None
+          | Some l1 -> match acc with
+            | None -> None
+            | Some l2 -> Some (l1 + l2)) (Some 0) ls
+    | Apply (f,_) ->
+      (match (try Some (StringMap.find f comps) with Not_found -> None) with
+      | None -> None
+      | Some comp -> (match comp with
+        | Subcirc s -> Some s.length
+        | _ -> None))
+    | Let (x,c1,c2) ->
+      let new_env = StringMap.add x (ast_length comps env c1) env in
+      ast_length comps new_env c2
+
+  (* [detect_ast_errors comps env id ast] recursively traverses [ast] detecting
+   * and logging errors in the context of overall component map [comps] and
+   * environment [env] where [env] is a map from bound variables to their length
+   *)
+  let rec detect_ast_errors (comps:component map) env id ast =
     let template = Printf.sprintf "Error in definition for %s:\n" id in
     match ast with
     | Const _ -> []
     | Var v ->
-      if StringSet.mem v env
+      if StringMap.mem v env
       then []
       else [Printf.sprintf "%sUnbound variable %s" template v]
     | Sub_seq (n1,n2,c) ->
@@ -321,9 +364,25 @@ module Analyzer : StaticAnalyzer = struct
         if n1 > n2
         then [Printf.sprintf
                 "%sArray access [%i - %i] is in the wrong order" template n1 n2]
-        else [] in
+        else
+          match ast_length comps env c with
+          | Some l ->
+            if n2 >= l
+            then [Printf.sprintf
+                 "%sArray access [%i - %i] is out of bounds" template n1 n2]
+            else []
+          | _ -> [] in
       warning @ (detect_ast_errors comps env id c)
-    | Nth (_,c) -> (detect_ast_errors comps env id c)
+    | Nth (n,c) ->
+      let warning =
+        match ast_length comps env c with
+        | Some l ->
+          if n >= l
+          then [Printf.sprintf
+                  "%sArray access [%i] is out of bounds" template n]
+          else []
+        | _ -> [] in
+      warning @ (detect_ast_errors comps env id c)
     | Gate (_,c1,c2) | Logical (_,c1,c2) | Comp (_,c1,c2) | Arith (_,c1,c2) ->
       (detect_ast_errors comps env id c1) @ (detect_ast_errors comps env id c2)
     | Reduce (_,c) | Neg (_,c) -> detect_ast_errors comps env id c
@@ -339,8 +398,8 @@ module Analyzer : StaticAnalyzer = struct
         then  [Printf.sprintf "%sUndefined subcircuit %s" template f]
         else match StringMap.find f comps with
           | Register _ -> [Printf.sprintf "%s%s is not a subcircuit" template f]
-          | Subcirc (_,args) ->
-            let expected = List.length args in
+          | Subcirc s ->
+            let expected = List.length s.args in
             let found = List.length cs in
             if expected <> found
             then [Printf.sprintf
@@ -356,7 +415,7 @@ module Analyzer : StaticAnalyzer = struct
         if StringMap.mem x comps
         then [Printf.sprintf "%sLocal variable %s shadows definition" template x]
         else [] in
-      let new_env = StringSet.add x env in
+      let new_env = StringMap.add x (ast_length comps env c1) env in
       warning @
       (detect_ast_errors comps new_env id c1) @
       (detect_ast_errors comps new_env id c1)
@@ -367,14 +426,17 @@ module Analyzer : StaticAnalyzer = struct
     let bound = comps |> (StringMap.filter
                 (fun k v -> not (is_reg_type Output k v || is_subcirc k v))) in
     let env = StringMap.fold
-                (fun k _ acc -> StringSet.add k acc) bound StringSet.empty in
+        (fun k v acc -> StringMap.add k
+            (match v with
+             | Register r -> Some r.length
+             | _ -> failwith "impossible" ) acc) bound StringMap.empty in
     match comp with
     | Register r ->
       (match r.next with
        | User_input -> []
        | AST ast -> detect_ast_errors comps env id ast)
-    | Subcirc (ast,args) ->
-      let ids = List.map (fst) args in
+    | Subcirc s ->
+      let ids = List.map (fst) s.args in
       let binding_warnings =
         ids |>
         (List.map (fun arg ->
@@ -385,8 +447,9 @@ module Analyzer : StaticAnalyzer = struct
         |> (List.filter (fun w -> w <> None))
         |> (List.map (function Some c -> c | None -> failwith "impossible")) in
       let fun_env =
-        List.fold_left (fun acc arg -> StringSet.add arg acc) env ids in
-      binding_warnings @ (detect_ast_errors comps fun_env id ast)
+        List.fold_left
+          (fun acc (id,l) -> StringMap.add id (Some l) acc) env s.args in
+      binding_warnings @ (detect_ast_errors comps fun_env id s.ast)
 
   (* [detect_variable_errors circ] detects and logs the following errors:
    * - binding a local variable that shadows a register name
@@ -401,7 +464,6 @@ module Analyzer : StaticAnalyzer = struct
     let warnings_list =
       StringMap.fold (fun _ v acc -> v @ acc) warnings_map [] in
     (circ,warnings_list)
-
 
   (* [contains acc ast] is a list of the ids of the subcircuits contained
    * within [ast] *)
@@ -441,7 +503,7 @@ module Analyzer : StaticAnalyzer = struct
   let make_graph circ =
     circ.comps |> (StringMap.filter (is_subcirc))
     |> (StringMap.map
-          (function | Subcirc (c,_) -> c
+          (function | Subcirc s -> s.ast
                     | _ -> failwith "impossible"))
     |> (StringMap.map (contains))
 
