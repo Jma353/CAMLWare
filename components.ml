@@ -34,7 +34,7 @@ let path d x_scale y_scale fill stroke width interp svg =
 
 (* [and_helper x y edge svg] assists in the creation of the shape of an AND
 * gate *)
-let and_helper x y edge svg =
+let and_helper (x:float) (y:float) (edge:float) svg =
   let scale = linear (0,100) (0,100) in (* 1:1 ratio *)
   let tl = (x, y +. 0.1 *. edge) in
   let tm = (x +. 0.5 *. edge, y +. 0.1 *. edge) in
@@ -42,14 +42,14 @@ let and_helper x y edge svg =
   let bm = (x +. 0.5 *. edge, y +. 0.9 *. edge) in
   let bl = (x, y +. 0.9 *. edge) in
   let d_1 = list_to_coord_js_array [tl;tm;mr;bm;bl] in
-  let path_1 = path d_1 scale scale "none" "black" 1 "basis" in
+  let path_1 = path d_1 scale scale "white" "black" 1 "basis" in
   let d_2 = list_to_coord_js_array [tl;bl] in
-  let path_2 = path d_2 scale scale "none" "black" 1 "linear" in
+  let path_2 = path d_2 scale scale "white" "black" 1 "linear" in
   svg |> path_1 |> path_2
 
 (* [or_helper x y edge svg] assists in the creation of the shape of an OR
  * gate *)
-let or_helper x y edge svg =
+let or_helper (x:float) (y:float) (edge:float) svg =
   let scale = linear (0,100) (0,100) in (* 1:1 ratio *)
   let tl = (x, y +. 0.1 *. edge) in
   let tm = (x +. 0.5 *. edge, y +. 0.1 *. edge) in
@@ -57,20 +57,40 @@ let or_helper x y edge svg =
   let bm = (x +. 0.5 *. edge, y +. 0.9 *. edge) in
   let bl = (x, y +. 0.9 *. edge) in
   let mm = (x +. 0.2 *. edge, y +. 0.5 *. edge) in
-  let d_1 = list_to_coord_js_array [tl;tm;mr] in
-  let path_1 = path d_1 scale scale "none" "black" 1 "basis" in
-  let d_2 = list_to_coord_js_array [mr;bm;bl] in
-  let path_2 = path d_2 scale scale "none" "black" 1 "basis" in
-  let d_3 = list_to_coord_js_array [tl;mm;bl] in
+  let d_1 = list_to_coord_js_array [tl;tm;mr;bm;bl] in
+  let path_1 = path d_1 scale scale "white" "black" 1 "basis" in
+  let d_2 = list_to_coord_js_array [tl;mm;bl] in
+  let path_2 = path d_2 scale scale "white" "black" 1 "basis" in
+  svg |> path_1 |> path_2
+
+(* [xor_helper x y edge svg] assists in the creation of the shape of an XOR
+ * gate *)
+let xor_helper (x:float) (y:float) (edge:float) svg =
+  let scale = linear (0,100) (0,100) in (* 1:1 ratio *)
+  let tl = (x +. 0.1 *. edge, y +. 0.1 *. edge) in
+  let tm = (x +. 0.5 *. edge, y +. 0.1 *. edge) in
+  let mr = (x +. edge, y +. 0.5 *. edge) in
+  let bm = (x +. 0.5 *. edge, y +. 0.9 *. edge) in
+  let bl = (x +. 0.1 *. edge, y +. 0.9 *. edge) in
+  let mm = (x +. 0.2 *. edge, y +. 0.5 *. edge) in
+  let d_1 = list_to_coord_js_array [tl;tm;mr;bm;bl] in
+  let path_1 = path d_1 scale scale "white" "black" 1 "basis" in
+  let d_2 = list_to_coord_js_array [tl;mm;bl] in
+  let path_2 = path d_2 scale scale "white" "black" 1 "basis" in
+  let xor_tl = (x, y +. 0.1 *. edge) in
+  let xor_mm = (x +. 0.1 *. edge, y +. 0.5 *. edge) in
+  let xor_bl = (x, y +. 0.9 *. edge) in
+  let d_3 = list_to_coord_js_array [xor_tl;xor_mm;xor_bl] in
   let path_3 = path d_3 scale scale "none" "black" 1 "basis" in
   svg |> path_1 |> path_2 |> path_3
 
 (* Constant Component *)
-let constant b x y edge svg =
+let constant b (x:float) (y:float) (edge:float) svg =
   let hex_str = Bitstream.bitstream_to_hexstring b in
   let w = edge in
   let h = w *. 0.3 in
-  let g = append "g" |. str attr "transform" (translate x y) in
+  let x_i = i_of_f x in let y_i = i_of_f y in
+  let g = append "g" |. str attr "transform" (translate x_i y_i) in
   let frame =
     (append "rect"
       |. flt attr "width" w
@@ -94,13 +114,13 @@ let constant b x y edge svg =
   svg |- gnode
 
 (* Register Component *)
-let register x y edge svg =
+let register (x:float) (y:float) (edge:float) svg =
   let frame =
     (append "rect"
     |. int attr "width" (i_of_f edge)
     |. int attr "height" (i_of_f edge)
-    |. int attr "x" x
-    |. int attr "y" y
+    |. flt attr "x" x
+    |. flt attr "y" y
     |. str style "stroke" "black"
     |. str style "fill" "transparent"
     |. int style "stroke-width" 1) in
@@ -114,8 +134,11 @@ let register x y edge svg =
     (int_of_float (0.85 *. edge)) 1 "black") in
   ((svg |- frame) |- line1) |- line2
 
-(* Arithmetic And Component *)
-let and_c x y edge svg = svg |> and_helper x y edge
+(* Arithmetic AND Component *)
+let and_c (x:float) (y:float) (edge:float) svg = svg |> and_helper x y edge
 
-(* Arithmetic Or Component *)
-let or_c x y edge svg = svg |> or_helper x y edge
+(* Arithmetic OR Component *)
+let or_c (x:float) (y:float) (edge:float) svg = svg |> or_helper x y edge
+
+(* XOR Component *)
+let xor_c (x:float) (y:float) (edge:float) svg = svg |> xor_helper x y edge
