@@ -1,0 +1,8 @@
+rm configure
+rm setup.ml
+rm myocamlbuild.ml
+rm Makefile
+rm setup.data
+rm _tags
+rm */*.*lib
+rm */META

@@ -1,58 +1,56 @@
-open Array
+(* Global references *)
+let d3 = Js.Unsafe.variable "d3"
+let d3_svg   = d3##svg
+let d3_scale = d3##scale
 
-(* Extensions to ocaml-d3 *)
-module D3Extended = struct
-  include D3
+(* Alias for useful wrapper of method callbacks *)
+let mb = Js.wrap_meth_callback
 
+(* [translate x y] expresses the "transform" command of translation,
+ * given an x and a y. *)
+let translate x y =
+  "translate(" ^ (string_of_int x) ^ "," ^ (string_of_int y) ^ ")"
 
+(* Makes a JS object representing an (x,y) pair *)
+let make_coord x y =
+  let c = Js.Unsafe.obj [||] in
+  c##x <- x; c##y <- y;
+  c
 
-  (* HELPER FUNCTIONS, TYPING, & REFERENCES *)
+(* OCaml to coordinates in JavaScript *)
+let list_to_coord_js_array lst =
+  let n = List.length lst in
+  let arr = Js.(jsnew array_length (n)) in
+  let rec add_vals l i =
+    match l with
+    | [] -> ()
+    | h::k -> Js.array_set arr i (make_coord (fst h) (snd h));
+              add_vals k (i+1) in
+  add_vals lst 0;
+  arr
 
-  (* Generic types (separate but inspired by D3 module being extended) *)
-  type 'a s = S
-  type ('a, 'b) our_t = 'a s -> 'b s
+(* Create a linear scaling function *)
+let linear dom rng =
+  let lin = Js.Unsafe.new_obj (d3_scale##linear) [||] in
+  let _ = (Js.Unsafe.(meth_call lin "domain"
+    [| inject (Array.of_list [fst dom; snd dom]) |])) in
+  let _ = (Js.Unsafe.(meth_call lin "range"
+    [| inject (Array.of_list [fst rng; snd rng]) |])) in
+  lin
 
-  (* Reference to global d3 *)
-  let d3 = Js.Unsafe.variable "d3"
+(* Allows us to use a scale *)
+let use_scale lne x = Js.Unsafe.(fun_call lne [| inject x |])
 
-  (* Original ocaml-d3 helper: https://goo.gl/VvVjHD*)
-  let name_call (meth:string) (name:string) f =
-    let open Js.Unsafe in
-    let name = Js.string name in
-    fun cxt -> meth_call cxt meth [| inject name; inject f |]
+(* Create a line function *)
+let line x_scale y_scale =
+  let dot_line = Js.Unsafe.new_obj (d3_svg##line) [||] in
+  let _ = (Js.Unsafe.(meth_call dot_line "x"
+    [| inject (mb (fun this d i -> use_scale x_scale d##x)) |])) in
+  let _ = (Js.Unsafe.(meth_call dot_line "y"
+    [| inject (mb (fun this d i -> use_scale y_scale d##y)) |])) in
+  let _ = Js.Unsafe.(meth_call dot_line "interpolate" [| inject "linear" |]) in
+  dot_line
 
-  (* Original ocaml-d3 helper: https://goo.gl/VvVjHD *)
-  let const_call (meth:string) arg cxt =
-    Js.(Unsafe.meth_call cxt meth [| Unsafe.inject arg |])
-
-  (* Original ocaml-d3 helper: https://goo.gl/VvVjHD *)
-  let thunk_call (meth:string) cxt =
-    Js.Unsafe.meth_call cxt meth [| |]
-
-  (* Alias for OCaml function utilization in JS callbacks:
-   * https://goo.gl/VvVjHD*)
-  let mb = Js.wrap_meth_callback
-
-  (* [rng name min max f] Range method calls on `name` (e.g. .domain (...)) *)
-  let rng name min max f = const_call name (mb
-    (fun this d i () -> Js.array (f this d i)))
-
-
-
-  (* EXTRA BINDINGS *)
-
-  let d3_svg   = d3##svg
-  let d3_scale = d3##scale
-
-  let ar f name lst = f name (fun _ _ _ -> of_list lst)
-
-  let linear : ('a, 'a) our_t = thunk_call "linear"
-  let line   : ('a, 'a) our_t = thunk_call "line"
-
-  let x f = const_call "x" (mb (fun this d i () -> Js.float (f this d i)))
-  let y f = const_call "y" (mb (fun this d i () -> Js.float (f this d i)))
-  let domain min max f = rng "domain" min max f
-  let range min max f = rng "range" min max f
-
-
-end
+(* Allows us to use a line-auto path generator function *)
+let use_line lne data =
+  Js.Unsafe.(fun_call lne [| inject data |])

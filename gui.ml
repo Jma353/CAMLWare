@@ -1,11 +1,12 @@
-open Extensions.D3Extended
-open Utils
+open D3
+open Extensions
 open Components
 open Circuit
 
 (* Dimensions of the window *)
 type dims =
   { width : int; height : int }
+
 
 (* View info *)
 let view dims padding =
@@ -19,9 +20,19 @@ let view dims padding =
     append "g"
     |. str attr "transform" (translate padding padding)
   in
-  let container = svg <.> g in
-  (* Add a register *)
-  register 50 75 container
+
+  let container = svg <.> g in                 (* Base container *)
+  let with_reg = register 50 75 container in   (* Add a register *)
+
+  (* Setup a path *)
+  let scale = linear (0,100) (0,100) in
+  let d = list_to_coord_js_array [(40.,40.);(70.,10.)] in
+  path d scale scale "none" "black" 1 with_reg
+
+
+
+
+
 ;;
 
 let _ =
