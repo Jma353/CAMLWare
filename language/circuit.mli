@@ -8,6 +8,10 @@ open Combinational
 module StringMap : Map.S with type key = string
 type 'a map = 'a StringMap.t
 
+(* a set of strings *)
+module StringSet : Set.S with type elt = string
+type set = StringSet.t
+
 (* a type to represent a circuit component *)
 type component
 
