@@ -35,7 +35,7 @@ let view dims padding =
   let container = (svg |- border_rect) <.> g in
 
   (* Test gates *)
-  let one = arith_nxor 0. 50. 60. in
+  let one = red_nxor 0. 50. 60. in
 
   (* Construct our view *)
   (container

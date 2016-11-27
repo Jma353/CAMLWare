@@ -39,15 +39,15 @@ let txt_c x y font_size sym =
   |. str attr "fill" "black"
   |. text (fun _ _ _ -> sym)
 
-(* [circ_c cx cy r] assists in the creation of a white circle SVG component *)
-let circ_c cx cy r =
+(* [circ_c cx cy r w] assists in the creation of a white circle SVG component *)
+let circ_c cx cy r w =
   append "circle"
   |. flt attr "cx" cx
   |. flt attr "cy" cy
   |. flt attr "r" r
   |. str style "fill" "white"
   |. str style "stroke" "black"
-  |. int style "stroke-width" 1
+  |. int style "stroke-width" w
 
 (* Path Component *)
 let path d x_scale y_scale fill stroke width interp svg =
@@ -60,13 +60,13 @@ let path d x_scale y_scale fill stroke width interp svg =
     |. int style "stroke-width" width) in
   svg |- path_comp
 
-(* [neg_dot x y edge svg] assists in the creation of a negation dot at the end
- * of a particular logic gate *)
-let neg_dot (x:float) (y:float) (edge:float) svg =
+(* [neg_dot x y edge red svg] assists in the creation of a negation dot at the
+ * end of a particular logic gate *)
+let neg_dot (x:float) (y:float) (edge:float) red svg =
   let r = 0.07 *. edge in
   let cx = (x +. edge *. 0.83 +. r) in
   let cy = (y +. 0.5 *. edge) in
-  let circ = circ_c cx cy r in
+  let circ = circ_c cx cy r (if red then 4 else 1) in
   svg |- circ
 
 (* [not_helper] x y edge svg] assists in the creation of the shape of a NOT
@@ -81,12 +81,13 @@ let not_helper (x:float) (y:float) (edge:float) svg =
   let r = 0.1 *. edge in
   let cx = (x +. edge *. 0.7 +. r) in
   let cy = (y +. 0.5 *. edge) in
-  let circ = circ_c cx cy r in
+  let circ = circ_c cx cy r 1 in
   (svg |> my_path) |- circ
 
-(* [and_helper x y edge svg] assists in the creation of the shape of an AND
+(* [and_helper x y edge red svg] assists in the creation of the shape of an AND
 * gate *)
-let and_helper (x:float) (y:float) (edge:float) svg =
+let and_helper (x:float) (y:float) (edge:float) red svg =
+  let w = if red then 4 else 1 in
   let scale = linear (0,100) (0,100) in (* 1:1 ratio *)
   let tl = (x, y +. 0.1 *. edge) in
   let tm = (x +. 0.5 *. edge, y +. 0.1 *. edge) in
@@ -94,14 +95,15 @@ let and_helper (x:float) (y:float) (edge:float) svg =
   let bm = (x +. 0.5 *. edge, y +. 0.9 *. edge) in
   let bl = (x, y +. 0.9 *. edge) in
   let d_1 = list_to_coord_js_array [tl;tm;mr;bm;bl] in
-  let path_1 = path d_1 scale scale "none" "black" 1 "basis" in
+  let path_1 = path d_1 scale scale "none" "black" w "basis" in
   let d_2 = list_to_coord_js_array [tl;bl] in
-  let path_2 = path d_2 scale scale "none" "black" 1 "linear" in
+  let path_2 = path d_2 scale scale "none" "black" w "linear" in
   svg |> path_1 |> path_2
 
-(* [or_helper x y edge svg] assists in the creation of the shape of an OR
+(* [or_helper x y edge red svg] assists in the creation of the shape of an OR
  * gate *)
-let or_helper (x:float) (y:float) (edge:float) svg =
+let or_helper (x:float) (y:float) (edge:float) red svg =
+  let w = if red then 4 else 1 in
   let scale = linear (0,100) (0,100) in (* 1:1 ratio *)
   let tl = (x, y +. 0.1 *. edge) in
   let tm = (x +. 0.5 *. edge, y +. 0.1 *. edge) in
@@ -110,14 +112,15 @@ let or_helper (x:float) (y:float) (edge:float) svg =
   let bl = (x, y +. 0.9 *. edge) in
   let mm = (x +. 0.2 *. edge, y +. 0.5 *. edge) in
   let d_1 = list_to_coord_js_array [tl;tm;mr;bm;bl] in
-  let path_1 = path d_1 scale scale "none" "black" 1 "basis" in
+  let path_1 = path d_1 scale scale "none" "black" w "basis" in
   let d_2 = list_to_coord_js_array [tl;mm;bl] in
-  let path_2 = path d_2 scale scale "none" "black" 1 "basis" in
+  let path_2 = path d_2 scale scale "none" "black" w "basis" in
   svg |> path_1 |> path_2
 
 (* [xor_helper x y edge svg] assists in the creation of the shape of an XOR
  * gate *)
-let xor_helper (x:float) (y:float) (edge:float) svg =
+let xor_helper (x:float) (y:float) (edge:float) red svg =
+  let w = if red then 4 else 1 in
   let scale = linear (0,100) (0,100) in (* 1:1 ratio *)
   let tl = (x +. 0.1 *. edge, y +. 0.1 *. edge) in
   let tm = (x +. 0.5 *. edge, y +. 0.1 *. edge) in
@@ -126,14 +129,14 @@ let xor_helper (x:float) (y:float) (edge:float) svg =
   let bl = (x +. 0.1 *. edge, y +. 0.9 *. edge) in
   let mm = (x +. 0.2 *. edge, y +. 0.5 *. edge) in
   let d_1 = list_to_coord_js_array [tl;tm;mr;bm;bl] in
-  let path_1 = path d_1 scale scale "none" "black" 1 "basis" in
+  let path_1 = path d_1 scale scale "none" "black" w "basis" in
   let d_2 = list_to_coord_js_array [tl;mm;bl] in
-  let path_2 = path d_2 scale scale "none" "black" 1 "basis" in
+  let path_2 = path d_2 scale scale "none" "black" w "basis" in
   let xor_tl = (x, y +. 0.1 *. edge) in
   let xor_mm = (x +. 0.1 *. edge, y +. 0.5 *. edge) in
   let xor_bl = (x, y +. 0.9 *. edge) in
   let d_3 = list_to_coord_js_array [xor_tl;xor_mm;xor_bl] in
-  let path_3 = path d_3 scale scale "none" "black" 1 "basis" in
+  let path_3 = path d_3 scale scale "none" "black" w "basis" in
   svg |> path_1 |> path_2 |> path_3
 
 (* [box_with_symbol x y edge sym svg] assists in the creation of a box with
@@ -239,28 +242,56 @@ let sub_seq_c (x:float) (y:float) (edge:float) (n1: int) (n2: int) svg =
             ((string_of_int n1) ^ "-" ^ (string_of_int n2)) svg)
 
 (* Arithmetic NOT Component *)
-let arith_not (x:float) (y:float) (edge:float) svg = svg |> not_helper x y edge
+let arith_not (x:float) (y:float) (edge:float) svg =
+  svg |> not_helper x y edge
 
 (* Arithmetic AND Component *)
-let arith_and (x:float) (y:float) (edge:float) svg = svg |> and_helper x y edge
+let arith_and (x:float) (y:float) (edge:float) svg =
+  svg |> and_helper x y edge false
 
 (* Arithmetic NAND Component *)
 let arith_nand (x:float) (y:float) (edge:float) svg =
-  svg |> arith_and x y edge |> neg_dot x y edge
+  svg |> arith_and x y edge |> neg_dot x y edge false
 
 (* Arithmetic OR Component *)
-let arith_or (x:float) (y:float) (edge:float) svg = svg |> or_helper x y edge
+let arith_or (x:float) (y:float) (edge:float) svg =
+  svg |> or_helper x y edge false
 
 (* Arithmetic NOR Component *)
 let arith_nor (x:float) (y:float) (edge:float) svg =
-  svg |> arith_or x y edge |> neg_dot x y edge
+  svg |> arith_or x y edge |> neg_dot x y edge false
 
 (* Arithmetic XOR Component *)
-let arith_xor (x:float) (y:float) (edge:float) svg = svg |> xor_helper x y edge
+let arith_xor (x:float) (y:float) (edge:float) svg =
+  svg |> xor_helper x y edge false
 
 (* Arithmetic NXOR Component *)
 let arith_nxor (x:float) (y:float) (edge:float) svg =
-  svg |> arith_xor x y edge |> neg_dot x y edge
+  svg |> arith_xor x y edge |> neg_dot x y edge false
+
+(* Reduction AND Component *)
+let red_and (x:float) (y:float) (edge:float) svg =
+  svg |> and_helper x y edge true
+
+(* Reduction NAND Component *)
+let red_nand (x:float) (y:float) (edge:float) svg =
+  svg |> red_and x y edge |> neg_dot x y edge true
+
+(* Reduction OR Component *)
+let red_or (x:float) (y:float) (edge:float) svg =
+  svg |> or_helper x y edge true
+
+(* Reduction NOR Component *)
+let red_nor (x:float) (y:float) (edge:float) svg =
+  svg |> red_or x y edge |> neg_dot x y edge true
+
+(* Reduction XOR Component *)
+let red_xor (x:float) (y:float) (edge:float) svg =
+  svg |> xor_helper x y edge true
+
+(* Reduction NXOR Component *)
+let red_nxor (x:float) (y:float) (edge:float) svg =
+  svg |> red_xor x y edge |> neg_dot x y edge true
 
 (* Logical AND Component *)
 let logical_and (x:float) (y:float) (edge:float) svg =
