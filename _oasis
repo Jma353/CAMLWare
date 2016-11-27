@@ -1,12 +1,13 @@
-OASISFormat: 0.4
-Name:        camlware
-Version:     1.0
-Synopsis:    Functional, hardware description language
-Authors:     CAMLWare
-License:     Apache-2.0
-Plugins:     META (0.4), DevFiles (0.4)
+OASISFormat:  0.4
+Name:         camlware
+Version:      1.0
+OCamlVersion: >= 4.01.0
+Synopsis:     Functional, hardware description language
+Authors:      CAMLWare
+License:      Apache-2.0
+Plugins:      META (0.4), DevFiles (0.4)
 
-BuildTools:           ocamlbuild 
+BuildTools:           ocamlbuild
 
 Library main
   Path:             language
