@@ -229,3 +229,27 @@ let logical_or (x:float) (y:float) (edge:float) svg =
 (* Logical NOT Component *)
 let logical_not (x:float) (y:float) (edge:float) svg =
   svg |> box_with_symbol x y edge "!"
+
+(* < Component *)
+let less_than (x:float) (y:float) (edge:float) svg =
+  svg |> box_with_symbol x y edge "<"
+
+(* > Component *)
+let greater_than (x:float) (y:float) (edge:float) svg =
+  svg |> box_with_symbol x y edge ">"
+
+(* = Component *)
+let equal_to (x:float) (y:float) (edge:float) svg =
+  svg |> box_with_symbol x y edge "="
+
+(* <= Component *)
+let less_than_or_equal_to (x:float) (y:float) (edge:float) svg =
+  svg |> box_with_symbol x y edge "<="
+
+(* >= Component *)
+let greater_than_or_equal_to (x:float) (y:float) (edge:float) svg =
+  svg |> box_with_symbol x y edge ">="
+
+(* != Component *)
+let not_equal_to (x:float) (y:float) (edge:float) svg =
+  svg |> box_with_symbol x y edge "!="
