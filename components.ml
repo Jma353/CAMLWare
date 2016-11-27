@@ -232,14 +232,18 @@ let d_register b (x:float) (y:float) (edge:float) svg =
 
 (* MUX2 Component *)
 let mux2_c (x:float) (y:float) (edge:float) svg =
+  let g = container x y in
   let scale = linear (0,100) (0,100) in (* 1:1 ratio *)
-  let one   = (x, y) in
-  let two   = (x +. edge *. 0.6, y +. edge *. 0.2) in
-  let three = (x +. edge *. 0.6, y +. edge *. 0.8) in
-  let four  = (x, y +. edge) in
+  let one   = (0., 0.) in
+  let two   = (edge *. 0.6, edge *. 0.2) in
+  let three = (edge *. 0.6, edge *. 0.8) in
+  let four  = (0., edge) in
   let d = list_to_coord_js_array [one;two;three;four;one] in
   let my_path = path d scale scale "none" "black" 1 "linear" in
-  svg |> my_path
+  let i0_label = txt_c (edge *. 0.2) (edge *. 0.3) (edge /. 7.5) "i_0" in
+  let i1_label = txt_c (edge *. 0.2) (edge *. 0.5) (edge /. 7.5) "i_1" in
+  let sel_label = txt_c (edge *. 0.2) (edge *. 0.7) (edge /. 7.5) "sel" in
+  svg |- ((((g |> my_path) |- i0_label) |- i1_label) |- sel_label)
 
 (* Nth Bit Component *)
 let nth_c (x:float) (y:float) (edge:float) (n:int) svg =
