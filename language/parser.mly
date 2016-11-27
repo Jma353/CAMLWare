@@ -3,17 +3,11 @@
 open Bitstream
 open Combinational
 open Circuit
-open Base_conversions
 open Lexing
 
-let parse_error _ =
-  let start_pos = Parsing.symbol_start_pos () in
-  let end_pos = Parsing.symbol_end_pos () in
-  let start_line = string_of_int start_pos.pos_lnum in
-  let start_char = string_of_int (start_pos.pos_cnum - start_pos.pos_bol) in
-  let end_line = string_of_int end_pos.pos_lnum in
-  let end_char = string_of_int (end_pos.pos_cnum - end_pos.pos_bol) in
-  failwith ("Parse error: ("^start_line^"."^start_char^"-"^end_line^"."^end_char)
+let check_positive n =
+  if n <= 0 then failwith (Printf.sprintf "%i is an invalid length" n) else ()
+
 %}
 
 %token FUN ASSIGN
@@ -55,23 +49,23 @@ component:
 
 %inline register:
   | RISING?; REGISTER; id = VAR; LBRACKET; l = NUM; RBRACKET; ASSIGN; ast = comb
-    { (id, rising_register l ast) }
+    { check_positive l; (id, rising_register l ast) }
   | FALLING; REGISTER; id = VAR; LBRACKET; l = NUM; RBRACKET; ASSIGN; ast = comb
-    { (id, falling_register l ast) }
+    { check_positive l; (id, falling_register l ast) }
   | OUTPUT; id = VAR; LBRACKET; l = NUM; RBRACKET; ASSIGN; ast = comb
-    { (id, output l ast) }
+    { check_positive l; (id, output l ast) }
   | INPUT; id = VAR; LBRACKET; l = NUM; RBRACKET;
-    { (id, input l) }
+    { check_positive l; (id, input l) }
 ;
 
 %inline subcircuit:
-  | FUN; id = VAR; LPAREN; args = separated_list(COMMA, arg);
-    RPAREN; ASSIGN; ast = comb
-    { (id, subcircuit ast args) }
+  | FUN; id = VAR; LPAREN; args = separated_list(COMMA, arg); RPAREN;
+    LBRACKET; l = NUM; RBRACKET; ASSIGN; ast = comb
+    { check_positive l; (id, subcircuit ast l args) }
 ;
 
 arg:
-  | id = VAR { id }
+  | id = VAR; LBRACKET; l = NUM; RBRACKET { check_positive l; (id,l) }
 ;
 
 logic:
