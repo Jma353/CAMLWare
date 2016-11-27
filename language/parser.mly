@@ -3,7 +3,6 @@
 open Bitstream
 open Combinational
 open Circuit
-open Base_conversions
 open Lexing
 
 let parse_error _ =
@@ -71,7 +70,7 @@ component:
 ;
 
 arg:
-  | id = VAR { id }
+  | id = VAR; LBRACKET; l = NUM; RBRACKET { (id,l) }
 ;
 
 logic:
