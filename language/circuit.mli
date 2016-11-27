@@ -88,3 +88,8 @@ end
 
 module Analyzer : StaticAnalyzer
 module Simulator : CircuitSimulator
+
+type formatted_circuit
+
+val format : circuit -> formatted_circuit
+val format_format_circuit : Format.formatter -> formatted_circuit -> unit
