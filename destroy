@@ -4,5 +4,5 @@ rm myocamlbuild.ml
 rm Makefile
 rm setup.data
 rm _tags
-rm language/main.*lib
-rm language/META
+rm */*.*lib
+rm */META
