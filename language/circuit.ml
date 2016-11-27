@@ -423,39 +423,39 @@ StringMap.filter
 type formatted_circuit = register StringMap.t list
 
 let assign_columns circ =
-let reg = get_all_registers circ in
-let inputs = find_inputs reg in
-let p = print_string (string_of_int (StringMap.cardinal inputs)) in
-let outputs = find_outputs reg in
-let asts = (no_outputs (no_inputs reg)) in
+  let reg = get_all_registers circ in
+  let inputs = find_inputs reg in
+  let p = print_string (string_of_int (StringMap.cardinal inputs)) in
+  let outputs = find_outputs reg in
+  let asts = (no_outputs (no_inputs reg)) in
 
-let p2 = print_string (string_of_int (StringMap.cardinal asts)) in
-let list_dep_of_register r =
-  (match r.reg_type with
-  | Rising | Falling -> (
-    match r.next with
-    | AST ast -> list_dependencies (attach_ids ast) reg
-    | _ -> []
-  )
-  | _ -> []) in
-let reg_deps = (StringMap.map (fun v -> list_dep_of_register v) (no_inputs reg)) in
-let p2 = print_string (string_of_int (StringMap.cardinal reg_deps)) in
-let rec dep_helper not_done d cols =
-  (match (StringMap.is_empty not_done) with
-  | true -> cols
-  | false ->
-    let resolved k v =
-      (List.for_all (fun x -> StringMap.mem x d) (StringMap.find k reg_deps)) in
-    let new_col = StringMap.filter resolved not_done in
-    let new_done = StringMap.union (fun k v1 v2 -> Some v2) d new_col in
-    let new_not_done = StringMap.filter (fun k v -> not (StringMap.mem k new_done)) not_done in
+  let p2 = print_string (string_of_int (StringMap.cardinal asts)) in
+  let list_dep_of_register r =
+    (match r.reg_type with
+    | Rising | Falling -> (
+      match r.next with
+      | AST ast -> list_dependencies (attach_ids ast) reg
+      | _ -> []
+    )
+    | _ -> []) in
+  let reg_deps = (StringMap.map (fun v -> list_dep_of_register v) (no_inputs reg)) in
+  let p2 = print_string (string_of_int (StringMap.cardinal reg_deps)) in
+  let rec dep_helper not_done d cols =
+    (match (StringMap.is_empty not_done) with
+    | true -> cols
+    | false ->
+      let resolved k v =
+        (List.for_all (fun x -> StringMap.mem x d) (StringMap.find k reg_deps)) in
+      let new_col = StringMap.filter resolved not_done in
+      let new_done = StringMap.union (fun k v1 v2 -> Some v2) d new_col in
+      let new_not_done = StringMap.filter (fun k v -> not (StringMap.mem k new_done)) not_done in
 
-    dep_helper new_not_done new_done (new_col::cols))
+      dep_helper new_not_done new_done (new_col::cols))
 
-in
-  if (StringMap.is_empty outputs)
-  then (List.rev ((dep_helper asts inputs [inputs])))
-  else List.rev (outputs::(dep_helper asts inputs [inputs]))
+  in
+    if (StringMap.is_empty outputs)
+    then (List.rev ((dep_helper asts inputs [inputs])))
+    else List.rev (outputs::(dep_helper asts inputs [inputs]))
 
 
 let get_ids ast =
@@ -570,6 +570,25 @@ let tree_to_list ast reg_id reg_list =
       ({y_coord = 0.; id = id; node = Let (var); parents = parents}
       ::(fot (list_helper c1 [id] new_lets reg_list reg_parents)), lets, reg_list)
     in (list_helper ast [reg_id] StringMap.empty reg_list StringMap.empty)
+
+let columnize_ast ast_list lets =
+  let rec column_helper finished not_done cols =
+    if (List.length not_done = 0)
+    then []
+    else
+      let find_register x =
+        (match x.node with
+        |Register _-> true
+        | _ -> false) in
+      let find_finished parent_list =
+        List.for_all
+        (fun x -> List.exists (fun y -> x = y.id) finished) parent_list in
+      let new_col = (List.filter (fun x -> (find_register x || find_finished x.parents)) not_done) in
+      let new_done = new_col@finished in
+      let new_cols = new_col :: cols in
+      let new_not_done = List.filter (fun x -> not (List.mem x new_done)) not_done in
+      column_helper new_done new_not_done new_cols
+    in column_helper [] ast_list []
 
 
 let format circ = assign_columns circ
