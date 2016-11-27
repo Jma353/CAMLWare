@@ -194,6 +194,26 @@ let register (x:float) (y:float) (edge:float) svg =
     (int_of_float (0.85 *. edge)) 1 "black") in
   ((svg |- frame) |- line1) |- line2
 
+(* Nth Bit Component *)
+let nth (x:float) (y:float) (edge:float) num svg =
+  let box =
+    (append "rect"
+    |. flt attr "width"  (0.4 *. edge)
+    |. flt attr "height" (0.4 *. edge)
+    |. flt attr "x" (0.3 *. edge +. x)
+    |. flt attr "y" (0.3 *. edge +. y)
+    |. int attr "rx" 2
+    |. int attr "ry" 2
+    |. str style "stroke" "black"
+    |. str style "fill" "#eff2ed"
+    |. int style "stroke-width" 1) in
+  let num_bit =
+    (txt_c (x +. edge /. 2.)
+           (y +. edge *. 0.15)
+           (edge /. 3.)
+           (string_of_int num)) in
+  (svg |- box) |- num_bit
+
 (* Arithmetic NOT Component *)
 let arith_not (x:float) (y:float) (edge:float) svg = svg |> not_helper x y edge
 
