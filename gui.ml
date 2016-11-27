@@ -24,16 +24,21 @@ let view dims padding =
   (* Base container *)
   let container = svg <.> g in
 
-  let one = nxor_c 0. 50. 60. in
-  let two = nxor_c 0. 150. 40. in
-  let three = nxor_c 0. 250. 100. in
+  let one = arith_nxor 0. 50. 60. in
+  let two = arith_nxor 0. 150. 40. in
+  let three = arith_nxor 0. 250. 100. in
+  let logic_and = logical_and 0. 350. 60. in
+  let logic_or = logical_or 0. 450. 100. in
+  let logic_not = logical_not 0. 600. 40. in
 
   (* Construct our view *)
   (container
     |> one
     |> two
-    |> three)
-
+    |> three
+    |> logic_and
+    |> logic_or
+    |> logic_not)
 
 ;;
 

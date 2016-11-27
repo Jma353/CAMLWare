@@ -18,8 +18,23 @@ let px (x:float) = ((string_of_int (int_of_float x)) ^ "px")
 (* [i_of_f x] int_of_float alias *)
 let i_of_f x = int_of_float x
 
-let border_radius tl tr br bl =
-  (px tl) ^ " " ^ (px tr) ^ " " ^ (px br) ^ " " ^ (px bl)
+(* [container x y] assists in the creation of a <g> container, given
+ * two float coordinates corresponding to the top left corner *)
+let container (x: float) (y: float) =
+  let x_i = i_of_f x in let y_i = i_of_f y in
+  append "g" |. str attr "transform" (translate x_i y_i)
+
+(* [txt_c x y font_size sym] assists in the creation of text SVG component *)
+let txt_c x y font_size sym =
+  append "text"
+  |. flt attr "x" x
+  |. flt attr "y" y
+  |. str attr "text-anchor" "middle"
+  |. str attr "alignment-baseline" "middle"
+  |. str attr "font-family" "Courier"
+  |. str attr "font-size" ((string_of_float font_size) ^ "px")
+  |. str attr "fill" "black"
+  |. text (fun _ _ _ -> sym)
 
 (* Path Component *)
 let path d x_scale y_scale fill stroke width interp svg =
@@ -100,32 +115,43 @@ let xor_helper (x:float) (y:float) (edge:float) svg =
   let path_3 = path d_3 scale scale "none" "black" 1 "basis" in
   svg |> path_1 |> path_2 |> path_3
 
+(* [box_with_symbol x y edge sym svg] assists in the creation of a box with
+ * a text symbol inside of it *)
+let box_with_symbol (x:float) (y:float) (edge:float) sym svg =
+  let g = container x y in
+  let frame =
+    (append "rect"
+    |. flt attr "width" edge
+    |. flt attr "height" edge
+    |. int attr "x" 0
+    |. int attr "y" 0
+    |. int attr "rx" 6
+    |. int attr "ry" 6
+    |. str style "stroke" "black"
+    |. str style "fill" "none"
+    |. int style "stroke-width" 1) in
+  let sym_c = txt_c (edge *. 0.5) (edge *. 0.5) (edge /. 2.) sym in
+  let gnode = (g |- frame) |- sym_c in
+  svg |- gnode
+
 (* Constant Component *)
 let constant b (x:float) (y:float) (edge:float) svg =
   let hex_str = Bitstream.bitstream_to_hexstring b in
   let w = edge in
   let h = w *. 0.3 in
-  let x_i = i_of_f x in let y_i = i_of_f y in
-  let g = append "g" |. str attr "transform" (translate x_i y_i) in
+  let g = container x y in
   let frame =
     (append "rect"
     |. flt attr "width" w
     |. flt attr "height" h
-    |. int attr "x" 0
-    |. int attr "y" 0
+    |. flt attr "x" 0.
+    |. flt attr "y" (edge *. 0.5 -. h *. 0.5)
+    |. int attr "rx" 6
+    |. int attr "ry" 6
     |. str style "stroke" "black"
-    |. str style "fill" "transparent"
+    |. str style "fill" "none"
     |. int style "stroke-width" 1) in
-  let words =
-    (append "text"
-    |. flt attr "x" (w *. 0.5)
-    |. flt attr "y" (h *. 0.5)
-    |. str attr "text-anchor" "middle"
-    |. str attr "alignment-baseline" "middle"
-    |. str attr "font-family" "Courier"
-    |. str attr "font-size" ((string_of_float (w /. 7.5)) ^ "px")
-    |. str attr "fill" "black"
-    |. text (fun _ _ _ -> hex_str)) in
+  let words = txt_c (w *. 0.5) (edge *. 0.5) (w /. 7.5) hex_str in
   let gnode = (g |- frame) |- words in
   svg |- gnode
 
@@ -151,22 +177,34 @@ let register (x:float) (y:float) (edge:float) svg =
   ((svg |- frame) |- line1) |- line2
 
 (* Arithmetic AND Component *)
-let and_c (x:float) (y:float) (edge:float) svg = svg |> and_helper x y edge
+let arith_and (x:float) (y:float) (edge:float) svg = svg |> and_helper x y edge
 
 (* Arithmetic NAND Component *)
-let nand_c (x:float) (y:float) (edge:float) svg =
-  svg |> and_c x y edge |> neg_dot x y edge
+let arith_nand (x:float) (y:float) (edge:float) svg =
+  svg |> arith_and x y edge |> neg_dot x y edge
 
 (* Arithmetic OR Component *)
-let or_c (x:float) (y:float) (edge:float) svg = svg |> or_helper x y edge
+let arith_or (x:float) (y:float) (edge:float) svg = svg |> or_helper x y edge
 
 (* Arithmetic NOR Component *)
-let nor_c (x:float) (y:float) (edge:float) svg =
-  svg |> or_c x y edge |> neg_dot x y edge
+let arith_nor (x:float) (y:float) (edge:float) svg =
+  svg |> arith_or x y edge |> neg_dot x y edge
 
-(* XOR Component *)
-let xor_c (x:float) (y:float) (edge:float) svg = svg |> xor_helper x y edge
+(* Arithmetic XOR Component *)
+let arith_xor (x:float) (y:float) (edge:float) svg = svg |> xor_helper x y edge
 
-(* NXOR Component *)
-let nxor_c (x:float) (y:float) (edge:float) svg =
-  svg |> xor_c x y edge |> neg_dot x y edge
+(* Arithmetic NXOR Component *)
+let arith_nxor (x:float) (y:float) (edge:float) svg =
+  svg |> arith_xor x y edge |> neg_dot x y edge
+
+(* Logical AND Component *)
+let logical_and (x:float) (y:float) (edge:float) svg =
+  svg |> box_with_symbol x y edge "&&"
+
+(* Logical OR Component *)
+let logical_or (x:float) (y:float) (edge:float) svg =
+  svg |> box_with_symbol x y edge "||"
+
+(* Logical NOT Component *)
+let logical_not (x:float) (y:float) (edge:float) svg =
+  svg |> box_with_symbol x y edge "!"
