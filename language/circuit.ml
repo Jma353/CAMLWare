@@ -184,6 +184,11 @@ module Simulator : CircuitSimulator = struct
     | Srl -> shift_right_logical b1 b2
     | Sra -> shift_right_arithmetic b1 b2
 
+  let subcirc_len_check b len =
+    if length b < len then (zero_extend len b)
+    else if length b > len then substream b 0 (len - 1)
+    else b
+
   let rec eval_hlpr circ comb env =
      match comb with
     | Const b -> b
@@ -213,8 +218,9 @@ module Simulator : CircuitSimulator = struct
                           then eval_hlpr circ c3 env
                           else eval_hlpr circ c2 env
     | Apply (id,clst) -> let subcirc = StringMap.find id circ.comps in
+                          let Subcirc s = subcirc in 
                           let (nv, comb1) = eval_apply subcirc circ clst env in
-                          eval_hlpr circ comb1 nv
+                          subcirc_len_check (eval_hlpr circ comb1 nv) s.length
     | Let (id,c1,c2) -> let b1 = (eval_hlpr circ c1 env) in
                         if List.mem_assoc id env then
                         failwith "Cannot use variable twice" else
@@ -232,8 +238,9 @@ module Simulator : CircuitSimulator = struct
       eval_apply_hlpr ids clst env circ =
          match (ids, clst) with
         | ([], []) -> env
-        | (i::is,c::cs) -> let b = (eval_hlpr circ c env) in
-                    (fst i, b)::(eval_apply_hlpr is cs env circ)
+        | (i::is,c::cs) -> let b = 
+                          subcirc_len_check (eval_hlpr circ c env) (snd i) in
+                          (fst i, b)::(eval_apply_hlpr is cs env circ)
         | _ -> failwith "incorrect sub circuit application"
 
   let rec evaluate circ comb =
