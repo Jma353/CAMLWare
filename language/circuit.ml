@@ -55,64 +55,19 @@ module type StaticAnalyzer = sig
 end
 
 module type CircuitFormatter = sig
+  type formatted_circuit
+  type display_node
 
-  type node =
-    | Register of id
-    | Let of id
-    | B of gate
-    | L of gate
-    | A of arithmetic
-    | N of negation
-    | C of comparison
-    | Sub of int * int
-    | Nth of int
-    | Subcirc of id
-    | Red of gate
-    | Concat of int list
-    | Mux of int * int * int
-    | Const of bitstream
-    | Apply of id * int list
+  type display_let
 
-  type display_info = {
-    y_coord : float;
-    id : int;
-    node : node;
-    parents : int list;
-  }
+  type display_register
 
-  type ast_column = {
-    x_coordinate : float;
-    nodes : display_info list
-  }
+  type display_reg_type
 
-  type display_ast = {
-    ast_columns : ast_column list;
-    reg_list : (id * int list) list;
-    let_list : (id * int list) list;
-  }
-
-  type display_input = Input of id | AST of display_ast
-
-  type display_register = {
-    y_coord : float;
-    ast : display_input
-  }
-
-  type circ_column = {
-    registers : (id * display_register ) list;
-    x_coordinate : float;
-  }
-
-  type formatted_circuit = circ_column list
-
+  type node
   val format : circuit -> formatted_circuit
-
-  val test_circ : unit -> formatted_circuit
-
   val format_format_circuit : Format.formatter -> formatted_circuit -> unit
-
 end
-
 
 let make_register length logic reg_type =
   Register {
@@ -616,8 +571,7 @@ module Analyzer : StaticAnalyzer = struct
 
 end
 
-
-module Formatter = struct
+module Formatter : CircuitFormatter = struct
 
   type comb_id =
     | Id_Const     of int * bitstream
@@ -765,7 +719,7 @@ module Formatter = struct
   | Id_Apply (id, _, _ ) -> id
   | Id_Let (id, _, _, _ ) -> id
 
-  type node = Register of id | Let of id | B of gate | L of gate | A of arithmetic
+  type node =  B of gate | L of gate | A of arithmetic
   | N of negation | C of comparison | Sub of int*int | Nth of int | Subcirc of id |
   Red of gate | Concat of int list | Mux of int *int * int | Const of bitstream | Apply of id * int list
 
@@ -778,7 +732,7 @@ module Formatter = struct
 
   let fot (x, _, _) = x
 
-  let tree_to_list ast reg_id reg_list =
+  (* let tree_to_list ast reg_id reg_list =
     (* ast:comb - what we are analyzing
      * parents : [int] - the parents of the current node
      * lets : Map: string -> ([int], comb) - a map from each variable name to its
@@ -803,7 +757,7 @@ module Formatter = struct
           else
             let (p, comb) = StringMap.find v lets in
             StringMap.add v (parents@p, comb) lets in
-        ([{y_coord = 0.; id=id; node = (Let v); parents = parents}], lets, new_reg_parents)
+        ([{y_coord = 0.; id=id; node = (L And); parents = parents}], lets, new_reg_parents)
       | Id_Sub_seq(id, i1, i2, comb) ->
         ({y_coord = 0.; id=id; node = Sub (i1, i2); parents=parents}
         ::(fot (list_helper comb [id] lets reg_list reg_parents)), lets, reg_parents)
@@ -851,9 +805,9 @@ module Formatter = struct
         let inputs = list_dependencies c1 reg_list in
         ({y_coord = 0.; id = id; node = Let (var); parents = parents}
         ::(fot (list_helper c1 [id] new_lets reg_list reg_parents)), lets, reg_parents)
-      in (list_helper ast [reg_id] StringMap.empty reg_list StringMap.empty)
+      in (list_helper ast [] StringMap.empty reg_list StringMap.empty) *)
 
-  let columnize_ast ast_list =
+  (* let columnize_ast ast_list =
     let rec column_helper finished not_done cols =
       if (List.length not_done = 0)
       then []
@@ -870,8 +824,8 @@ module Formatter = struct
         let new_cols = new_col :: cols in
         let new_not_done = List.filter (fun x -> not (List.mem x new_done)) not_done in
         column_helper new_done new_not_done new_cols
-      in column_helper [] ast_list []
-
+      in column_helper [] ast_list [] *)
+(*
   type ast_column = {
     x_coordinate : float;
     nodes : display_info list
@@ -886,114 +840,146 @@ module Formatter = struct
 
   type display_register = {
     y_coord : float;
-    ast : display_input
+    ast : display_input;
+    reg_type: reg_type;
   }
   type circ_column = {
     registers : (id * display_register ) list;
     x_coordinate : float;
-  }
-  type formatted_circuit = circ_column list
-  (* let organize_no_coordinates circ =
-    let columns = assign_columns circ in
-    let reg_map = get_all_registers circ in
-    List.map (
-      fun reg_map -> (
-        StringMap.map (fun id register ->
-          match register.next with
-          | User_input -> Input id
-          | AST ast ->
-            let (ast_list, lets, regs) = (tree_to_list id_ast (get_ids id_ast) circ.comps) in
-            let columns = columnize_ast ast_list in
+  } *)
 
-        ) reg_map
-      )
-    ) columns*)
-  let reg1 = {
+  type display_reg_type = Dis_rising | Dis_falling | Dis_input | Dis_output
+  type parent = Reg of id | Node of int
+
+  let reg_type_to_display reg_type =
+    match reg_type with
+    | Rising -> Dis_rising
+    | Falling -> Dis_falling
+    | Input -> Dis_input
+    | Output -> Dis_output
+
+  type display_register = {
+    id : id;
+    reg_type :  display_reg_type;
+    x_coord : float;
+    y_coord : float;
+    node_connections : int list;
+    reg_connections : id list;
+  }
+
+  type display_node = {
+    id : int;
+    x_coord: float;
+    y_coord: float;
+    parent: parent;
+    node : node;
+  }
+
+  type display_let = {
+    id : id;
+    x_coord:float;
+    y_coord: float;
+    inputs: id list;
+    node_Connections: int list;
+    reg_connections: id list;
+  }
+  type formatted_circuit = {
+  	registers : display_register list;
+  	nodes : display_node list;
+  	lets : display_let list
+  }
+
+
+  (* let format_register reg_id register reg_list =
+    let reg =
+    match register.next with
+    | User_input -> Input reg_id
+    | AST ast ->
+      let id_ast = attach_ids ast in
+      let (ast, lets, reg) = tree_to_list id_ast reg_id reg_list in
+      AST {ast_columns=(columnize_ast ast); reg_list=StringMap.empty; let_list=(StringMap.ampty);}
+    in {y_coord=0.; ast=reg; reg_type=register.reg_type;} *)
+
+  let r1 = {
+    id = "A";
+    reg_type = Dis_input;
+    x_coord = 0.;
     y_coord = 0.;
-    ast = Input "A"
+    node_connections = [3;];
+    reg_connections = [];
   }
-
-  let reg2 = {
+  let r2 = {
+    id = "B";
+    reg_type = Dis_input;
+    x_coord = 0.;
+    y_coord = 25.;
+    node_connections = [3;];
+    reg_connections = [];
+  }
+  let r3 = {
+    id = "C";
+    reg_type = Dis_input;
+    x_coord = 0.;
     y_coord = 50.;
-    ast = Input "B"
+    node_connections = [4;];
+    reg_connections = [];
+  }
+  let r4 = {
+    id = "D";
+    reg_type = Dis_rising;
+    x_coord = 50.;
+    y_coord = 50.;
+    node_connections = [6;];
+    reg_connections = [];
+  }
+  let r5 = {
+    id = "E";
+    reg_type = Dis_output;
+    x_coord = 100.;
+    y_coord = 50.;
+    node_connections = [];
+    reg_connections = [];
+  }
+  let r = [r1;r2;r3;r4;r5;]
+
+  let n1 = {
+    id = 3;
+    x_coord = 25.;
+    y_coord = 25.;
+    parent = Node 4;
+    node = L And;
   }
 
-  let reg3 = {
-    y_coord = 100.;
-    ast = Input "C"
+  let n2 = {
+    id = 4;
+    x_coord = 35.;
+    y_coord = 50.;
+    parent = Reg "D";
+    node = L And;
   }
-
-  let col1 = {
-    x_coordinate=16.66;
-    nodes=[{
-      y_coord=25.;
-      id=3;
-      node= B(And);
-      parents=[4;];
-    }]
+  let n3 = {
+    id = 3;
+    x_coord = 75.;
+    y_coord = 55.;
+    parent = Reg "E";
+    node = Red And;
   }
-
-  let col2 = {
-    x_coordinate=33.33;
-    nodes=[{
-      y_coord=75.;
-      id=4;
-      node= B(And);
-      parents=[5;];
-    }]
-  }
-
-  let ast4 = AST {
-    ast_columns=[col1;col2];
-    reg_list=[("A", [3;]); ("B", [3;]); ("C", [4;])];
-    let_list=[];
-  }
-
-  let reg4 = {
-    y_coord=50.;
-    ast = ast4;
-  }
-
-  let col3 = {
-    x_coordinate=75.;
-    nodes=[{
-      y_coord=50.;
-      id=6;
-      node= Red (And);
-      parents=[5;];
-    }]
-  }
-
-  let ast5 = AST {
-    ast_columns=[col3;];
-    reg_list=[("D", [6;]);];
-    let_list=[];
-  }
-
-  let reg5 = {
-    y_coord=50.;
-    ast = ast5;
-  }
+  let n = [n1; n2; n3]
 
   (* Test circuit *)
   let test_circ () =
-  [
-    {x_coordinate=0.; registers=[("A", reg1); ("B", reg2); ("C", reg3);]};
-    {x_coordinate=50.; registers=[("D", reg4)]};
-    {x_coordinate=100.; registers=[("E", reg5)]};
-  ]
-
-
-
-
-
+  {
+    registers = r;
+    lets = [];
+    nodes = n;
+  }
 
   let format circ =
-  [
-  {x_coordinate=0.; registers=[("A", reg1); ("B", reg2); ("C", reg3);]};
-  {x_coordinate=50.; registers=[("D", reg4)]};
-  {x_coordinate=100.; registers=[("D", reg5)]};
-  ]
+  {
+    registers = r;
+    lets = [];
+    nodes = n;
+  }
 
   let format_format_circuit f circ = ()
     (* Format.fprintf f "Columns : %s\n\n" (string_of_int (List.length circ));
