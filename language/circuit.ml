@@ -55,13 +55,56 @@ module type StaticAnalyzer = sig
 end
 
 module type CircuitFormatter = sig
-  type formatted_circuit
-  type display_node
-  type display_let
-  type display_register
-  type display_reg_type
-  type node
-  type connection
+
+  type connection = RegOrLet of id | Node of int
+
+  type node =
+    | B of gate * connection * connection
+    | L of gate * connection * connection
+    | A of arithmetic * connection * connection
+    | N of negation * connection
+    | C of comparison * connection * connection
+    | Sub of int * int * connection * connection
+    | Nth of int * connection
+    | Subcirc of id
+    | Red of gate * connection
+    | Concat of connection list
+    | Mux of connection * connection * connection
+    | Const of bitstream
+    | Apply of id * connection list
+
+  type display_reg_type = Dis_rising | Dis_falling | Dis_input | Dis_output
+
+  type display_node = {
+    id     : int;
+    x_coord: float;
+    y_coord: float;
+    node   : node;
+  }
+
+  type display_register = {
+    id          : id;
+    reg_type    : display_reg_type;
+    x_coord     : float;
+    y_coord     : float;
+    connections : connection list
+  }
+
+  type display_let = {
+    id          : id;
+    x_coord     : float;
+    y_coord     : float;
+    inputs      : id list;
+    connections : connection list
+  }
+
+  type formatted_circuit = {
+    registers : display_register list;
+    nodes     : display_node list;
+    lets      : display_let list
+  }
+
+
   val format : circuit -> formatted_circuit
   val format_format_circuit : Format.formatter -> formatted_circuit -> unit
 end

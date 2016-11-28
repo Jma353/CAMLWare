@@ -218,18 +218,25 @@ let register_helper b l (x:float) (y:float) (edge:float) svg =
     (0.80 *. edge) 0.
     (0.85 *. edge) 1 "black") in
   let bit_vals = txt_c (edge *. 0.5) (edge *. 0.5) (edge /. 7.5) hex_str in
-  let label = txt_c (edge *. 0.8) (edge *. 0.2) (edge /. 3.5) l in
+  let label = txt_c (edge *. 0.8) (edge *. 0.2) (edge /. 4.5) l in
   let gnode = g |- frame |- line1 |- line2 |- bit_vals |- label in
   svg |- gnode
 
 (* Rising (UP) Register Component *)
 let u_register b l (x:float) (y:float) (edge:float) svg =
-  (svg |> register_helper b l x y edge)
+  (svg |> register_helper b ("Rising: " ^ l) x y edge)
 
 (* Falling (DOWN) Register Component *)
 let d_register b l (x:float) (y:float) (edge:float) svg =
-  let circ = circ_c (x -. 0.05 *. edge) (y +. edge *. 0.8) (0.05 *. edge) 1 in
-  (svg |> register_helper b l x y edge) |- circ
+  (svg |> register_helper b ("Falling: " ^ l) x y edge)
+
+(* Input Register Component *)
+let i_register b l (x:float) (y:float) (edge:float) svg =
+  (svg |> register_helper b ("Input: " ^ l) x y edge)
+
+(* Output Register Component *)
+let o_register b l (x:float) (y:float) (edge:float) svg =
+  (svg |> register_helper b ("Output: " ^ l) x y edge)
 
 (* MUX2 Component *)
 let mux2_c (x:float) (y:float) (edge:float) svg =

@@ -6,6 +6,8 @@ val path : 'a Js.js_array -> 'a Js.t -> 'a Js.t -> string -> string -> int -> st
 val constant   : Bitstream.bitstream -> float  -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val u_register : Bitstream.bitstream -> string -> float -> float -> float         -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val d_register : Bitstream.bitstream -> string -> float -> float -> float         -> ('a, 'b) D3.t -> ('a, 'b) D3.t
+val i_register : Bitstream.bitstream -> string -> float -> float -> float         -> ('a, 'b) D3.t -> ('a, 'b) D3.t
+val o_register : Bitstream.bitstream -> string -> float -> float -> float         -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 
 val mux2_c    : float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val nth_c     : float -> float -> float -> int           -> ('a, 'b) D3.t -> ('a, 'b) D3.t
