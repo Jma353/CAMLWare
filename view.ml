@@ -40,13 +40,13 @@ let rec collect_registers x_scale y_scale (regs: display_register list) acc =
   | h::t ->
     let x = x_scale h.x_coord in
     let y = y_scale h.y_coord in
-    let ones = Bitstream.ones 32 in
+    let zeros = Bitstream.zeros 32 in
     let id = h.id in
     begin match h.reg_type with
-      | Dis_rising  -> collect_registers x_scale y_scale t ((u_register ones id x y nonNodeS)::acc)
-      | Dis_falling -> collect_registers x_scale y_scale t ((d_register ones id x y nonNodeS)::acc)
-      | Dis_input   -> collect_registers x_scale y_scale t ((i_register ones id x y nonNodeS)::acc)
-      | Dis_output  -> collect_registers x_scale y_scale t ((o_register ones id x y nonNodeS)::acc)
+      | Dis_rising  -> collect_registers x_scale y_scale t ((u_register zeros id x y nonNodeS)::acc)
+      | Dis_falling -> collect_registers x_scale y_scale t ((d_register zeros id x y nonNodeS)::acc)
+      | Dis_input   -> collect_registers x_scale y_scale t ((i_register zeros id x y nonNodeS)::acc)
+      | Dis_output  -> collect_registers x_scale y_scale t ((o_register zeros id x y nonNodeS)::acc)
     end
 
 (* Collect lets to add to the screen *)
@@ -177,6 +177,12 @@ let rec collect_nodes x_scale y_scale (n:display_node list) acc =
   | [] -> acc
   | h::t -> collect_nodes x_scale y_scale t (handle_node x_scale y_scale h acc)
 
+(* Applies all views to a container *)
+let rec apply_views views container =
+  match views with
+  | []   -> container
+  | h::t -> apply_views t (container |> h)
+
 (* Collects a list of functions to be applied to a view, as well as map
  * info regarding inputs & outputs. *)
 let collect_views (width:int) (height:int) (c: formatted_circuit) =
@@ -193,20 +199,18 @@ let collect_views (width:int) (height:int) (c: formatted_circuit) =
   let x_n_scale = make_node_scale width_f in
   let y_n_scale = make_node_scale height_f in
 
-  (* Collect the registers & lets *)
+  (* Collect Everything *)
   let regs = collect_registers x_nn_scale y_nn_scale c.registers [] in
   let lets = collect_lets x_nn_scale y_nn_scale c.lets [] in
-
-  (* Collect nodes + mapping *)
   let e_map = IntMap.empty in
   let stuff = collect_nodes x_n_scale y_n_scale c.nodes (e_map,[]) in
-
-  (* Nodes *)
   let nodes = snd stuff in
   let map = fst stuff in
-
-  (* Collect wires *)
   let wires = collect_wires x_n_scale y_n_scale map c.nodes [] in
 
-
   regs @ lets @ nodes @ wires
+
+
+(* The function to call *)
+let make (width:int) (height:int) (c: formatted_circuit) container =
+  apply_views (collect_views width height c) container
