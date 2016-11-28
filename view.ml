@@ -5,11 +5,11 @@ open Circuit
 open Circuit.Formatter
 
 (* Sizes *)
-let nonNodeS = 100.
+let nonNodeS = 80.
 let nodeS = 50.
 
-(* Representing a location (of inputs &/or outputs) *)
-type point = { x : int; y : int }
+(* Representing an output *)
+type point = { x : float; y : float }
 
 (* Mini-Int module for use in mapping id's to channels *)
 module Int = struct
@@ -28,10 +28,8 @@ module IntMap = Map.Make(Int)
 let make_scale dim edge =
   (fun x -> dim *. x /. 100. -. edge /. 2.)
 
-(* Make a scale for placing down nodes *)
+(* Scale creation *)
 let make_node_scale dim = make_scale dim nodeS
-
-(* Make a scale for placing down non-nodes *)
 let make_non_node_scale dim = make_scale dim nonNodeS
 
 (* Collect registers to add to the screen *)
@@ -59,6 +57,33 @@ let rec collect_lets x_scale y_scale (lets: display_let list) acc =
     let y = y_scale h.y_coord in
     let id = h.id in
     collect_lets x_scale y_scale t ((let_c id x y nonNodeS)::acc)
+
+(* Add wirings of a node to a properly accumulating list *)
+let rec make_wirings c_s map n x base_y space acc =
+  match c_s with
+  | [] -> acc
+  | c::t ->
+    let y = base_y +. (float_of_int n) *. space in
+    begin match c with
+      | RegOrLet id ->
+        make_wirings t map (n+1) x base_y space ((tunnel id x y nodeS)::acc)
+      | Node i ->
+        let i_i = Int.make i in
+        let pt = IntMap.find i_i map in
+        make_wirings t map (n+1) x base_y space ((wiring pt.x pt.y x y)::acc)
+    end
+
+(* Process node wirings accordingly *)
+let process_node_wirings c_s map cx cy side acc = failwith "Unimplemented"
+
+(* Adds wiring based on the type of node to exist *)
+let handle_wiring x_scale y_scale (n:display_node) acc =
+  let cx = x_scale n.x_coord in
+  let cy = x_scale n.y_coord in
+
+  (* Match on the type of node *)
+  failwith "Unimplemented"
+
 
 
 
