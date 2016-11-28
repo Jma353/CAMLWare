@@ -35,15 +35,7 @@ let view dims padding =
   (* Base container *)
   let container = (svg |- border_rect) <.> g in
 
-  (* Setup for view *)
-  let x_scale = make_scale (dims.width - 2 * padding) in
-  let y_scale = make_scale (dims.height - 2 * padding) in
-  let comps = gather_components (test_circ ()) x_scale y_scale in
-
-
-  (* Result view *)
-  apply_to_view comps container
-
+  container
 
 ;;
 

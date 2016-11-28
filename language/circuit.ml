@@ -860,7 +860,7 @@ module Formatter : CircuitFormatter = struct
     reg_type :  display_reg_type;
     x_coord : float;
     y_coord : float;
-    connections : parent list 
+    connections : parent list
   }
 
   type display_node = {
@@ -901,40 +901,35 @@ module Formatter : CircuitFormatter = struct
     reg_type = Dis_input;
     x_coord = 0.;
     y_coord = 0.;
-    node_connections = [3;];
-    reg_connections = [];
+    connections = [Node 3;];
   }
   let r2 = {
     id = "B";
     reg_type = Dis_input;
     x_coord = 0.;
     y_coord = 25.;
-    node_connections = [3;];
-    reg_connections = [];
+    connections = [Node 3;];
   }
   let r3 = {
     id = "C";
     reg_type = Dis_input;
     x_coord = 0.;
     y_coord = 50.;
-    node_connections = [4;];
-    reg_connections = [];
+    connections = [Node 4;];
   }
   let r4 = {
     id = "D";
     reg_type = Dis_rising;
     x_coord = 50.;
     y_coord = 50.;
-    node_connections = [6;];
-    reg_connections = [];
+    connections = [Node 6;];
   }
   let r5 = {
     id = "E";
     reg_type = Dis_output;
     x_coord = 100.;
     y_coord = 50.;
-    node_connections = [];
-    reg_connections = [];
+    connections = [];
   }
   let r = [r1;r2;r3;r4;r5;]
 
