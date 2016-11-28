@@ -23,6 +23,7 @@ let view dims padding =
   (* Circuit Container *)
   let g =
     (append "g"
+    |. str attr "class" "circuit"
     |. str attr "transform" (translate padding padding)) in
 
   (* Border *)
@@ -41,16 +42,22 @@ let view dims padding =
 
   (* Add things to g *)
 
-
   (* Return the result *)
-  bordered_svg |- g
+  let circuit = bordered_svg |- g in
 
+  (* Compilation box *)
+  let input_box =
+    static "div"
+    |. seq [
+        static "textarea"
+        |. str attr "class" "code"
+        |. int attr "rows" 10
+        |. int attr "cols" 80] in
+
+  seq [circuit; input_box]
 
 ;;
 
 let _ =
   (run ~node:(Dom_html.document##body)
-  (view {
-    width = 800;
-    height = 500;
-  } 100) ())
+  (view { width = 800; height = 400; } 100) ())
