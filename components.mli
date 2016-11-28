@@ -41,6 +41,7 @@ val subtract_c               : float -> float -> float -> ('a, 'b) D3.t -> ('a, 
 val shift_left_logical       : float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val shift_right_logical      : float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val shift_right_arithmetic   : float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
+val concat_c                 : float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 
 val let_c      : string -> float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val sub_circ_c : string -> float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t

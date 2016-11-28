@@ -73,19 +73,40 @@ let rec make_wirings c_s map n x base_y space acc =
         make_wirings t map (n+1) x base_y space ((wiring pt.x pt.y x y)::acc)
     end
 
-(* Process node wirings accordingly *)
-let process_node_wirings c_s map cx cy side acc = failwith "Unimplemented"
+(* Process node wirings (after categorizing which node we have) *)
+let process_node_wirings c_s map cx cy acc =
+  let side = nodeS in
+  let n = List.length c_s in
+  let x = cx -. side /. 2. in
+  let base_y = cy -. side /. 2. in
+  match n with
+  | 1 -> make_wirings c_s map 1 x base_y (side /. 2.) acc
+  | 2 -> make_wirings c_s map 0 x base_y side acc
+  | a -> make_wirings c_s map 0 x base_y (side /. ((float_of_int a) -. 1.)) acc
 
 (* Adds wiring based on the type of node to exist *)
-let handle_wiring x_scale y_scale (n:display_node) acc =
+let handle_wiring x_scale y_scale map (n:display_node) acc =
   let cx = x_scale n.x_coord in
-  let cy = x_scale n.y_coord in
+  let cy = y_scale n.y_coord in
+  match n.node with
+  | B (_,c1,c2)     -> process_node_wirings [c1;c2] map cx cy acc
+  | L (_,c1,c2)     -> process_node_wirings [c1;c2] map cx cy acc
+  | A (_,c1,c2)     -> process_node_wirings [c1;c2] map cx cy acc
+  | N (_,c)         -> process_node_wirings [c] map cx cy acc
+  | C (_,c1,c2)     -> process_node_wirings [c1;c2] map cx cy acc
+  | Sub (_,_,c1,c2) -> process_node_wirings [c1;c2] map cx cy acc
+  | Nth (_,c)       -> process_node_wirings [c] map cx cy acc
+  | Red (_,c)       -> process_node_wirings [c] map cx cy acc
+  | Concat c_s      -> process_node_wirings c_s map cx cy acc
+  | Mux (c1,c2,c3)  -> process_node_wirings [c1;c2;c3] map cx cy acc
+  | Const _         -> acc
+  | Apply (_,c_s)   -> process_node_wirings c_s map cx cy acc
 
-  (* Match on the type of node *)
-  failwith "Unimplemented"
-
-
-
+(* Collect wires to add to the screen *)
+let rec collect_wires x_scale y_scale map (n_s:display_node list) acc =
+  match n_s with
+  | [] -> acc
+  | h::t -> collect_wires x_scale y_scale map t (handle_wiring x_scale y_scale map h acc)
 
 (* Collects a list of functions to be applied to a view, as well as map
  * info regarding inputs & outputs. *)
@@ -106,6 +127,9 @@ let collect_views (width:int) (height:int) (c: formatted_circuit) =
   (* Collect the registers & lets *)
   let regs = collect_registers x_nn_scale y_nn_scale c.registers [] in
   let lets = collect_lets x_nn_scale y_nn_scale c.lets [] in
+
+  (* Collect nodes + mapping from ints to output *)
+  (* Collect wires *)
 
   let result = regs @ lets in
 

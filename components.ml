@@ -68,7 +68,7 @@ let wiring (x1:float) (y1:float) (x2:float) (y2:float) svg =
 let tunnel (l:string) (x:float) (y:float) (edge:float) svg =
   let x1 = x -. edge *. 0.1 in
   let mini_wire = line_comp x1 y x y 1 "black" in
-  let label = txt_c (x1 -. edge *. 0.1) y (edge /. 4.) l in 
+  let label = txt_c (x1 -. edge *. 0.1) y (edge /. 4.) l in
   svg |- mini_wire |- label
 
 (* [neg_dot x y edge red svg] assists in the creation of a negation dot at the
@@ -406,6 +406,10 @@ let shift_right_logical (x:float) (y:float) (edge:float) svg =
 (* Shift Right Arithmetic Component *)
 let shift_right_arithmetic (x:float) (y:float) (edge:float) svg =
   svg |> box_with_symbol x y edge ">>>"
+
+(* Concat Component *)
+let concat_c (x:float) (y:float) (edge:float) svg =
+  svg |> box_with_symbol x y edge "Concat"
 
 (* Let-statement Component *)
 let let_c v (x:float) (y:float) (edge:float) svg =

@@ -100,7 +100,6 @@ module type CircuitFormatter = sig
     | C of comparison * connection * connection
     | Sub of int * int * connection * connection
     | Nth of int * connection
-    | Subcirc of id
     | Red of gate * connection
     | Concat of connection list
     | Mux of connection * connection * connection
