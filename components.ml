@@ -363,6 +363,10 @@ let logical_or (x:float) (y:float) (edge:float) svg =
 let logical_not (x:float) (y:float) (edge:float) svg =
   svg |> box_with_symbol x y edge "!"
 
+(* Bitwise NOT Component *)
+let bitwise_not (x:float) (y:float) (edge:float) svg =
+  svg |> box_with_symbol x y edge "!(b)"
+
 (* < Component *)
 let less_than (x:float) (y:float) (edge:float) svg =
   svg |> box_with_symbol x y edge "<"

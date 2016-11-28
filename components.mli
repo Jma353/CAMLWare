@@ -30,6 +30,7 @@ val red_nxor                 : float -> float -> float -> ('a, 'b) D3.t -> ('a, 
 val logical_and              : float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val logical_or               : float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val logical_not              : float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
+val bitwise_not              : float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val less_than                : float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val greater_than             : float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val equal_to                 : float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t

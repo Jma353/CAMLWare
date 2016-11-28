@@ -3,6 +3,7 @@ open Extensions
 open Components
 open Circuit
 open Circuit.Formatter
+open Combinational
 
 (* Sizes *)
 let nonNodeS = 80.
@@ -108,6 +109,74 @@ let rec collect_wires x_scale y_scale map (n_s:display_node list) acc =
   | [] -> acc
   | h::t -> collect_wires x_scale y_scale map t (handle_wiring x_scale y_scale map h acc)
 
+(* Adds a node to the view *)
+let handle_node x_scale y_scale (n:display_node) stuff =
+  let id_i = Int.make n.id in
+  let acc = snd stuff in
+  let x = x_scale n.x_coord in
+  let y = y_scale n.y_coord in
+  let map = IntMap.add id_i {x = x +. nodeS /. 2.; y} (fst stuff) in
+  match n.node with
+  | B (g,_,_) ->
+    begin match g with
+    | And  -> (map, (arith_and x y nodeS) ::acc)
+    | Or   -> (map, (arith_or x y nodeS)  ::acc)
+    | Xor  -> (map, (arith_xor x y nodeS) ::acc)
+    | Nand -> (map, (arith_nand x y nodeS)::acc)
+    | Nor  -> (map, (arith_nor x y nodeS) ::acc)
+    | Nxor -> (map, (arith_nxor x y nodeS)::acc)
+    end
+  | L (g,_,_) ->
+    begin match g with
+    | And -> (map, (logical_and x y nodeS) ::acc)
+    | Or  -> (map, (logical_or x y nodeS)  ::acc)
+    | _   -> failwith "not possible"
+    end
+  | Red (g,_) ->
+    begin match g with
+    | And  -> (map, (red_and x y nodeS) ::acc)
+    | Or   -> (map, (red_or x y nodeS)  ::acc)
+    | Xor  -> (map, (red_xor x y nodeS) ::acc)
+    | Nand -> (map, (red_nand x y nodeS)::acc)
+    | Nor  -> (map, (red_nor x y nodeS) ::acc)
+    | Nxor -> (map, (red_nxor x y nodeS)::acc)
+    end
+  | A (a,_,_) ->
+    begin match a with
+    | Add      -> (map, (add_c x y nodeS)                 ::acc)
+    | Subtract -> (map, (subtract_c x y nodeS)            ::acc)
+    | Sll      -> (map, (shift_left_logical x y nodeS)    ::acc)
+    | Srl      -> (map, (shift_right_logical x y nodeS)   ::acc)
+    | Sra      -> (map, (shift_right_arithmetic x y nodeS)::acc)
+    end
+  | N (n,_) ->
+    begin match n with
+    | Neg_bitwise    -> (map, (bitwise_not x y nodeS)::acc)
+    | Neg_logical    -> (map, (logical_not x y nodeS)::acc)
+    | Neg_arithmetic -> (map, (arith_not x y nodeS)  ::acc)
+    end
+  | C (c,_,_) ->
+    begin match c with
+    | Lt  -> (map, (less_than x y nodeS)               ::acc)
+    | Gt  -> (map, (greater_than x y nodeS)            ::acc)
+    | Eq  -> (map, (equal_to x y nodeS)                ::acc)
+    | Lte -> (map, (less_than_or_equal_to x y nodeS)   ::acc)
+    | Gte -> (map, (greater_than_or_equal_to x y nodeS)::acc)
+    | Neq -> (map, (not_equal_to x y nodeS)            ::acc)
+    end
+  | Sub (i1,i2,_,_) -> (map, (sub_seq_c x y nodeS i1 i2)::acc)
+  | Nth (n,_)       -> (map, (nth_c x y nodeS n)        ::acc)
+  | Concat (_)      -> (map, (concat_c x y nodeS)       ::acc)
+  | Mux (_,_,_)     -> (map, (mux2_c x y nodeS)         ::acc)
+  | Const b         -> (map, (constant b x y nodeS)     ::acc)
+  | Apply (id,_)    -> (map, (sub_circ_c id x y nodeS)  ::acc)
+
+(* Collect (mapping,acc) from nodes *)
+let rec collect_nodes x_scale y_scale (n:display_node list) acc =
+  match n with
+  | [] -> acc
+  | h::t -> collect_nodes x_scale y_scale t (handle_node x_scale y_scale h acc)
+
 (* Collects a list of functions to be applied to a view, as well as map
  * info regarding inputs & outputs. *)
 let collect_views (width:int) (height:int) (c: formatted_circuit) =
@@ -128,11 +197,16 @@ let collect_views (width:int) (height:int) (c: formatted_circuit) =
   let regs = collect_registers x_nn_scale y_nn_scale c.registers [] in
   let lets = collect_lets x_nn_scale y_nn_scale c.lets [] in
 
-  (* Collect nodes + mapping from ints to output *)
+  (* Collect nodes + mapping *)
+  let e_map = IntMap.empty in
+  let stuff = collect_nodes x_n_scale y_n_scale c.nodes (e_map,[]) in
+
+  (* Nodes *)
+  let nodes = snd stuff in
+  let map = fst stuff in
+
   (* Collect wires *)
-
-  let result = regs @ lets in
-
+  let wires = collect_wires x_n_scale y_n_scale map c.nodes [] in
 
 
-  result
+  regs @ lets @ nodes @ wires
