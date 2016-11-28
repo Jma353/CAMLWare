@@ -152,7 +152,7 @@ let box_with_symbol (x:float) (y:float) (edge:float) sym svg =
     |. str style "fill" "none"
     |. int style "stroke-width" 1) in
   let sym_c = txt_c (edge *. 0.5) (edge *. 0.5) (edge /. 2.) sym in
-  let gnode = (g |- frame) |- sym_c in
+  let gnode = g |- frame |- sym_c in
   svg |- gnode
 
 (* [sub_bits width height x y txt_x txt_y msg svg] assists in the creation of a
@@ -172,7 +172,7 @@ let sub_bits edge width height x y txt_x txt_y msg svg =
   let num_bits =
     (txt_c txt_x txt_y
            (edge /. 3.) msg) in
-  (svg |- box) |- num_bits
+  svg |- box |- num_bits
 
 (* Constant Component *)
 let constant b (x:float) (y:float) (edge:float) svg =
@@ -192,12 +192,12 @@ let constant b (x:float) (y:float) (edge:float) svg =
     |. str style "fill" "none"
     |. int style "stroke-width" 1) in
   let words = txt_c (w *. 0.5) (edge *. 0.5) (w /. 7.5) hex_str in
-  let gnode = (g |- frame) |- words in
+  let gnode = g |- frame |- words in
   svg |- gnode
 
 (* [register_helper b x y edge float svg] assists in the creation of a
  * component that shows a register *)
-let register_helper b (x:float) (y:float) (edge:float) svg =
+let register_helper b l (x:float) (y:float) (edge:float) svg =
   let g = container x y in
   let hex_str = Bitstream.bitstream_to_hexstring b in
   let frame =
@@ -218,17 +218,18 @@ let register_helper b (x:float) (y:float) (edge:float) svg =
     (0.80 *. edge) 0.
     (0.85 *. edge) 1 "black") in
   let bit_vals = txt_c (edge *. 0.5) (edge *. 0.5) (edge /. 7.5) hex_str in
-  let gnode = (((g |- frame) |- line1) |- line2) |- bit_vals in
+  let label = txt_c (edge *. 0.8) (edge *. 0.2) (edge /. 3.5) l in
+  let gnode = g |- frame |- line1 |- line2 |- bit_vals |- label in
   svg |- gnode
 
 (* Rising (UP) Register Component *)
-let u_register b (x:float) (y:float) (edge:float) svg =
-  (svg |> register_helper b x y edge)
+let u_register b l (x:float) (y:float) (edge:float) svg =
+  (svg |> register_helper b l x y edge)
 
 (* Falling (DOWN) Register Component *)
-let d_register b (x:float) (y:float) (edge:float) svg =
+let d_register b l (x:float) (y:float) (edge:float) svg =
   let circ = circ_c (x -. 0.05 *. edge) (y +. edge *. 0.8) (0.05 *. edge) 1 in
-  (svg |> register_helper b x y edge) |- circ
+  (svg |> register_helper b l x y edge) |- circ
 
 (* MUX2 Component *)
 let mux2_c (x:float) (y:float) (edge:float) svg =

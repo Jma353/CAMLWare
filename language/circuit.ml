@@ -110,7 +110,7 @@ module type CircuitFormatter = sig
   val test_circ : unit -> formatted_circuit
 
   val format_format_circuit : Format.formatter -> formatted_circuit -> unit
-  
+
 end
 
 
@@ -980,8 +980,10 @@ module Formatter = struct
   [
     {x_coordinate=0.; registers=[("A", reg1); ("B", reg2); ("C", reg3);]};
     {x_coordinate=50.; registers=[("D", reg4)]};
-    {x_coordinate=100.; registers=[("D", reg5)]};
+    {x_coordinate=100.; registers=[("E", reg5)]};
   ]
+
+
 
 
 

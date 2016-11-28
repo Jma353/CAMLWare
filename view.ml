@@ -4,14 +4,14 @@ open Components
 open Circuit
 open Circuit.Formatter
 
-let side = 40.
+let side = 50.
 
 let make_scale size =
   (fun x -> (x /. 100.) *. (float_of_int size) -. side /. 2.)
 
 let add_reg reg x y_scale funcs =
   match reg with
-  | (id, r) -> (u_register (Bitstream.ones 32) x (y_scale r.y_coord) side)::funcs
+  | (id, r) -> (u_register (Bitstream.ones 32) id x (y_scale r.y_coord) side)::funcs
 
 let rec process_regs regs x y_scale funcs =
   match regs with
