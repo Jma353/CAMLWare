@@ -90,12 +90,61 @@ module type CircuitFormatter = sig
   (* This module contains the functions for formatting a circuit in preparation
    * for rendering it *)
 
-  (* This type represents a circuit with attached coordinate information *)
-  type formatted_circuit
+  type node =
+    | Register of id
+    | Let of id
+    | B of gate
+    | L of gate
+    | A of arithmetic
+    | N of negation
+    | C of comparison
+    | Sub of int * int
+    | Nth of int
+    | Subcirc of id
+    | Red of gate
+    | Concat of int list
+    | Mux of int * int * int
+    | Const of bitstream
+    | Apply of id * int list
+
+  type display_info = {
+    y_coord : float;
+    id : int;
+    node : node;
+    parents : int list;
+  }
+
+  type ast_column = {
+    x_coordinate : float;
+    nodes : display_info list
+  }
+
+  type display_ast = {
+    ast_columns : ast_column list;
+    reg_list : (id * int list) list;
+    let_list : (id * int list) list;
+  }
+
+  type display_input = Input of id | AST of display_ast
+
+  type display_register = {
+    y_coord : float;
+    ast : display_input
+  }
+
+  type circ_column = {
+    registers : (id * display_register ) list;
+    x_coordinate : float;
+  }
+
+  type formatted_circuit = circ_column list
 
   (* [format circ] is a representation of [circ] with coordinate information
    * attached for rendering *)
   val format : circuit -> formatted_circuit
+
+  (* [test_circ] is a test circuit *)
+  val test_circ : unit -> formatted_circuit
 
   (* [format_format_circuit f circ] format a formatted circuit for printing *)
   val format_format_circuit : Format.formatter -> formatted_circuit -> unit

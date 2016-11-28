@@ -55,10 +55,64 @@ module type StaticAnalyzer = sig
 end
 
 module type CircuitFormatter = sig
-  type formatted_circuit
+
+  type node =
+    | Register of id
+    | Let of id
+    | B of gate
+    | L of gate
+    | A of arithmetic
+    | N of negation
+    | C of comparison
+    | Sub of int * int
+    | Nth of int
+    | Subcirc of id
+    | Red of gate
+    | Concat of int list
+    | Mux of int * int * int
+    | Const of bitstream
+    | Apply of id * int list
+
+  type display_info = {
+    y_coord : float;
+    id : int;
+    node : node;
+    parents : int list;
+  }
+
+  type ast_column = {
+    x_coordinate : float;
+    nodes : display_info list
+  }
+
+  type display_ast = {
+    ast_columns : ast_column list;
+    reg_list : (id * int list) list;
+    let_list : (id * int list) list;
+  }
+
+  type display_input = Input of id | AST of display_ast
+
+  type display_register = {
+    y_coord : float;
+    ast : display_input
+  }
+
+  type circ_column = {
+    registers : (id * display_register ) list;
+    x_coordinate : float;
+  }
+
+  type formatted_circuit = circ_column list
+
   val format : circuit -> formatted_circuit
+
+  val test_circ : unit -> formatted_circuit
+
   val format_format_circuit : Format.formatter -> formatted_circuit -> unit
+  
 end
+
 
 let make_register length logic reg_type =
   Register {
@@ -563,7 +617,7 @@ module Analyzer : StaticAnalyzer = struct
 end
 
 
-module Formatter : CircuitFormatter = struct
+module Formatter = struct
 
   type comb_id =
     | Id_Const     of int * bitstream
@@ -895,12 +949,10 @@ module Formatter : CircuitFormatter = struct
     let_list=[];
   }
 
-
   let reg4 = {
     y_coord=50.;
     ast = ast4;
   }
-
 
   let col3 = {
     x_coordinate=75.;
@@ -918,18 +970,28 @@ module Formatter : CircuitFormatter = struct
     let_list=[];
   }
 
-
   let reg5 = {
     y_coord=50.;
     ast = ast5;
   }
 
+  (* Test circuit *)
+  let test_circ () =
+  [
+    {x_coordinate=0.; registers=[("A", reg1); ("B", reg2); ("C", reg3);]};
+    {x_coordinate=50.; registers=[("D", reg4)]};
+    {x_coordinate=100.; registers=[("D", reg5)]};
+  ]
+
+
+
+
   let format circ =
-      [
-      {x_coordinate=0.; registers=[("A", reg1); ("B", reg2); ("C", reg3);]};
-      {x_coordinate=50.; registers=[("D", reg4)]};
-      {x_coordinate=100.; registers=[("D", reg5)]};
-      ]
+  [
+  {x_coordinate=0.; registers=[("A", reg1); ("B", reg2); ("C", reg3);]};
+  {x_coordinate=50.; registers=[("D", reg4)]};
+  {x_coordinate=100.; registers=[("D", reg5)]};
+  ]
 
   let format_format_circuit f circ = ()
     (* Format.fprintf f "Columns : %s\n\n" (string_of_int (List.length circ));
