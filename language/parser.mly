@@ -79,8 +79,6 @@ comb:
     { Let (x, def, eval) }
   | IF; cond = comb; THEN; then_expr = comb; ELSE; else_expr = comb %prec IF
     { Mux2 (cond, else_expr, then_expr) }
-  | f = VAR; LPAREN; args = separated_list(COMMA, comb); RPAREN
-    { Apply (f, args) }
   | c1 = comb; op = arith_op; c2 = comb
     { Arith (op, c1, c2) }
   | c1 = comb; op = gate; c2 = comb
@@ -107,10 +105,16 @@ array_access:
 ;
 
 primary:
-  | id = VAR                                                    { Var id }
-  | n = STREAM                                                  { Const n }
-  | LPAREN; c = comb; RPAREN                                    { c }
-  | LBRACE; args = separated_nonempty_list(COMMA, comb); RBRACE { Concat args }
+  | id = VAR
+    { Var id }
+  | n = STREAM
+    { Const n }
+  | f = VAR; LPAREN; args = separated_list(COMMA, comb); RPAREN
+    { Apply (f, args) }
+  | LPAREN; c = comb; RPAREN
+    { c }
+  | LBRACE; args = separated_nonempty_list(COMMA, comb); RBRACE
+    { Concat args }
 ;
 
 %inline arith_op:
