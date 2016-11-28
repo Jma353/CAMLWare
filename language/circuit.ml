@@ -57,13 +57,9 @@ end
 module type CircuitFormatter = sig
   type formatted_circuit
   type display_node
-
   type display_let
-
   type display_register
-
   type display_reg_type
-
   type node
   val format : circuit -> formatted_circuit
   val format_format_circuit : Format.formatter -> formatted_circuit -> unit
@@ -851,6 +847,7 @@ module Formatter : CircuitFormatter = struct
   type display_reg_type = Dis_rising | Dis_falling | Dis_input | Dis_output
   type parent = Reg of id | Node of int
 
+
   let reg_type_to_display reg_type =
     match reg_type with
     | Rising -> Dis_rising
@@ -863,8 +860,7 @@ module Formatter : CircuitFormatter = struct
     reg_type :  display_reg_type;
     x_coord : float;
     y_coord : float;
-    node_connections : int list;
-    reg_connections : id list;
+    connections : parent list 
   }
 
   type display_node = {
@@ -880,9 +876,9 @@ module Formatter : CircuitFormatter = struct
     x_coord:float;
     y_coord: float;
     inputs: id list;
-    node_Connections: int list;
-    reg_connections: id list;
+    connections : parent list
   }
+
   type formatted_circuit = {
   	registers : display_register list;
   	nodes : display_node list;
