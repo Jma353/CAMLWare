@@ -108,6 +108,17 @@ module type CircuitFormatter = sig
   val format_format_circuit : Format.formatter -> formatted_circuit -> unit
 end
 
+(* [is_subcirc comp] is true if [comp] is a subcircuit, false otherwise *)
+let is_subcirc _ = function
+  | Subcirc _ -> true
+  | _ -> false
+
+(* [is_reg_type t comp] is true if [comp] is a register of type [t], false
+ * otherwise *)
+let is_reg_type t _ = function
+  | Register r -> r.reg_type = t
+  | _ -> false
+
 let make_register length logic reg_type =
   Register {
     reg_type = reg_type;
@@ -146,6 +157,10 @@ let circuit_from_list l =
     List.fold_left (fun acc (k,v) -> StringMap.add k v acc) StringMap.empty in
   l |> map_of_assoclist |> circuit
 
+let register_values circ =
+  circ.comps |> (StringMap.filter (fun k v -> not (is_subcirc k v))) |>
+  (StringMap.map (function Register r -> r.value | _ -> failwith "impossible"))
+
 let format_register_input f input =
   match input with
   | User_input -> Format.fprintf f "User Input"
@@ -176,17 +191,6 @@ let format_circuit f circ =
   StringMap.iter
     (fun id comp -> Format.fprintf f ("%s =\n%a\n\n") id (format_comp) comp)
     circ.comps
-
-(* [is_subcirc comp] is true if [comp] is a subcircuit, false otherwise *)
-let is_subcirc _ = function
-  | Subcirc _ -> true
-  | _ -> false
-
-(* [is_reg_type t comp] is true if [comp] is a register of type [t], false
- * otherwise *)
-let is_reg_type t _ = function
-  | Register r -> r.reg_type = t
-  | _ -> false
 
 (************************ eval ***********************)
 
@@ -266,7 +270,9 @@ module Simulator : CircuitSimulator = struct
                           then eval_hlpr circ c3 env
                           else eval_hlpr circ c2 env
     | Apply (id,clst) -> let subcirc = StringMap.find id circ.comps in
-                          let Subcirc s = subcirc in
+                          let s = (match subcirc with
+                              | Subcirc sub -> sub
+                              | _ -> failwith "Tried to apply a register") in
                           let (nv, comb1) = eval_apply subcirc circ clst env in
                           subcirc_len_check (eval_hlpr circ comb1 nv) s.length
     | Let (id,c1,c2) -> let b1 = (eval_hlpr circ c1 env) in
