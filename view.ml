@@ -60,6 +60,8 @@ let rec collect_lets x_scale y_scale (lets: display_let list) acc =
     let id = h.id in
     collect_lets x_scale y_scale t ((let_c id x y nonNodeS)::acc)
 
+
+
 (* Collects a list of functions to be applied to a view, as well as map
  * info regarding inputs & outputs. *)
 let collect_views (width:int) (height:int) (c: formatted_circuit) =

@@ -57,6 +57,14 @@ let path d x_scale y_scale fill stroke width interp svg =
     |. int style "stroke-width" width) in
   svg |- path_comp
 
+(* Wiring from (x1,y2) -> (x2,y2) Component *)
+let wiring (x1:float) (y1:float) (x2:float) (y2:float) svg =
+  let scale = linear (0,100) (0,100) in (* 1:1 ratio *)
+  let lst = [(x1,y1);((x1 +. x2) /. 2., y1);((x1 +. x2) /. 2., y2);(x2,y2)] in
+  let d = list_to_coord_js_array lst in
+  path d scale scale "none" "black" 1 "linear" svg
+
+
 (* [neg_dot x y edge red svg] assists in the creation of a negation dot at the
  * end of a particular logic gate *)
 let neg_dot (x:float) (y:float) (edge:float) red svg =

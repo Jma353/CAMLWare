@@ -1,7 +1,7 @@
 open D3
 open Extensions
 
-val path : 'a Js.js_array -> 'a Js.t -> 'a Js.t -> string -> string -> int -> string -> ('b, 'c) D3.t -> ('b, 'c) D3.t
+val wiring : float -> float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 
 val constant   : Bitstream.bitstream -> float  -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val u_register : Bitstream.bitstream -> string -> float -> float -> float         -> ('a, 'b) D3.t -> ('a, 'b) D3.t
