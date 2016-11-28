@@ -61,6 +61,7 @@ module type CircuitFormatter = sig
   type display_register
   type display_reg_type
   type node
+  type connection
   val format : circuit -> formatted_circuit
   val format_format_circuit : Format.formatter -> formatted_circuit -> unit
 end
@@ -715,9 +716,25 @@ module Formatter : CircuitFormatter = struct
   | Id_Apply (id, _, _ ) -> id
   | Id_Let (id, _, _, _ ) -> id
 
-  type node =  B of gate | L of gate | A of arithmetic
-  | N of negation | C of comparison | Sub of int*int | Nth of int | Subcirc of id |
-  Red of gate | Concat of int list | Mux of int *int * int | Const of bitstream | Apply of id * int list
+  (* Categorizes a register or node connection *)
+  type connection = RegOrLet of id | Node of int
+
+  (* Any type of non-Let/Reg node (with all input info preserved) *)
+  type node =
+    | B of gate * connection * connection
+    | L of gate * connection * connection
+    | A of arithmetic * connection * connection
+    | N of negation * connection
+    | C of comparison * connection * connection
+    | Sub of int * int * connection * connection
+    | Nth of int * connection
+    | Subcirc of id
+    | Red of gate * connection
+    | Concat of connection list
+    | Mux of connection * connection * connection
+    | Const of bitstream
+    | Apply of id * connection list
+
 
   type display_info = {
     y_coord : float;
@@ -845,8 +862,6 @@ module Formatter : CircuitFormatter = struct
   } *)
 
   type display_reg_type = Dis_rising | Dis_falling | Dis_input | Dis_output
-  type parent = Reg of id | Node of int
-
 
   let reg_type_to_display reg_type =
     match reg_type with
@@ -855,34 +870,33 @@ module Formatter : CircuitFormatter = struct
     | Input -> Dis_input
     | Output -> Dis_output
 
-  type display_register = {
-    id : id;
-    reg_type :  display_reg_type;
-    x_coord : float;
-    y_coord : float;
-    connections : parent list
-  }
-
   type display_node = {
-    id : int;
+    id     : int;
     x_coord: float;
     y_coord: float;
-    parent: parent;
-    node : node;
+    node   : node;
+  }
+
+  type display_register = {
+    id          : id;
+    reg_type    : display_reg_type;
+    x_coord     : float;
+    y_coord     : float;
+    connections : connection list
   }
 
   type display_let = {
-    id : id;
-    x_coord:float;
-    y_coord: float;
-    inputs: id list;
-    connections : parent list
+    id          : id;
+    x_coord     : float;
+    y_coord     : float;
+    inputs      : id list;
+    connections : connection list
   }
 
   type formatted_circuit = {
-  	registers : display_register list;
-  	nodes : display_node list;
-  	lets : display_let list
+    registers : display_register list;
+    nodes     : display_node list;
+    lets      : display_let list
   }
 
 
@@ -903,6 +917,7 @@ module Formatter : CircuitFormatter = struct
     y_coord = 0.;
     connections = [Node 3;];
   }
+
   let r2 = {
     id = "B";
     reg_type = Dis_input;
@@ -910,6 +925,7 @@ module Formatter : CircuitFormatter = struct
     y_coord = 25.;
     connections = [Node 3;];
   }
+
   let r3 = {
     id = "C";
     reg_type = Dis_input;
@@ -917,6 +933,7 @@ module Formatter : CircuitFormatter = struct
     y_coord = 50.;
     connections = [Node 4;];
   }
+
   let r4 = {
     id = "D";
     reg_type = Dis_rising;
@@ -924,6 +941,7 @@ module Formatter : CircuitFormatter = struct
     y_coord = 50.;
     connections = [Node 6;];
   }
+
   let r5 = {
     id = "E";
     reg_type = Dis_output;
@@ -931,30 +949,30 @@ module Formatter : CircuitFormatter = struct
     y_coord = 50.;
     connections = [];
   }
+
   let r = [r1;r2;r3;r4;r5;]
 
   let n1 = {
     id = 3;
     x_coord = 25.;
     y_coord = 25.;
-    parent = Node 4;
-    node = L And;
+    node = L (And, RegOrLet "A", RegOrLet "B");
   }
 
   let n2 = {
     id = 4;
     x_coord = 35.;
     y_coord = 50.;
-    parent = Reg "D";
-    node = L And;
+    node = L (And, RegOrLet "D", RegOrLet "E");
   }
+
   let n3 = {
-    id = 3;
+    id = 6;
     x_coord = 75.;
     y_coord = 55.;
-    parent = Reg "E";
-    node = Red And;
+    node = Red (And, RegOrLet "E");
   }
+
   let n = [n1; n2; n3]
 
   (* Test circuit *)
@@ -971,6 +989,7 @@ module Formatter : CircuitFormatter = struct
     lets = [];
     nodes = n;
   }
+
 
   let format_format_circuit f circ = ()
     (* Format.fprintf f "Columns : %s\n\n" (string_of_int (List.length circ));

@@ -94,14 +94,11 @@ module type CircuitFormatter = sig
   type formatted_circuit
 
   type display_node
-
   type display_let
-
   type display_register
-
   type display_reg_type
-
   type node
+  type connection
 
   (* [format circ] is a representation of [circ] with coordinate information
    * attached for rendering *)
