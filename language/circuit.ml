@@ -56,7 +56,7 @@ end
 
 module type CircuitFormatter = sig
 
-  type connection = RegOrLet of id | Node of int
+  type connection = Reg of id | Node of int | Let of id
 
   type node =
     | B of gate * connection * connection
@@ -71,38 +71,37 @@ module type CircuitFormatter = sig
     | Mux of connection * connection * connection
     | Const of bitstream
     | Apply of id * connection list
+    | Var of id
 
   type display_reg_type = Dis_rising | Dis_falling | Dis_input | Dis_output
 
   type display_node = {
-    id     : int;
+    id : int;
     x_coord: float;
     y_coord: float;
-    node   : node;
+    node : node;
   }
 
   type display_register = {
-    id          : id;
-    reg_type    : display_reg_type;
-    x_coord     : float;
-    y_coord     : float;
-    connections : connection list
+    id : id;
+    reg_type :  display_reg_type;
+    x_coord : float;
+    y_coord : float;
+    input : int;
   }
 
   type display_let = {
-    id          : id;
-    x_coord     : float;
-    y_coord     : float;
-    inputs      : id list;
-    connections : connection list
+    id : id;
+    x_coord:float;
+    y_coord: float;
+    inputs: id list;
   }
 
   type formatted_circuit = {
-    registers : display_register list;
-    nodes     : display_node list;
-    lets      : display_let list
+    registers : (id * display_register) list;
+    nodes     : (int * display_node) list;
+    lets      : (id * display_let) list
   }
-
 
   val format : circuit -> formatted_circuit
   val format_format_circuit : Format.formatter -> formatted_circuit -> unit
@@ -759,7 +758,7 @@ module Formatter : CircuitFormatter = struct
   | Id_Let (id, _, _, _ ) -> id
 
   (* Categorizes a register or node connection *)
-  type connection = RegOrLet of id | Node of int
+  type connection = Reg of id | Node of int | Let of id
 
   (* Any type of non-Let/Reg node (with all input info preserved) *)
   type node =
@@ -775,7 +774,7 @@ module Formatter : CircuitFormatter = struct
     | Mux of connection * connection * connection
     | Const of bitstream
     | Apply of id * connection list
-
+    | Var of id
 
   type display_info = {
     y_coord : float;
@@ -911,34 +910,33 @@ module Formatter : CircuitFormatter = struct
     | Input -> Dis_input
     | Output -> Dis_output
 
-  type display_node = {
-    id     : int;
-    x_coord: float;
-    y_coord: float;
-    node   : node;
-  }
+    type display_node = {
+      id : int;
+      x_coord: float;
+      y_coord: float;
+      node : node;
+    }
 
-  type display_register = {
-    id          : id;
-    reg_type    : display_reg_type;
-    x_coord     : float;
-    y_coord     : float;
-    connections : connection list
-  }
+    type display_register = {
+      id : id;
+      reg_type :  display_reg_type;
+      x_coord : float;
+      y_coord : float;
+      input : int;
+    }
 
-  type display_let = {
-    id          : id;
-    x_coord     : float;
-    y_coord     : float;
-    inputs      : id list;
-    connections : connection list
-  }
+    type display_let = {
+      id : id;
+      x_coord:float;
+      y_coord: float;
+      inputs: id list;
+    }
 
-  type formatted_circuit = {
-    registers : display_register list;
-    nodes     : display_node list;
-    lets      : display_let list
-  }
+    type formatted_circuit = {
+      registers : (id * display_register) list;
+      nodes     : (int * display_node) list;
+      lets      : (id * display_let) list
+    }
 
 
   (* let format_register reg_id register reg_list =
@@ -956,7 +954,7 @@ module Formatter : CircuitFormatter = struct
     reg_type = Dis_input;
     x_coord = 0.;
     y_coord = 0.;
-    connections = [Node 3;];
+    input = -1;
   }
 
   let r2 = {
@@ -964,7 +962,7 @@ module Formatter : CircuitFormatter = struct
     reg_type = Dis_input;
     x_coord = 0.;
     y_coord = 25.;
-    connections = [Node 3;];
+    input = -1;
   }
 
   let r3 = {
@@ -972,15 +970,15 @@ module Formatter : CircuitFormatter = struct
     reg_type = Dis_input;
     x_coord = 0.;
     y_coord = 50.;
-    connections = [Node 4;];
+    input = -1;
   }
 
   let r4 = {
     id = "D";
     reg_type = Dis_rising;
-    x_coord = 50.;
+    x_coord = 75.;
     y_coord = 50.;
-    connections = [Node 6;];
+    input = 5;
   }
 
   let r5 = {
@@ -988,46 +986,48 @@ module Formatter : CircuitFormatter = struct
     reg_type = Dis_output;
     x_coord = 100.;
     y_coord = 50.;
-    connections = [];
+    input=7;
   }
 
-  let r = [r1;r2;r3;r4;r5;]
+  let r = [("A", r1);("B",r2);("C",r3);("D",r4);("E",r5);]
 
   let n1 = {
     id = 3;
     x_coord = 25.;
     y_coord = 25.;
-    node = L (And, RegOrLet "A", RegOrLet "B");
+    node = L (And, Reg "A", Reg "B");
   }
 
   let n2 = {
-    id = 4;
-    x_coord = 35.;
-    y_coord = 50.;
-    node = L (And, RegOrLet "D", RegOrLet "E");
+    id = 5;
+    x_coord = 37.5;
+    y_coord = 75.;
+    node = L (And, Node 3, Let "X");
   }
 
   let n3 = {
     id = 6;
-    x_coord = 75.;
-    y_coord = 55.;
-    node = Red (And, RegOrLet "E");
+    x_coord = 87.5;
+    y_coord = 50.;
+    node = Red (And, Reg "D");
   }
 
-  let n = [n1; n2; n3]
+  let n = [(3, n1); (5, n2); (6, n3)]
+
+  let lets = [("X",{id="X"; x_coord=12.5; y_coord=75.; inputs=["B"; "C"];})]
 
   (* Test circuit *)
   let test_circ () =
   {
     registers = r;
-    lets = [];
+    lets = lets;
     nodes = n;
   }
 
   let format circ =
   {
     registers = r;
-    lets = [];
+    lets = lets;
     nodes = n;
   }
 
