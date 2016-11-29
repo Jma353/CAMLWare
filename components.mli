@@ -5,10 +5,10 @@ val wiring : float -> float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val l_tunnel : string -> float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val r_tunnel : string -> float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 
+val i_register : Bitstream.bitstream -> string -> float -> float -> float -> (unit -> unit) -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val constant   : Bitstream.bitstream -> float  -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val u_register : Bitstream.bitstream -> string -> float -> float -> float         -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val d_register : Bitstream.bitstream -> string -> float -> float -> float         -> ('a, 'b) D3.t -> ('a, 'b) D3.t
-val i_register : Bitstream.bitstream -> string -> float -> float -> float         -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val o_register : Bitstream.bitstream -> string -> float -> float -> float         -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 
 val mux2_c    : float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
