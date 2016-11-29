@@ -43,8 +43,9 @@ type circuit = {
 module type CircuitSimulator = sig
   val evaluate : circuit -> comb -> bitstream
   val step : circuit -> circuit
-  val step_n : circuit -> int -> circuit
-  val change_input : circuit -> id -> bitstream -> circuit
+  val step_n : int -> circuit -> circuit
+  val change_input : id -> bitstream -> circuit -> circuit
+  val update_outputs: circuit -> circuit 
 end
 
 module type StaticAnalyzer = sig
@@ -146,17 +147,6 @@ let subcircuit logic length args =
     args = args;
   }
 
-let circuit comps =
-  {
-    comps = comps;
-    clock = false;
-  }
-
-let circuit_from_list l =
-  let map_of_assoclist =
-    List.fold_left (fun acc (k,v) -> StringMap.add k v acc) StringMap.empty in
-  l |> map_of_assoclist |> circuit
-
 let register_values circ =
   circ.comps |> (StringMap.filter (fun k v -> not (is_subcirc k v))) |>
   (StringMap.map (function Register r -> r.value | _ -> failwith "impossible"))
@@ -241,6 +231,9 @@ module Simulator : CircuitSimulator = struct
     else if length b > len then substream b 0 (len - 1)
     else b
 
+  let extend_bits b l1 l2 = 
+    if l1 > l2 then zero_extend l1 b else zero_extend l2 b
+
   let rec eval_hlpr circ comb env =
      match comb with
     | Const b -> b
@@ -266,9 +259,13 @@ module Simulator : CircuitSimulator = struct
                       (fun acc c ->
                         concat (eval_hlpr circ c env) acc) (create []) clst
     | Mux2 (c1,c2,c3) -> let s = (eval_hlpr circ c1 env) in
+                          let b2 = (eval_hlpr circ c2 env) in 
+                          let b3 = (eval_hlpr circ c3 env) in 
+                          let l2 = length b2 in 
+                          let l3 = length b3 in 
                           if is_zero s
-                          then eval_hlpr circ c3 env
-                          else eval_hlpr circ c2 env
+                          then extend_bits b2 l2 l3 
+                          else extend_bits b3 l2 l3 
     | Apply (id,clst) -> let subcirc = StringMap.find id circ.comps in
                           let s = (match subcirc with
                               | Subcirc sub -> sub
@@ -332,7 +329,7 @@ module Simulator : CircuitSimulator = struct
       | Register r -> eval_regs r circ
       | _ -> c
 
-  let update_outputs circ c =
+  let update_output circ c =
     match c with
       | Register r -> (match (r.next, r.reg_type) with
                       |(AST comb, Output) -> let new_val =
@@ -343,28 +340,43 @@ module Simulator : CircuitSimulator = struct
                       | _ -> c)
       | _ -> c
 
-
   let step circ =
     let new_comps = StringMap.map (update_rising_falling circ) circ.comps in
     let new_circ = {comps = new_comps; clock = not circ.clock} in
-    let comps_new = StringMap.map (update_outputs new_circ) new_circ.comps in
+    let comps_new = StringMap.map (update_output new_circ) new_circ.comps in
     {comps = comps_new; clock = new_circ.clock}
 
-  let rec step_n circ n =
+  let rec step_n n circ =
     match n with
     | 0 -> circ
-    | i -> let new_circ = step circ in step_n new_circ (i - 1)
+    | i -> let new_circ = step circ in step_n (i - 1) new_circ
 
-  let change_input circ id value =
+  let change_input id value circ =
     let r = match StringMap.find id circ.comps with
       | Register reg -> reg
       | _ -> failwith "tried to change the value of a subcircuit" in
     let new_comps =
       StringMap.add id (Register {r with value = value}) circ.comps in
     let new_circ = {comps = new_comps; clock = circ.clock} in
-    let comps_new = StringMap.map (update_outputs new_circ) new_circ.comps in
+    let comps_new = StringMap.map (update_output new_circ) new_circ.comps in
     {comps = comps_new; clock = new_circ.clock}
+
+  let update_outputs circ = 
+    let new_comps = StringMap.map (update_output circ) circ.comps in 
+    {circ with comps = new_comps}
+
 end
+
+let circuit comps =
+  let initial = {
+    comps = comps;
+    clock = false; } in
+  Simulator.update_outputs initial  
+
+let circuit_from_list l =
+  let map_of_assoclist =
+    List.fold_left (fun acc (k,v) -> StringMap.add k v acc) StringMap.empty in
+  l |> map_of_assoclist |> circuit
 
 module Analyzer : StaticAnalyzer = struct
   (* an error log is a monadic data type containing a circuit and a list of
@@ -715,7 +727,7 @@ module Formatter : CircuitFormatter = struct
 
   (* type formatted_circuit = register StringMap.t list *)
 
-  let assign_columns circ =
+  let columnize_registers circ =
     let reg = get_all_registers circ in
     let inputs = find_inputs reg in
     let outputs = find_outputs reg in
@@ -742,9 +754,8 @@ module Formatter : CircuitFormatter = struct
         dep_helper new_not_done new_done (new_col::cols))
 
     in
-      if (StringMap.is_empty outputs)
-      then (List.rev ((dep_helper asts inputs [inputs])))
-      else List.rev (outputs::(dep_helper asts inputs [inputs]))
+      let registers = List.rev (dep_helper asts inputs []) in
+      (inputs, registers, outputs)
 
 
   let get_ids ast =
@@ -935,7 +946,6 @@ module Formatter : CircuitFormatter = struct
       in
     (new_lets, (top_sort new_nodes [] []))
 
-
   let r1 = {
     r_id = "A";
     reg_type = Dis_input;
@@ -1011,7 +1021,51 @@ module Formatter : CircuitFormatter = struct
     nodes = n;
   }
 
+  let make_register_column reg_col x_coord =
+    let l = float_of_int (List.length reg_col) in
+    let rec col_helper unfinished current_y =
+    match unfinished with
+    | [] ->  []
+    | h::t -> {r_id=h.r_id; reg_type=h.reg_type; input=h.input; r_y_coord=current_y; r_x_coord=x_coord}::
+              (col_helper t (current_y +. (100./.l))) in
+    col_helper reg_col 0.
+
+  (* let make_lists (inputs, registers, outputs) = 
+    let to_display_input reg_id register = {
+      r_id=reg_id;
+      r_x_coord=0.;
+      r_y_coord=0.;
+      reg_type=Dis_input;
+      input=(-1)
+    } in
+    let new_inputs =  *)
+
   let format circ =
+    let (inputs, reg_columns, outputs) = columnize_registers circ in
+    let x = StringMap.is_empty inputs in
+    let y = List.map (fun x-> StringMap.is_empty x) reg_columns in
+    let z = StringMap.is_empty outputs in
+    let to_display_input reg_id register = {
+      r_id=reg_id;
+      r_x_coord=0.;
+      r_y_coord=0.;
+      reg_type=Dis_input;
+      input=(-1)
+    } in
+    let new_inputs = StringMap.mapi to_display_input inputs in
+    let k = make_register_column (List.map (fun (k,v) -> v) (StringMap.bindings new_inputs)) 0. in
+
+    (*let format_one_register reg =
+      let ast =
+        match reg.next with
+        | User_input-> failwith "invalid map error"
+        | AST ast -> ast
+      in format_reg_ast (tree_to_list ast reg_list) in
+
+    let processed_outputs *)
+
+
+
   {
     registers = r;
     lets = lets;
