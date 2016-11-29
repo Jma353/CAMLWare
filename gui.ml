@@ -5,6 +5,7 @@ open Circuit
 open Circuit.Formatter
 open Combinational
 
+
 (* Int
  *
  * This mini-module *)
@@ -16,6 +17,7 @@ module Int = struct
     else if n1 > n2 then 1
     else 0
 end
+
 
 (* The Maps
  *
@@ -144,7 +146,9 @@ module View = struct
       | c::t ->
         let y = base_y +. (float_of_int n) *. space in
         begin match c with
-          | RegOrLet id ->
+          | Reg id ->
+            make_wirings t (n+1) x base_y space ((tunnel id x y nodeS)::acc)
+          | Let id ->
             make_wirings t (n+1) x base_y space ((tunnel id x y nodeS)::acc)
           | Node i ->
             let i_i = Int.make i in
@@ -174,8 +178,8 @@ module View = struct
       | L (_,c1,c2)     -> process_node_wirings [c1;c2] cx cy acc
       | A (_,c1,c2)     -> process_node_wirings [c1;c2] cx cy acc
       | C (_,c1,c2)     -> process_node_wirings [c1;c2] cx cy acc
-      | Sub (_,_,c1,c2) -> process_node_wirings [c1;c2] cx cy acc
       | Mux (c1,c2,c3)  -> process_node_wirings [c1;c2;c3] cx cy acc
+      | Sub (_,_,c)     -> process_node_wirings [c] cx cy acc
       | N (_,c)         -> process_node_wirings [c] cx cy acc
       | Nth (_,c)       -> process_node_wirings [c] cx cy acc
       | Red (_,c)       -> process_node_wirings [c] cx cy acc
@@ -249,7 +253,7 @@ module View = struct
         | Gte -> (map, (greater_than_or_equal_to x y nodeS)::acc)
         | Neq -> (map, (not_equal_to x y nodeS)            ::acc)
         end
-      | Sub (i1,i2,_,_) -> (map, (sub_seq_c x y nodeS i1 i2)::acc)
+      | Sub (i1,i2,_)   -> (map, (sub_seq_c x y nodeS i1 i2)::acc)
       | Nth (n,_)       -> (map, (nth_c x y nodeS n)        ::acc)
       | Concat (_)      -> (map, (concat_c x y nodeS)       ::acc)
       | Mux (_,_,_)     -> (map, (mux2_c x y nodeS)         ::acc)
@@ -312,30 +316,38 @@ module View = struct
       | h::t -> apply_views t (container |> h)
     in
 
-
     (* Collects a list of functions to be applied to a view, as well as map
      * info regarding inputs & outputs. *)
     let collect_views (op_c: circuit option) =
       match op_c with
       | None -> []
       | Some(a_c) ->
-        let c = format_circuit a_c in
+
+        (* Format the circuit *)
+        let c = format a_c in
+        let get_second = (fun (_,x) -> x) in
+
+        (* Format info *)
+        let registers = List.map get_second c.registers in
+        let lets      = List.map get_second c.lets in
+        let c_nodes     = List.map get_second c.nodes in
+
         (* Dimensions & scaling *)
-        let width_f = float_of_int width in
-        let height_f = float_of_int height in
+        let width_f    = float_of_int width in
+        let height_f   = float_of_int height in
         let x_nn_scale = make_non_node_scale width_f in
         let y_nn_scale = make_non_node_scale height_f in
-        let x_n_scale = make_node_scale width_f in
-        let y_n_scale = make_node_scale height_f in
+        let x_n_scale  = make_node_scale width_f in
+        let y_n_scale  = make_node_scale height_f in
 
         (* Collect Everything *)
-        let regs = collect_registers x_nn_scale y_nn_scale c.registers [] in
-        let lets = collect_lets x_nn_scale y_nn_scale c.lets [] in
+        let regs  = collect_registers x_nn_scale y_nn_scale registers [] in
+        let lets  = collect_lets x_nn_scale y_nn_scale lets [] in
         let e_map = IntMap.empty in
-        let stuff = collect_nodes x_n_scale y_n_scale c.nodes (e_map,[]) in
+        let stuff = collect_nodes x_n_scale y_n_scale c_nodes (e_map,[]) in
         let nodes = snd stuff in
-        let map = fst stuff in
-        let wires = collect_wires x_n_scale y_n_scale map c.nodes [] in
+        let map   = fst stuff in
+        let wires = collect_wires x_n_scale y_n_scale map c_nodes [] in
 
         (* Resultant *)
         regs @ lets @ nodes @ wires
@@ -343,21 +355,17 @@ module View = struct
 
     apply_views (collect_views !circ) init
 
-
 end
-
 
 (* Event Loop  *)
 let main_lwt () =
   let stream, push, _ =
     let stream, push = Lwt_stream.create () in
-    stream, (fun x -> push (Somex)), (fun () -> push None)
-  in
+    stream, (fun x -> push (Some x)), (fun () -> push None) in
   let view = View.make push in
   let node = (Dom_html.document##body) in
   run ~node view ();
   Lwt_stream.fold (fun e m -> run ~node view (); ()) stream ()
-
 
 
 (* Run the app *)
