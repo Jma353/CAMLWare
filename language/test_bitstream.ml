@@ -59,4 +59,60 @@ let tests = [
   (test "substream1" "3'b001" ((substream (one 5) 0 2) |> strb));
   (test "substream2" "3'b000" ((substream (one 5) 1 3) |> strb));
   (test "substream3" "1'b1" ((substream (one 5) 0 0) |> strb));
+  (test "concat1" "5'b11100" ((concat (zeros 2) (ones 3)) |> strb));
+  (test "reduce and1" "1'b1" (5 |> ones |> (reduce (&&)) |> strb));
+  (test "reduce and2" "1'b0" ("5'b11011" |> bstrb |> (reduce (&&)) |> strb));
+  (test "reduce or1" "1'b1" ("5'b00100" |> bstrb |> (reduce (||)) |> strb));
+  (test "reduce or2" "1'b0" (5 |> zeros |> (reduce (||)) |> strb));
+  (test "bitwise not1" "32'xFFFFFFFF" (32 |> zeros |> bitwise_not |> strx));
+  (test "bitwise not2" "32'x00000000" (32 |> ones |> bitwise_not |> strx));
+  (test "negate1" "32'x00000001" (32 |> ones |> negate |> strx));
+  (test "negate2" "32'x00000000" (32 |> zeros |> negate |> strx));
+  (test "sll0" "8'b11111111" ((shift_left (ones 8) ("8'd0" |> bstrd)) |> strb));
+  (test "sll1" "8'b11111110" ((shift_left (ones 8) ("8'd1" |> bstrd)) |> strb));
+  (test "sll2" "8'b11111100" ((shift_left (ones 8) ("8'd2" |> bstrd)) |> strb));
+  (test "sll3" "8'b11111000" ((shift_left (ones 8) ("8'd3" |> bstrd)) |> strb));
+  (test "sll4" "8'b11110000" ((shift_left (ones 8) ("8'd4" |> bstrd)) |> strb));
+  (test "sll5" "8'b11100000" ((shift_left (ones 8) ("8'd5" |> bstrd)) |> strb));
+  (test "sll6" "8'b11000000" ((shift_left (ones 8) ("8'd6" |> bstrd)) |> strb));
+  (test "sll7" "8'b10000000" ((shift_left (ones 8) ("8'd7" |> bstrd)) |> strb));
+  (test "sll8" "8'b00000000" ((shift_left (ones 8) ("8'd8" |> bstrd)) |> strb));
+  (test "srl0" "8'b11111111" ((shift_right_logical (ones 8) ("8'd0" |> bstrd))
+                              |> strb));
+  (test "srl1" "8'b01111111" ((shift_right_logical (ones 8) ("8'd1" |> bstrd))
+                              |> strb));
+  (test "srl2" "8'b00111111" ((shift_right_logical (ones 8) ("8'd2" |> bstrd))
+                              |> strb));
+  (test "srl3" "8'b00011111" ((shift_right_logical (ones 8) ("8'd3" |> bstrd))
+                              |> strb));
+  (test "srl4" "8'b00001111" ((shift_right_logical (ones 8) ("8'd4" |> bstrd))
+                              |> strb));
+  (test "srl5" "8'b00000111" ((shift_right_logical (ones 8) ("8'd5" |> bstrd))
+                              |> strb));
+  (test "srl6" "8'b00000011" ((shift_right_logical (ones 8) ("8'd6" |> bstrd))
+                              |> strb));
+  (test "srl7" "8'b00000001" ((shift_right_logical (ones 8) ("8'd7" |> bstrd))
+                              |> strb));
+  (test "srl8" "8'b00000000" ((shift_right_logical (ones 8) ("8'd8" |> bstrd))
+                              |> strb));
+  (test "sra0" "4'b0111" ((shift_right_arithmetic ("4'b0111" |> bstrb)
+                             ("4'd0" |> bstrd)) |> strb));
+  (test "sra1 pos" "4'b0011" ((shift_right_arithmetic ("4'b0111" |> bstrb)
+                              ("4'd1" |> bstrd)) |> strb));
+  (test "sra2 neg" "4'b1111" ((shift_right_arithmetic ("4'b1111" |> bstrb)
+                                 ("4'd2" |> bstrd)) |> strb));
+  (test "add1" "32'd5" ((add ("'d2" |> bstrd) ("'d3" |> bstrd)) |> strds));
+  (test "add2" "32'd5" ((add ("'d3" |> bstrd) ("'d2" |> bstrd)) |> strds));
+  (test "add3" "32'd-1" ((add ("'d2" |> bstrd) ("'d-3" |> bstrd)) |> strds));
+  (test "subtract1" "32'd5" ((subtract ("'d2" |> bstrd) ("'d-3" |> bstrd))
+                             |> strds));
+  (test "gt1" "1'b1" ((greater_than ("'d3" |> bstrd) ("'d2" |> bstrd))|> strb));
+  (test "gt2" "1'b0" ((greater_than ("'d2" |> bstrd) ("'d3" |> bstrd))|> strb));
+  (test "gt3" "1'b0" ((greater_than ("'d2" |> bstrd) ("'d2" |> bstrd))|> strb));
+  (test "lt1" "1'b0" ((less_than ("'d3" |> bstrd) ("'d2" |> bstrd))|> strb));
+  (test "lt2" "1'b1" ((less_than ("'d2" |> bstrd) ("'d3" |> bstrd))|> strb));
+  (test "lt3" "1'b0" ((less_than ("'d2" |> bstrd) ("'d2" |> bstrd))|> strb));
+  (test "eq1" "1'b0" ((equals ("'d3" |> bstrd) ("'d2" |> bstrd))|> strb));
+  (test "eq2" "1'b0" ((equals ("'d2" |> bstrd) ("'d3" |> bstrd))|> strb));
+  (test "eq3" "1'b1" ((equals ("'d2" |> bstrd) ("'d2" |> bstrd))|> strb));
 ]
