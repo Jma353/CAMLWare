@@ -64,14 +64,14 @@ module type CircuitFormatter = sig
     | A of arithmetic * connection * connection
     | N of negation * connection
     | C of comparison * connection * connection
-    | Sub of int * int * connection * connection
+    | Sub of int * int * connection
     | Nth of int * connection
     | Red of gate * connection
     | Concat of connection list
     | Mux of connection * connection * connection
     | Const of bitstream
     | Apply of id * connection list
-    | Var of id
+
 
   type display_reg_type = Dis_rising | Dis_falling | Dis_input | Dis_output
 
@@ -773,14 +773,13 @@ module Formatter : CircuitFormatter = struct
     | A of arithmetic * connection * connection
     | N of negation * connection
     | C of comparison * connection * connection
-    | Sub of int * int * connection * connection
+    | Sub of int * int * connection
     | Nth of int * connection
     | Red of gate * connection
     | Concat of connection list
     | Mux of connection * connection * connection
     | Const of bitstream
     | Apply of id * connection list
-    | Var of id
 
   type display_info = {
     y_coord : float;
@@ -791,121 +790,11 @@ module Formatter : CircuitFormatter = struct
 
   let fot (x, _, _) = x
 
-  (* let tree_to_list ast reg_id reg_list =
-    (* ast:comb - what we are analyzing
-     * parents : [int] - the parents of the current node
-     * lets : Map: string -> ([int], comb) - a map from each variable name to its
-     *        parents as well as its combinational logic
-     * reg_list : the reg map we throw around everywhere
-     * reg_parents : Map id -> [int]*)
-    let rec list_helper ast parents lets reg_list reg_parents =
-      match ast with
-      | Id_Const (id, b) ->
-        ([{y_coord=0.; id=id; node = Const b; parents = parents}], lets, reg_parents)
-      | Id_Var (id, v) ->
-        let new_reg_parents =
-          if (StringMap.mem v reg_list)
-          then
-            if (StringMap.mem v reg_parents)
-            then StringMap.add v (parents@(StringMap.find v reg_parents)) reg_parents
-            else StringMap.add v parents reg_parents
-          else reg_parents in
-        let new_lets =
-          if (StringMap.mem v reg_list)
-          then lets
-          else
-            let (p, comb) = StringMap.find v lets in
-            StringMap.add v (parents@p, comb) lets in
-        ([{y_coord = 0.; id=id; node = (L And); parents = parents}], lets, new_reg_parents)
-      | Id_Sub_seq(id, i1, i2, comb) ->
-        ({y_coord = 0.; id=id; node = Sub (i1, i2); parents=parents}
-        ::(fot (list_helper comb [id] lets reg_list reg_parents)), lets, reg_parents)
-      | Id_Nth (id, n, comb) ->
-        ({y_coord = 0.; id=id; node = Nth n; parents=parents}
-        ::(fot (list_helper comb [id] lets reg_list reg_parents)), lets, reg_parents)
-      | Id_Gate (id, g, c1, c2) ->
-        ({y_coord = 0.; id=id; node = B g; parents = parents}
-        ::(( fot (list_helper c1 [id] lets reg_list reg_parents))
-        @ (fot (list_helper c2 [id] lets reg_list reg_parents))) , lets, reg_parents)
-      | Id_Logical (id, l, c1, c2) ->
-        ({y_coord = 0.; id=id; node = L l; parents = parents}
-        ::(( fot (list_helper c1 [id] lets reg_list reg_parents))
-        @ (fot (list_helper c2 [id] lets reg_list reg_parents))) , lets, reg_parents)
-      | Id_Reduce ( id, g, comb ) ->
-        ({y_coord = 0.; id=id; node = Red g; parents=parents}
-        ::(fot (list_helper comb [id] lets reg_list reg_parents)), lets, reg_parents)
-      | Id_Neg (id, n, comb) ->
-        ({y_coord = 0.; id=id; node = N n; parents=parents}
-        ::(fot (list_helper comb [id] lets reg_list reg_parents)), lets, reg_parents)
-      | Id_Comp(id, c, c1, c2) ->
-        ({y_coord = 0.; id=id; node = C c; parents = parents}
-          ::(( fot (list_helper c1 [id] lets reg_list reg_parents))
-          @ (fot (list_helper c2 [id] lets reg_list reg_parents))) , lets, reg_parents)
-      | Id_Arith (id, o, c1, c2) ->
-        ({y_coord = 0.; id=id; node = A o; parents = parents}
-          ::(( fot (list_helper c1 [id] lets reg_list reg_parents))
-          @ (fot (list_helper c2 [id] lets reg_list reg_parents))) , lets, reg_parents)
-      | Id_Concat (id, c_list) ->
-        let ids = List.fold_left (fun acc x -> (get_ids x)::acc) [] c_list in
-        ({y_coord = 0.; id=id; node=(Concat (List.rev ids)); parents=parents}
-        ::List.flatten((List.fold_right(fun x acc -> (fot (list_helper x [id] lets reg_list reg_parents))::acc) c_list []))
-        , lets, reg_parents)
-      | Id_Mux2 (id, c1, c2, c3) ->
-        ({y_coord = 0.; id=id; node = (Mux (get_ids c1, get_ids c2, get_ids c3) ); parents=parents}
-        :: ((fot (list_helper c1 [id] lets reg_list reg_parents))
-        @ (fot (list_helper c2 [id] lets reg_list reg_parents))
-        @ (fot (list_helper c3 [id] lets reg_list reg_parents))), lets, reg_parents)
-      | Id_Apply (id, var, c_list) ->
-        ({y_coord = 0.; id = id; node = (Subcirc var); parents = parents}
-        ::List.flatten ((List.fold_right (fun x acc -> (fot (list_helper x [id] lets reg_list reg_parents))::acc) c_list []))
-        , lets, reg_parents)
-      | Id_Let (id, var, c1, c2) ->
-        let new_lets = StringMap.add var ([], c1) lets in
-        let inputs = list_dependencies c1 reg_list in
-        ({y_coord = 0.; id = id; node = Let (var); parents = parents}
-        ::(fot (list_helper c1 [id] new_lets reg_list reg_parents)), lets, reg_parents)
-      in (list_helper ast [] StringMap.empty reg_list StringMap.empty) *)
-
-  (* let columnize_ast ast_list =
-    let rec column_helper finished not_done cols =
-      if (List.length not_done = 0)
-      then []
-      else
-        let find_register x =
-          (match x.node with
-          |Register _-> true
-          | _ -> false) in
-        let find_finished parent_list =
-          List.for_all
-          (fun x -> List.exists (fun y -> x = y.id) finished) parent_list in
-        let new_col = (List.filter (fun x -> (find_register x || find_finished x.parents)) not_done) in
-        let new_done = new_col@finished in
-        let new_cols = new_col :: cols in
-        let new_not_done = List.filter (fun x -> not (List.mem x new_done)) not_done in
-        column_helper new_done new_not_done new_cols
-      in column_helper [] ast_list [] *)
-(*
-  type ast_column = {
-    x_coordinate : float;
-    nodes : display_info list
-  }
-
-  type display_ast = {
-    ast_columns : ast_column list;
-    reg_list : (id * int list) list;
-    let_list : (id * int list) list;
-  }
-  type display_input = Input of id | AST of display_ast
-
-  type display_register = {
-    y_coord : float;
-    ast : display_input;
-    reg_type: reg_type;
-  }
-  type circ_column = {
-    registers : (id * display_register ) list;
-    x_coordinate : float;
-  } *)
+  let process_conn reg_list comb =
+    match comb with
+    | Id_Var (_, v) ->
+      if (StringMap.mem v reg_list) then (Reg v) else (Let v)
+    | x -> Node (get_ids x)
 
   type display_reg_type = Dis_rising | Dis_falling | Dis_input | Dis_output
 
@@ -944,16 +833,72 @@ module Formatter : CircuitFormatter = struct
       lets      : (id * display_let) list
     }
 
+  let tree_to_list ast reg_list =
+    let rec list_helper ast lets =
+    match ast with
+    | Id_Const (id, b) ->
+      ([{y_coord=0.; x_coord=0.; id=id; node=(Const b);}], lets)
+    | Id_Var (id, v) ->
+      ([], lets)
+    | Id_Sub_seq(id, i1, i2, comb) ->
+      let n = {y_coord=0.; x_coord=0.; id=id; node = Sub (i1, i2, (process_conn reg_list comb))} in
+      let (n1, l2) = list_helper comb lets in
+      (n::n1, lets@l2)
+    | Id_Nth (id, i, comb) ->
+      let n = {y_coord=0.; x_coord=0.; id=id; node = Nth (i, (process_conn reg_list comb))} in
+      let (n1, l2) = list_helper comb lets in
+      (n::n1, lets@l2)
+    | Id_Gate (id, g, c1, c2) ->
+      let n = {y_coord=0.; x_coord=0.; id=id; node = B (g, (process_conn reg_list c1), (process_conn reg_list c2))} in
+      let (n1, l1) = list_helper c1 [] in
+      let (n2, l2) = list_helper c2 [] in
+      (n::(n1@n2), lets@l1@l2)
+    | Id_Logical (id, g, c1, c2) ->
+      let n = {y_coord=0.; x_coord=0.; id=id; node = L (g, (process_conn reg_list c1), (process_conn reg_list c2))} in
+      let (n1, l1) = list_helper c1 [] in
+      let (n2, l2) = list_helper c2 [] in
+      (n::(n1@n2), lets@l1@l2)
+    | Id_Reduce ( id, g, comb ) ->
+      let n = {y_coord=0.; x_coord=0.; id=id; node = Red (g, (process_conn reg_list comb))} in
+      let (n1, l2) = list_helper comb [] in
+      (n::n1, lets@l2)
+    | Id_Neg (id, neg, comb) ->
+      let n = {y_coord=0.; x_coord=0.; id=id; node = N (neg, (process_conn reg_list comb))} in
+      let (n1, l2) = list_helper comb lets in
+      (n::n1, lets@l2)
+    | Id_Comp(id, c, c1, c2) ->
+      let n = {y_coord=0.; x_coord=0.; id=id; node = C (c, (process_conn reg_list c1), (process_conn reg_list c2))} in
+      let (n1, l1) = list_helper c1 [] in
+      let (n2, l2) = list_helper c2 [] in
+      (n::(n1@n2), lets@l1@l2)
+    | Id_Arith (id, o, c1, c2) ->
+      let n = {y_coord=0.; x_coord=0.; id=id; node = A (o, (process_conn reg_list c1), (process_conn reg_list c2))} in
+      let (n1, l1) = list_helper c1 [] in
+      let (n2, l2) = list_helper c2 [] in
+      (n::(n1@n2), lets@l1@l2)
+    | Id_Concat (id, c_list) ->
+      let connection_list = List.map (fun x -> process_conn reg_list x) c_list in
+      let n = {y_coord=0.; x_coord=0.; id=id; node = Concat connection_list} in
+      let (n1, l1) = List.split (List.map (fun x -> list_helper x []) c_list) in
+      (n::(List.flatten n1), lets@(List.flatten l1))
+    | Id_Mux2 (id, c1, c2, c3) ->
+      let n = {y_coord=0.; x_coord=0.; id=id; node=Mux (process_conn reg_list c1, process_conn reg_list c2, process_conn reg_list c3)} in
+      let (n1, l1) = list_helper c1 [] in
+      let (n2, l2) = list_helper c2 [] in
+      let (n3, l3) = list_helper c3 [] in
+      (n::(n1@n2@n3), lets@l1@l2@l3)
+    | Id_Apply (id, var, c_list) ->
+      let connections = List.map (fun x -> process_conn reg_list x) c_list in
+      let n = {y_coord=0.; x_coord=0.; id=id; node= Apply (var, connections)} in
+      let (n1, l1) = List.split (List.map (fun x -> list_helper x []) c_list) in
+      (n::(List.flatten n1), lets@(List.flatten l1))
+    | Id_Let (id, var, c1, c2) ->
+      let inputs = list_dependencies c1 reg_list in
+      let new_let = {y_coord=0.; x_coord=0.; id=var; inputs=inputs} in
+      let (n2, l2) = list_helper c2 [] in
+      (n2, new_let::l2)
+  in list_helper ast []
 
-  (* let format_register reg_id register reg_list =
-    let reg =
-    match register.next with
-    | User_input -> Input reg_id
-    | AST ast ->
-      let id_ast = attach_ids ast in
-      let (ast, lets, reg) = tree_to_list id_ast reg_id reg_list in
-      AST {ast_columns=(columnize_ast ast); reg_list=StringMap.empty; let_list=(StringMap.ampty);}
-    in {y_coord=0.; ast=reg; reg_type=register.reg_type;} *)
 
   let r1 = {
     id = "A";
