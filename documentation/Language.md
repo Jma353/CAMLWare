@@ -3,6 +3,7 @@ header-includes:
  - \usepackage{pgf}
  - \usepackage{tikz}
  - \usetikzlibrary{arrows,automata}
+ - \usepackage{karnaugh}
 ---
 
 # CamelWare
@@ -282,7 +283,7 @@ The following state machine processes an incoming string of bits via an input. I
                 edge [bend left=60]   node {1} (1);
 \end{tikzpicture}
 
-The corresponding `CamelWare` code is
+A naive `CamelWare` implementation is:
 
 ```
 input in_channel[1]
@@ -311,6 +312,84 @@ fun next()[3] =
     else 3'd0
 ```
 
+Although the above code is very readable, unfortunately it suffers from serious efficiency problems. `CamelWare` does not have an optimizing compiler - there's a one to one correspondence between operators and gates - and this means that the above uses 5 comparators and 9 2 to 1 multiplexers to acheive some fairly simple functionality.
+
+A better approach is to use traditional digital design methods to work out the logic before writing it down. The desired truth table is:
+
+| State[2] | State[1] | State[0]  | In_channel   | Next      | Out_channel |
+|----------|----------|-----------|--------------|-----------|-------------|
+|   0      |     0    |   0       | 0            |   3'b000  | 1'b0        |
+|   0      |     0    |   0       | 1            |   3'b001  | 1'b0        |
+|   0      |     0    |   1       | 0            |   3'b010  | 1'b0        |
+|   0      |     0    |   1       | 1            |   3'b001  | 1'b0        |
+|   0      |     1    |   0       | 0            |   3'b011  | 1'b0        |
+|   0      |     1    |   0       | 1            |   3'b001  | 1'b0        |
+|   0      |     1    |   1       | 0            |   3'b000  | 1'b0        |
+|   0      |     1    |   1       | 1            |   3'b100  | 1'b0        |
+|   1      |     0    |   0       | 0            |   3'b000  | 1'b1        |
+|   1      |     0    |   0       | 1            |   3'b001  | 1'b1        |
+
+The Karnaugh maps are
+
+`Next[2]`:
+
+\begin{Karnaugh}
+    \contingut{0,0,0,0,0,0,0,1,x,x,x,x,0,0,x,x}
+    \implicant{7}{15}{red}
+\end{Karnaugh}
+
+```
+Next[2] = State[1] & State[0] & In_channel
+```
+
+`Next[1]`:
+
+\begin{Karnaugh}
+    \contingut{0,0,1,0,1,0,0,0,0,0,x,x,x,x,x,x}
+    \implicant{4}{12}{green}
+    \implicantdaltbaix{2}{10}{red}
+\end{Karnaugh}
+
+```
+Next[1] = ~State[1] & State[0] & ~In_channel | State[1] & ~State[0] & ~In_channel
+```
+
+`Next[0]`:
+
+\begin{Karnaugh}
+    \contingut{0,1,0,1,1,1,0,0,0,1,x,x,x,x,x,x}
+    \implicant{4}{13}{green}
+    \implicantdaltbaix{1}{11}{red}
+\end{Karnaugh}
+
+```
+Next[0] = ~State[1] & In_channel | State[1] & ~State[0]
+```
+
+`Out_channel`:
+
+\begin{Karnaugh}
+    \contingut{0,0,0,0,0,0,0,0,1,1,x,x,x,x,x,x}
+    \implicant{12}{10}{red}
+\end{Karnaugh}
+
+```
+Out_channel = State[2]
+```
+
+From this we can derive an efficient hardware implementation
+
+```
+input in_channel[1]
+register state[3] = next()
+output out_channel[1] = state[2]
+fun next()[3] = {
+  State[1] & State[0] & In_channel,
+  ~State[1] & State[0] & ~In_channel | State[1] & ~State[0] & ~In_channel,
+  ~State[1] & In_channel | State[1] & ~State[0]
+}
+```
+
 ### Shift Registers and Counters
 
 The following examples are inspired by the the example designs in section 4.3 of __FPGA Prototyping By Verilog Examples__ by Pong P. Chu.
@@ -325,6 +404,14 @@ output out_channel[1] = R[0]
 
 #### Universal Shift Register
 A universal shift register either shifts to the left, shifts to the right, loads parallel data, or stays the same depending on a 2 bit control signal. It outputs the current contents of the register.
+
+| Ctrl[1] | Ctrl[0] | Operation    |
+|---------|---------|--------------|
+|   0     |   0     |  Pause       |
+|   0     |   1     |  Shift Left |
+|   1     |   0     |  Shift Right  |
+|   1     |   1     |  Load        |
+
 ```
 input in_channel[32]
 input ctrl[2]
