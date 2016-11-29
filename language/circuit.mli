@@ -94,7 +94,7 @@ module type CircuitFormatter = sig
   (* This module contains the functions for formatting a circuit in preparation
    * for rendering it *)
 
-  type connection = RegOrLet of id | Node of int
+  type connection = Reg of id | Node of int | Let of id
 
   type node =
     | B of gate * connection * connection
@@ -109,38 +109,37 @@ module type CircuitFormatter = sig
     | Mux of connection * connection * connection
     | Const of bitstream
     | Apply of id * connection list
+    | Var of id
 
   type display_reg_type = Dis_rising | Dis_falling | Dis_input | Dis_output
 
   type display_node = {
-    id     : int;
+    id : int;
     x_coord: float;
     y_coord: float;
-    node   : node;
+    node : node;
   }
 
   type display_register = {
-    id          : id;
-    reg_type    : display_reg_type;
-    x_coord     : float;
-    y_coord     : float;
-    connections : connection list
+    id : id;
+    reg_type :  display_reg_type;
+    x_coord : float;
+    y_coord : float;
+    input : int;
   }
 
   type display_let = {
-    id          : id;
-    x_coord     : float;
-    y_coord     : float;
-    inputs      : id list;
-    connections : connection list
+    id : id;
+    x_coord:float;
+    y_coord: float;
+    inputs: id list;
   }
 
   type formatted_circuit = {
-    registers : display_register list;
-    nodes     : display_node list;
-    lets      : display_let list
+    registers : (id * display_register) list;
+    nodes     : (int * display_node) list;
+    lets      : (id * display_let) list
   }
-
 
   (* [format circ] is a representation of [circ] with coordinate information
    * attached for rendering *)
