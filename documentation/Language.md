@@ -285,28 +285,83 @@ The following state machine processes an incoming string of bits via an input. I
 The corresponding `CamelWare` code is
 
 ```
-input in[1]
+input in_channel[1]
 register state[3] = next()
-output out[1] = state == 3'b100
+output out_channel[1] = state == 3'b100
 fun next()[3] =
   if state == 3'd0 then
-    if in
+    if in_channel
     then 3'd1
     else 3'd0
   else if state == 3'd1 then
-    if in
+    if in_channel
     then 3'd1
     else 3'd2
   else if state == 3'd2 then
-    if in
+    if in_channel
     then 3'd1
     else 3'd3
   else if state == 3'd3 then
-    if in
+    if in_channel
     then 3'd4
     else 3'd0
   else
-    if in
+    if in_channel
     then 3'd1
     else 3'd0
+```
+
+### Shift Registers and Counters
+
+The following examples are inspired by the the example designs in section 4.3 of __FPGA Prototyping By Verilog Examples__ by Pong P. Chu.
+
+#### Free Running Shift Register
+A free running shift register shifts in the input bit on the right and shifts out the output bit on the left each clock cycle. The `CamelWare` code for this is
+```
+input in_channel[1]
+register R[32] = {in_channel,R[1-31]}
+output out_channel[1] = R[0]
+```
+
+#### Universal Shift Register
+A universal shift register either shifts to the left, shifts to the right, loads parallel data, or stays the same depending on a 2 bit control signal. It outputs the current contents of the register.
+```
+input in_channel[32]
+input ctrl[2]
+output out_channel[32] = R
+register R[32] =
+  if ctrl == 2'b00 then R
+  else if ctrl == 2'b01 then {R[0-30],in_channel[0]}
+  else if ctrl == 2'b10 then {in_channel[31],R[1-31]}
+  else in_channel
+```
+
+#### Free Running Binary Counter
+A binary counter increments its value by one each tick until eventually overflowing and returning to `0`. The following is a 8 bit example:
+```
+output max_tick[1] = C == 8'b11111111
+register C[8] = C + 1
+```
+
+#### Universal Binary Counter
+A universal binary counter counts up, counts down, pauses, is loaded with a new value or is synchronously cleared depending on the value of a 4 bit control signal.
+
+| Clear | Load | Enable  | Up   | Next         | Operation |
+|-------|------|---------|------|--------------|-----------|
+|   1   |   x  |  x      |   x  | 32'x00000000 |   Clear   |
+|   0   |   1  |  x      |   x  | In_channel   |   Load    |
+|   0   |   0  |  1      |   1  | C + 1        |   Up      |
+|   0   |   0  |  1      |   0  | C - 1        |   Down    |
+|   0   |   0  |  0      |   x  | C            |   Pause   |
+
+```
+input in_channel[32]
+input ctrl[4]
+output max_tick[1] = C == 32'xFFFFFFFF
+register C[32] =
+  if ctrl[3] then 32'x00000000
+  else if ctrl[2] then in_channel
+  else if ctrl[1] then
+    if ctrl[0] then C + 1 else C - 1
+  else C
 ```
