@@ -52,8 +52,8 @@ module Event = struct
 
   (* Handle changing input *)
   let change_input_handler map =
-    let f = (fun k v acc -> (Simulator.change_input
-      acc k (Bitstream.bitstream_of_integer v))) in
+    let f = (fun k v acc ->
+      Simulator.change_input k (Bitstream.bitstream_of_integer v) acc) in
     match !circ with
     | Some c -> circ := Some(StringMap.fold f map c)
     | _ -> failwith "fail"
@@ -108,10 +108,10 @@ module View = struct
     match regs with
     | [] -> acc
     | h::t ->
-    let x = x_scale h.x_coord in
-    let y = y_scale h.y_coord in
+    let x = x_scale h.r_x_coord in
+    let y = y_scale h.r_y_coord in
     let zeros = Bitstream.zeros 32 in
-    let id = h.id in
+    let id = h.r_id in
     begin match h.reg_type with
       | Dis_rising  -> collect_registers x_scale y_scale t ((u_register zeros id x y nonNodeS)::acc)
       | Dis_falling -> collect_registers x_scale y_scale t ((d_register zeros id x y nonNodeS)::acc)
@@ -127,9 +127,9 @@ module View = struct
     match lets with
     | [] -> acc
     | h::t ->
-    let x = x_scale h.x_coord in
-    let y = y_scale h.y_coord in
-    let id = h.id in
+    let x = x_scale h.l_x_coord in
+    let y = y_scale h.l_y_coord in
+    let id = h.l_id in
     collect_lets x_scale y_scale t ((let_c id x y nonNodeS)::acc)
 
 
@@ -171,8 +171,8 @@ module View = struct
 
     (* Adds wiring based on the type of node to exist *)
     let handle_wiring (n:display_node) acc =
-      let cx = x_scale n.x_coord in
-      let cy = y_scale n.y_coord in
+      let cx = x_scale n.n_x_coord in
+      let cy = y_scale n.n_y_coord in
       match n.node with
       | B (_,c1,c2)     -> process_node_wirings [c1;c2] cx cy acc
       | L (_,c1,c2)     -> process_node_wirings [c1;c2] cx cy acc
@@ -202,7 +202,7 @@ module View = struct
       if reg.input <> -1 then
         let id_i = Int.make reg.input in
         let p = IntMap.find id_i map in
-        (r_tunnel reg.id p.x p.y nodeS)::acc
+        (r_tunnel reg.r_id p.x p.y nodeS)::acc
       else
         acc
     in
@@ -219,10 +219,10 @@ module View = struct
   let rec collect_nodes x_scale y_scale (n:display_node list) acc =
     (* Singular helper *)
     let handle_node (n:display_node) stuff =
-      let id_i = Int.make n.id in
+      let id_i = Int.make n.n_id in
       let acc = snd stuff in
-      let x = x_scale n.x_coord in
-      let y = y_scale n.y_coord in
+      let x = x_scale n.n_x_coord in
+      let y = y_scale n.n_y_coord in
       let map = (IntMap.add id_i
         {x = x +. nodeS; y = y +. nodeS /. 2.}
         (fst stuff)) in

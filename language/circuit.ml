@@ -958,16 +958,16 @@ module Formatter : CircuitFormatter = struct
   let r2 = {
     r_id = "B";
     reg_type = Dis_input;
-    x_coord = 0.;
-    y_coord = 50.;
+    r_x_coord = 0.;
+    r_y_coord = 50.;
     input = -1;
   }
 
   let r3 = {
     r_id = "C";
     reg_type = Dis_input;
-    x_coord = 0.;
-    y_coord = 100.;
+    r_x_coord = 0.;
+    r_y_coord = 100.;
     input = -1;
   }
 
@@ -982,8 +982,8 @@ module Formatter : CircuitFormatter = struct
   let r5 = {
     r_id = "E";
     reg_type = Dis_output;
-    x_coord = 100.;
-    y_coord = 50.;
+    r_x_coord = 100.;
+    r_y_coord = 50.;
     input=6;
   }
 
