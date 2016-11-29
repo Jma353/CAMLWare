@@ -1,10 +1,14 @@
+---
+header-includes:
+ - \usepackage{pgf}
+ - \usepackage{tikz}
+ - \usetikzlibrary{arrows,automata}
+---
+
 # CamelWare
 Ocaml, bit by bit
 
 Documentation of the `CamelWare` language
-
-## Table of Contents
-1. [Overview](#overview)
 
 ## Overview
 `CamelWare` is a functional hardware description language for digital logic. It provides syntactical constructs that make it easy to compactly describe the construction of small to medium scale digital circuits and an interactive simulator for examining their behavior.
@@ -225,11 +229,84 @@ let x = 3'b010 in 1'b1 -->* 1'b1
 ```
 
 ## Subcircuit Definitions
+
+### Syntax
+
 In order to allow for code reuse `CamelWare` allows for defining subcircuits. These are essentially functions with multiple inputs but only one output. The syntax is:
+
 ```
 subcircuit := fun function_name (arg1[length1], ...)[output_length] = expression
 ```
+
 To apply it:
+
 ```
 application := function_name(expression1, ...)
+```
+
+To ensure that indexing isn't out of bounds, input expressions are all zero extended or truncated to become the length specified in the function definition before it is applied. The function's result is similarly adjusted to become `output_length`.
+
+A function corresponds to a subcircuit in hardware. When function `f` calls function `g` it means that subcircuit `f` contains `g` physically. Accordingly any sort of recursion is completely illegal.
+
+### Example Usage
+```
+fun f(x[1],y[1])[1] = x & y
+fun g(x[4])[2] = {g[0],g[3]}
+```
+
+## Large Examples
+
+### State Machine
+The following state machine processes an incoming string of bits via an input. It outputs `1'b1` when it receives the string `1001`
+
+\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=2.8cm,
+                    semithick]
+
+  \tikzstyle{state}=[state with output]
+
+  \node[initial,state]   (0)              {$0$ \nodepart{lower} $0$};
+  \node[state]           (1) [right of=0] {$1$ \nodepart{lower} $0$};
+  \node[state]           (2) [right of=1] {$2$ \nodepart{lower} $0$};
+  \node[state]           (3) [right of=2] {$3$ \nodepart{lower} $0$};
+  \node[state,accepting] (4) [right of=3] {$4$ \nodepart{lower} $1$};
+
+  \path[->] (0) edge [loop above]     node {0} ()
+                edge                  node {1} (1)
+            (1) edge [bend left]      node {0} (2)
+                edge [loop above]     node {1} ()
+            (2) edge                  node {0} (3)
+                edge [bend left]      node {1} (1)
+            (3) edge [bend right=60]  node {0} (0)
+                edge                  node {1} (4)
+            (4) edge [bend left=90]   node {0} (0)
+                edge [bend left=60]   node {1} (1);
+\end{tikzpicture}
+
+The corresponding `CamelWare` code is
+
+```
+input in[1]
+register state[3] = next()
+output out[1] = state == 3'b100
+fun next()[3] =
+  if state == 3'd0 then
+    if in
+    then 3'd1
+    else 3'd0
+  else if state == 3'd1 then
+    if in
+    then 3'd1
+    else 3'd2
+  else if state == 3'd2 then
+    if in
+    then 3'd1
+    else 3'd3
+  else if state == 3'd3 then
+    if in
+    then 3'd4
+    else 3'd0
+  else
+    if in
+    then 3'd1
+    else 3'd0
 ```

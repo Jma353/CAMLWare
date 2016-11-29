@@ -146,6 +146,8 @@ module type CircuitFormatter = sig
     nodes     : (int * display_node) list;
     lets      : (id * display_let) list
   }
+  
+  val test_circ : unit -> formatted_circuit
 
   (* [format circ] is a representation of [circ] with coordinate information
    * attached for rendering *)

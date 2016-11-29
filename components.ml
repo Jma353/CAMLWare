@@ -117,7 +117,9 @@ let and_helper (x:float) (y:float) (edge:float) red svg =
   let path_1 = path d_1 scale scale "none" "black" w "basis" in
   let d_2 = list_to_coord_js_array [tl;bl] in
   let path_2 = path d_2 scale scale "none" "black" w "linear" in
-  svg |> path_1 |> path_2
+  let d = list_to_coord_js_array [(x +. 0.85 *. edge, y +. 0.5 *. edge);mr] in
+  let path = path d scale scale "none" "black" 1 "linear" in
+  svg |> path_1 |> path_2 |> path
 
 (* [or_helper x y edge red svg] assists in the creation of the shape of an OR
  * gate *)
@@ -134,7 +136,9 @@ let or_helper (x:float) (y:float) (edge:float) red svg =
   let path_1 = path d_1 scale scale "none" "black" w "basis" in
   let d_2 = list_to_coord_js_array [tl;mm;bl] in
   let path_2 = path d_2 scale scale "none" "black" w "basis" in
-  svg |> path_1 |> path_2
+  let d = list_to_coord_js_array [(x +. 0.85 *. edge, y +. 0.5 *. edge);mr] in
+  let path = path d scale scale "none" "black" 1 "linear" in
+  svg |> path_1 |> path_2 |> path
 
 (* [xor_helper x y edge svg] assists in the creation of the shape of an XOR
  * gate *)
@@ -156,7 +160,9 @@ let xor_helper (x:float) (y:float) (edge:float) red svg =
   let xor_bl = (x, y +. 0.9 *. edge) in
   let d_3 = list_to_coord_js_array [xor_tl;xor_mm;xor_bl] in
   let path_3 = path d_3 scale scale "none" "black" w "basis" in
-  svg |> path_1 |> path_2 |> path_3
+  let d = list_to_coord_js_array [(x +. 0.85 *. edge, y +. 0.5 *. edge);mr] in
+  let path = path d scale scale "none" "black" 1 "linear" in
+  svg |> path_1 |> path_2 |> path_3 |> path
 
 (* [box_with_symbol x y edge sym svg] assists in the creation of a box with
  * a text symbol inside of it *)
@@ -168,8 +174,8 @@ let box_with_symbol (x:float) (y:float) (edge:float) sym svg =
     |. flt attr "height" edge
     |. int attr "x" 0
     |. int attr "y" 0
-    |. int attr "rx" 6
-    |. int attr "ry" 6
+    |. int attr "rx" 1
+    |. int attr "ry" 1
     |. str style "stroke" "black"
     |. str style "fill" "none"
     |. int style "stroke-width" 1) in
@@ -240,7 +246,7 @@ let register_helper b l (x:float) (y:float) (edge:float) svg =
     (0.80 *. edge) 0.
     (0.85 *. edge) 1 "black") in
   let bit_vals = txt_c (edge *. 0.5) (edge *. 0.5) (edge /. 7.5) hex_str in
-  let label = txt_c (edge *. 0.8) (edge *. 0.2) (edge /. 4.5) l in
+  let label = txt_c (edge *. 0.5) (edge *. 0.2) (edge /. 7.5) l in
   let gnode = g |- frame |- line1 |- line2 |- bit_vals |- label in
   svg |- gnode
 
