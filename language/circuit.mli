@@ -102,14 +102,14 @@ module type CircuitFormatter = sig
     | A of arithmetic * connection * connection
     | N of negation * connection
     | C of comparison * connection * connection
-    | Sub of int * int * connection * connection
+    | Sub of int * int * connection
     | Nth of int * connection
     | Red of gate * connection
     | Concat of connection list
     | Mux of connection * connection * connection
     | Const of bitstream
     | Apply of id * connection list
-    | Var of id
+
 
   type display_reg_type = Dis_rising | Dis_falling | Dis_input | Dis_output
 
