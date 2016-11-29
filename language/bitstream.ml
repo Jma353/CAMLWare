@@ -1,5 +1,18 @@
 
-(* RI: Except within constructors, this type is treated as IMMUTABLE *)
+(* A bitstream represents a zero indexed collection of boolean values (bits)
+ * indexed in order of increasing significance
+ * The natural data structure for when O(1) indexed access is required is an
+ * array. Although OCaml does not provide immutable arrays, there is nothing
+ * stopping a clever programmer from using the provided arrays but treating
+ * them as if they were immutable after construction. Therefore the following
+ * invariant is enforced in this module:
+ * INVARIANT: all arguments to functions in this module must NOT BE MODIFIED
+ * regardless of whether they internally use mutable data structures *)
+
+(* AF: The array [|b_0; ... ; b_n|] represents the binary whose ith bit (with i
+ * ordered from least to most significant) is [1] if [b_i] is [true] and [0] if
+ * [b_i] is false. [||] does not represent anything
+ * RI: Once created a bitstream is treated as immutable in all other functions*)
 type bitstream = bool array
 
 let max_length = 32
@@ -21,7 +34,7 @@ let singleton (b:bool) : bitstream = Array.make 1 b
 
 let nth (b:bitstream) (n:int) : bitstream = singleton (Array.get b n)
 
-let substream b n1 n2 = Array.sub b n1 (n2 - n1)
+let substream b n1 n2 = Array.sub b n1 (n2 - n1 + 1)
 
 let is_zero = Array.for_all (fun x -> x = false)
 
@@ -36,11 +49,16 @@ let one n =
   z.(0) <- true; z
 
 let sign_extend n b =
+  if n <= length b then  b else
   Array.append b (Array.make (n - length b) (is_negative b))
 
 let zero_extend n b =
+  if n <= length b then b else
   Array.append b (Array.make (n - length b) false)
 
+(* [extend_matching extender b1 b2] is a pair [(r1,r2)] where [r1] and [r2]
+ * are [b1] and [b2] extended using [extender] to [max (length b1) (length b2)]
+ *)
 let extend_matching extender b1 b2 =
   let resized1 = extender (max (length b1) (length b2)) b1 in
   let resized2 = extender (max (length b1) (length b2)) b2 in
@@ -75,6 +93,11 @@ let logical_not b =
   let r = reduce (||) b in
   singleton (not r.(0))
 
+(* [adder c_in b1 b2 n out] is an internal function that simulates the behavior
+ * of a carry lookahead adder. When it finishes it imperatively sets the bits
+ * of [out] from bit [n] to bit [length out - 1] to be the result of
+ * [b1 + b2 + c_in] and returns a reference to [out]
+ * Requires: [length b1 = length b2] *)
 let rec adder c_in b1 b2 n out =
   if n = length out then out else
     let x = xor_bits b1.(n) b2.(n) in
@@ -97,6 +120,7 @@ let negate b =
   let out = Array.make (length b) false in
   adder true (zeros (length b)) (bitwise_not b) 0 out
 
+(* [rev_string s] is a string that is the reverse of [s] *)
 let rev_string s =
   String.init (String.length s)
     (fun x -> String.get s (String.length s - 1 - x))
