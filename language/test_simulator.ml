@@ -190,16 +190,35 @@ let tests = [
                 [("A",(bitstream_of_decstring "32'd12"))];
 
     change_input_test "mux" 
-        "input A[32] register C[32] = 32'd10 register B[16] = if A == C then 16'd15 else 16'd16" 3 
+        "input A[32] register C[32] = 32'd10 register B[16] = if A == C then 16'd14 else 16'd15" 3 
                 [("A", "32'x0000000C");("B", "16'x000F");(
                     "C", "32'x0000000A")] 
                 [("A",(bitstream_of_decstring "32'd12"))];
-
 
     change_input_test "mux equal" 
         "input A[32] register C[32] = 32'd10 register B[16] = if A == C then 16'd0 else 16'd16" 3 
                 [("A", "32'x0000000A");("B", "16'x0000");(
                     "C", "32'x0000000A")] 
                 [("A",(bitstream_of_decstring "32'd10"))];
+
+    change_input_test "fun" 
+        "input A[32] register C[32] = 32'd12 fun sub(x[32],y[32])[32] = x + y register B[32] = sub(A,C)" 3 
+                [("A", "32'x0000000A");("B", "32'x00000016");(
+                    "C", "32'x0000000C")] 
+                [("A",(bitstream_of_decstring "32'd10"))];
+
+    change_input_test "fun" 
+        "input A[32] register C[32] = 32'd12 fun sub(x[32],y[32])[32] = let z = x + y in z register B[32] = sub(A,C)" 3 
+                [("A", "32'x0000000A");("B", "32'x00000016");(
+                    "C", "32'x0000000C")] 
+                [("A",(bitstream_of_decstring "32'd10"))];
+
+    change_input_test "nth" 
+        "input A[32] register C[32] = 32'd12 output B[32] = A[1]" 3 
+                [("A", "32'x0000000A");("B", "32'x00000001");(
+                    "C", "32'x0000000C")] 
+                [("A",(bitstream_of_decstring "32'd10"))];
+
+    
 ]
 

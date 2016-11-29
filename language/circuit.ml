@@ -264,8 +264,8 @@ module Simulator : CircuitSimulator = struct
                           let l2 = length b2 in 
                           let l3 = length b3 in 
                           if is_zero s
-                          then extend_bits b3 l2 l3 
-                          else extend_bits b2 l2 l3 
+                          then extend_bits b2 l2 l3 
+                          else extend_bits b3 l2 l3 
     | Apply (id,clst) -> let subcirc = StringMap.find id circ.comps in
                           let s = (match subcirc with
                               | Subcirc sub -> sub
