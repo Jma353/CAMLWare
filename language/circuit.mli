@@ -45,6 +45,10 @@ val circuit : component map -> circuit
  * in association list [comps] *)
 val circuit_from_list : (id * component) list -> circuit
 
+(* [register_values circ] is a map from the ids of the register in [circ] to
+ * their values *)
+val register_values : circuit -> bitstream map
+
 (* formatting function for circuit components *)
 val format_comp : Format.formatter -> component -> unit
 
