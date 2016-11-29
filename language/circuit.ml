@@ -715,7 +715,7 @@ module Formatter : CircuitFormatter = struct
 
   (* type formatted_circuit = register StringMap.t list *)
 
-  let assign_columns circ =
+  let columnize_registers circ =
     let reg = get_all_registers circ in
     let inputs = find_inputs reg in
     let outputs = find_outputs reg in
@@ -742,9 +742,8 @@ module Formatter : CircuitFormatter = struct
         dep_helper new_not_done new_done (new_col::cols))
 
     in
-      if (StringMap.is_empty outputs)
-      then (List.rev ((dep_helper asts inputs [inputs])))
-      else List.rev (outputs::(dep_helper asts inputs [inputs]))
+      let registers = List.rev (dep_helper asts inputs []) in
+      (inputs, registers, outputs)
 
 
   let get_ids ast =
@@ -935,7 +934,6 @@ module Formatter : CircuitFormatter = struct
       in
     (new_lets, (top_sort new_nodes [] []))
 
-
   let r1 = {
     r_id = "A";
     reg_type = Dis_input;
@@ -1011,7 +1009,51 @@ module Formatter : CircuitFormatter = struct
     nodes = n;
   }
 
+  let make_register_column reg_col x_coord =
+    let l = float_of_int (List.length reg_col) in
+    let rec col_helper unfinished current_y =
+    match unfinished with
+    | [] ->  []
+    | h::t -> {r_id=h.r_id; reg_type=h.reg_type; input=h.input; r_y_coord=current_y; r_x_coord=x_coord}::
+              (col_helper t (current_y +. (100./.l))) in
+    col_helper reg_col 0.
+
+  (* let make_lists (inputs, registers, outputs) = 
+    let to_display_input reg_id register = {
+      r_id=reg_id;
+      r_x_coord=0.;
+      r_y_coord=0.;
+      reg_type=Dis_input;
+      input=(-1)
+    } in
+    let new_inputs =  *)
+
   let format circ =
+    let (inputs, reg_columns, outputs) = columnize_registers circ in
+    let x = StringMap.is_empty inputs in
+    let y = List.map (fun x-> StringMap.is_empty x) reg_columns in
+    let z = StringMap.is_empty outputs in
+    let to_display_input reg_id register = {
+      r_id=reg_id;
+      r_x_coord=0.;
+      r_y_coord=0.;
+      reg_type=Dis_input;
+      input=(-1)
+    } in
+    let new_inputs = StringMap.mapi to_display_input inputs in
+    let k = make_register_column (List.map (fun (k,v) -> v) (StringMap.bindings new_inputs)) 0. in
+
+    (*let format_one_register reg =
+      let ast =
+        match reg.next with
+        | User_input-> failwith "invalid map error"
+        | AST ast -> ast
+      in format_reg_ast (tree_to_list ast reg_list) in
+
+    let processed_outputs *)
+
+
+
   {
     registers = r;
     lets = lets;
