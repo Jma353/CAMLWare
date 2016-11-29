@@ -91,7 +91,7 @@ let rec format_logic f comb =
                         (string_of_arithmetic a) (format_logic) c2
   | Concat args -> Format.fprintf f "{%a}" (format_args) args
   | Mux2 (sel,c1,c2) -> Format.fprintf f "(if %a then %a else %a)"
-                        (format_logic) sel (format_logic) c1 (format_logic) c2
+                        (format_logic) sel (format_logic) c2 (format_logic) c1
   | Apply (id,args) -> Format.fprintf f "%s(%a)" id (format_args) args
   | Let (x,def,eval) -> Format.fprintf f "let %s = %a in %a" x (format_logic)
                         def (format_logic) eval
