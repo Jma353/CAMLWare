@@ -287,6 +287,19 @@ module View = struct
     | h::t -> collect_nodes x_scale y_scale t (handle_node h acc)
 
 
+  (* Initial view for compiling *)
+  let init_view () =
+    static "div"
+    |. seq [
+        static "textarea"
+        |. str attr "class" "code"
+        |. int attr "rows" 10
+        |. int attr "cols" 80;
+        static "button"
+        |. str attr "class" "compile-btn"
+        |. text (fun _ _ _ -> "Compile")]
+
+
   (* Make *)
   let make () =
 
@@ -318,15 +331,6 @@ module View = struct
       (* Circuit *)
       let bordered_svg = (svg |- border_rect) in
       let circuit = bordered_svg <.> g in
-      (* Compilation box *)
-      let input_box =
-        static "div"
-        |. seq [
-            static "textarea"
-            |. str attr "class" "code"
-            |. int attr "rows" 10
-            |. int attr "cols" 80] in
-      (* seq [input_box; circuit] *)
       circuit in
 
 
@@ -386,7 +390,7 @@ end
 
 
 (* Run the app *)
-let _ = run ~node:(Dom_html.document##body) (View.make ()) ()
+let _ = run ~node:(Dom_html.document##body) (View.init_view ()) ()
 
 
 
