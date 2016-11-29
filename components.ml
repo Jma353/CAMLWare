@@ -1,18 +1,20 @@
 open D3
 open Extensions
 
+(* Global Stroke Width *)
+let s_w = 2
+
 (* Line Computation
  * Creates a line SVG element from point (x1,y1) -> (x2,y2).  Allows for the
- * specification of a stroke width, as well as a stroke color *)
-let line_comp (x1:float) (y1:float) (x2:float) (y2:float)
-              (stroke_width:int) (stroke:string) =
+ * specification of the stroke color *)
+let line_comp (x1:float) (y1:float) (x2:float) (y2:float) =
   append "line"
   |. flt attr "x1" x1
   |. flt attr "y1" y1
   |. flt attr "x2" x2
   |. flt attr "y2" y2
-  |. int style "stroke-width" stroke_width
-  |. str style "stroke" stroke
+  |. int style "stroke-width" s_w
+  |. str style "stroke" "black"
 
 (* Int of Float Alias
  * A int_of_float alias *)
@@ -50,26 +52,25 @@ let text x y font_size clss sym =
 
 (* Circle Element Helper
  * Assists in the creation of a white circle SVG component *)
-let circ_c cx cy r w =
+let circ_c cx cy r =
   append "circle"
   |. flt attr "cx" cx
   |. flt attr "cy" cy
   |. flt attr "r" r
   |. str style "fill" "white"
   |. str style "stroke" "black"
-  |. int style "stroke-width" w
+  |. int style "stroke-width" s_w
 
 (* Path Element Helper
- * Assist in the creation of a path according to data (d) fill, stroke,
- * stroke width, and interpolation *)
-let path d fill stroke width interp =
+ * Assists in the creation of a path according to data and interpolation *)
+let path d interp =
   let scale = linear (0,100) (0,100) in (* 1:1 ratio *)
   let line_fun = line scale scale interp in
   (append "path"
   |. str attr "d" (use_line line_fun d)
-  |. str style "fill" fill
-  |. str style "stroke" stroke
-  |. int style "stroke-width" width)
+  |. str style "fill" "none"
+  |. str style "stroke" "black"
+  |. int style "stroke-width" s_w)
 
 (* Rectangle Element Helper
  * Assists in the creation of a rectangle SVG component *)
@@ -83,7 +84,7 @@ let rect_c (w:float) (h:float) (x:float) (y:float) (rx:float) (ry:float) =
   |. flt attr "ry" ry
   |. str style "stroke" "black"
   |. str style "fill" "none"
-  |. int style "stroke-width" 1
+  |. int style "stroke-width" s_w
 
 (* Box With Symbol Helper
  * Assists in the creation of a box with a singular symbol in it *)
@@ -102,7 +103,7 @@ module Wiring = struct
    * Assists in the creation of a tunnel component *)
   let tunnel op (l:string) (x:float) (y:float) (edge:float) svg =
     let x1 = op x (edge *. 0.1) in
-    let mini_wire = line_comp x1 y x y 1 "black" in
+    let mini_wire = line_comp x1 y x y in
     let label = text (op x1 (edge *. 0.1)) y (edge /. 4.) "" l in
     svg |- mini_wire |- label
 
@@ -111,7 +112,7 @@ module Wiring = struct
   (* Wiring Component *)
   let wiring (x1:float) (y1:float) (x2:float) (y2:float) svg =
     let d = _d [(x1,y1);((x1+.x2)/.2.,y1);((x1+.x2)/.2.,y2);(x2,y2)] in
-    svg |- (path d "none" "black" 1 "linear")
+    svg |- (path d "linear")
 
   (* Left Tunnel Component *)
   let l_tunnel (l:string) (x:float) (y:float) (edge:float) svg =
@@ -134,7 +135,7 @@ module Gates = struct
     let r = (0.07*.edge) in
     let cx = (x+.edge*.0.83+.r) in
     let cy = (y+.0.5*.edge) in
-    circ_c cx cy r 1
+    circ_c cx cy r
 
   (* Not Helper
    * Assists in the creation of a NOT gate
@@ -144,11 +145,11 @@ module Gates = struct
     let mr = (x +. edge *. 0.7, y +. edge *. 0.5) in
     let bl = (x +. edge *. 0.2, y +. edge *. 0.8) in
     let d = _d [tl;mr;bl;tl] in
-    let my_path = path d "none" "black" 1 "linear" in
+    let my_path = path d "linear" in
     let r = 0.1 *. edge in
     let cx = (x +. edge *. 0.7 +. r) in
     let cy = (y +. 0.5 *. edge) in
-    let circ = circ_c cx cy r 1 in
+    let circ = circ_c cx cy r in
     svg |- my_path |- circ
 
   (* And Helper
@@ -162,11 +163,11 @@ module Gates = struct
     let bm = (x +. 0.5 *. edge, y +. 0.9 *. edge) in
     let bl = (x, y +. 0.9 *. edge) in
     let d_1 = _d [tl;tm;mr;bm;bl] in
-    let path_1 = path d_1 "none" "black" 1 "basis" in
+    let path_1 = path d_1 "basis" in
     let d_2 = _d [tl;bl] in
-    let path_2 = path d_2 "none" "black" 1 "linear" in
+    let path_2 = path d_2 "linear" in
     let d_3 = _d [mm;mr] in
-    let path_3 = path d_3 "none" "black" 1 "linear" in
+    let path_3 = path d_3 "linear" in
     svg |- path_1 |- path_2 |- path_3
 
   (* Or Helper
@@ -181,11 +182,11 @@ module Gates = struct
     let mm = (x +. 0.2 *. edge, y +. 0.5 *. edge) in
     let mm2 = (x +. 0.85 *. edge, y +. 0.5 *. edge) in
     let d_1 = _d [tl;tm;mr;bm;bl] in
-    let path_1 = path d_1 "none" "black" 1 "basis" in
+    let path_1 = path d_1 "basis" in
     let d_2 = _d [tl;mm;bl] in
-    let path_2 = path d_2 "none" "black" 1 "basis" in
+    let path_2 = path d_2 "basis" in
     let d_3 = _d [mm2;mr] in
-    let path_3 = path d_3 "none" "black" 1 "linear" in
+    let path_3 = path d_3 "linear" in
     svg |- path_1 |- path_2 |- path_3
 
   (* Xor Helper
@@ -200,16 +201,16 @@ module Gates = struct
     let mm = (x +. 0.2 *. edge, y +. 0.5 *. edge) in
     let mm2 = (x +. 0.85 *. edge, y +. 0.5 *. edge) in
     let d_1 = _d [tl;tm;mr;bm;bl] in
-    let path_1 = path d_1 "none" "black" 1 "basis" in
+    let path_1 = path d_1  "basis" in
     let d_2 = _d [tl;mm;bl] in
-    let path_2 = path d_2 "none" "black" 1 "basis" in
+    let path_2 = path d_2 "basis" in
     let xor_tl = (x, y +. 0.1 *. edge) in
     let xor_mm = (x +. 0.1 *. edge, y +. 0.5 *. edge) in
     let xor_bl = (x, y +. 0.9 *. edge) in
     let d_3 = _d [xor_tl;xor_mm;xor_bl] in
-    let path_3 = path d_3 "none" "black" 1 "basis" in
+    let path_3 = path d_3 "basis" in
     let d_4 = _d [mm2;mr] in
-    let path_4 = path d_4 "none" "black" 1 "linear" in
+    let path_4 = path d_4 "linear" in
     svg |- path_1 |- path_2 |- path_3 |- path_4
 
   (* Reduce Text Helper
@@ -223,7 +224,7 @@ module Gates = struct
    * reduction gates
    * NOTE: Adds it to an SVG `svg` *)
   let red_line (x:float) (y:float) (edge:float) svg =
-    svg |- (line_comp x (y +. edge *. 0.2) x (y +.edge *. 0.8) 1 "black")
+    svg |- (line_comp x (y +. edge *. 0.2) x (y +.edge *. 0.8))
 
   (* COMPONENTS *)
 
@@ -315,9 +316,9 @@ module SubBits = struct
   (* Nth Bit Component *)
   let nth_c (n:int) (x:float) (y:float) (edge:float) svg =
     let in_line = (line_comp x (y +. edge /. 2.)
-      (0.3 *. edge +. x) (y +. edge /. 2.) 1 "black") in
+           (0.3 *. edge +. x) (y +. edge /. 2.)) in
     let out_line = (line_comp (x +. edge *. 0.7) (y +. edge /. 2.)
-      (x +. edge) (y +. edge /. 2.)  1 "black") in
+                                    (x +. edge) (y +. edge /. 2.)) in
     (sub_bits edge
       (0.4 *. edge)
       (0.4 *. edge)
@@ -330,9 +331,9 @@ module SubBits = struct
   (* Sebsequence of Bits Component *)
   let sub_seq_c (n1: int) (n2: int) (x:float) (y:float) (edge:float) svg =
     let in_line = (line_comp x (y +. edge /. 2.)
-      (0.15 *. edge +. x) (y +. edge /. 2.) 1 "black") in
+          (0.15 *. edge +. x) (y +. edge /. 2.)) in
     let out_line = (line_comp (x +. edge *. 0.85) (y +. edge /. 2.)
-      (x +. edge) (y +. edge /. 2.)  1 "black") in
+                                     (x +. edge) (y +. edge /. 2.)) in
     (sub_bits edge
       (0.7 *. edge)
       (0.4 *. edge)
@@ -366,10 +367,10 @@ module Registers = struct
     let b = base_register_helper b l type_l x y edge in
     let line1 = (line_comp 0.
       (0.75 *. edge) (0.15 *. edge)
-      (0.80 *. edge) 1 "black") in
+      (0.80 *. edge)) in
     let line2 = (line_comp
       (0.15 *. edge) (0.80 *. edge) 0.
-      (0.85 *. edge) 1 "black") in
+      (0.85 *. edge)) in
     b |- line1 |- line2
 
   (* COMPONENTS *)
@@ -464,12 +465,11 @@ module Miscs = struct
     let three = (edge *. 0.6, edge *. 0.8) in
     let four  = (0., edge) in
     let d = _d [one;two;three;four;one] in
-    let my_path = path d "none" "black" 1 "linear" in
+    let my_path = path d "linear" in
     let i0_label = text (edge *. 0.2) (edge *. 0.3) (edge /. 7.5) "" "i_0" in
     let i1_label = text (edge *. 0.2) (edge *. 0.5) (edge /. 7.5) "" "i_1" in
     let sel_label = text (edge *. 0.2) (edge *. 0.7) (edge /. 7.5) "" "sel" in
-    let out_wire = (line_comp (edge *. 0.6) (edge /. 2.) edge
-      (edge /. 2.) 1 "black") in
+    let out_wire = (line_comp (edge *. 0.6) (edge /. 2.) edge (edge /. 2.)) in
     svg |- g |- my_path |- i0_label |- i1_label |- sel_label |- out_wire
 
   (* Let-statement Component *)
