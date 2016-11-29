@@ -54,3 +54,7 @@ let line x_scale y_scale interp =
 (* Allows us to use a line-auto path generator function *)
 let use_line lne data =
   Js.Unsafe.(fun_call lne [| inject data |])
+
+(* Shortcut function to run a D3 change *)
+let plz_run a =
+  D3.run ~node:(Dom_html.document##body) a ()
