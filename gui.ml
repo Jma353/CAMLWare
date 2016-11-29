@@ -76,7 +76,7 @@ module View = struct
       | Dis_falling -> collect_registers x_scale y_scale t ((d_register zeros id x y nonNodeS)::acc)
       | Dis_output  -> collect_registers x_scale y_scale t ((o_register zeros id x y nonNodeS)::acc)
       | Dis_input   ->
-        let f = (fun () -> ()) in
+        let f = () in
         collect_registers x_scale y_scale t ((i_register zeros id x y nonNodeS f)::acc)
     end
 
