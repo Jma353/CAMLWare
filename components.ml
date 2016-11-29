@@ -64,12 +64,20 @@ let wiring (x1:float) (y1:float) (x2:float) (y2:float) svg =
   let d = list_to_coord_js_array lst in
   path d scale scale "none" "black" 1 "linear" svg
 
-(* Tunnel Component *)
-let tunnel (l:string) (x:float) (y:float) (edge:float) svg =
-  let x1 = x -. edge *. 0.1 in
+(* Tunnel helper *)
+let tunnel op (l:string) (x:float) (y:float) (edge:float) svg =
+  let x1 = op x (edge *. 0.1) in
   let mini_wire = line_comp x1 y x y 1 "black" in
-  let label = txt_c (x1 -. edge *. 0.1) y (edge /. 4.) l in
+  let label = txt_c (op x1 (edge *. 0.1)) y (edge /. 4.) l in
   svg |- mini_wire |- label
+
+(* Left Tunnel Component *)
+let l_tunnel (l:string) (x:float) (y:float) (edge:float) svg =
+  tunnel (-.) l x y edge svg
+
+(* Right Tunnel Component *)
+let r_tunnel (l:string) (x:float) (y:float) (edge:float) svg =
+  tunnel (+.) l x y edge svg
 
 (* [neg_dot x y edge red svg] assists in the creation of a negation dot at the
  * end of a particular logic gate *)

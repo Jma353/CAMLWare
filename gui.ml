@@ -147,9 +147,9 @@ module View = struct
         let y = base_y +. (float_of_int n) *. space in
         begin match c with
           | Reg id ->
-            make_wirings t (n+1) x base_y space ((tunnel id x y nodeS)::acc)
+            make_wirings t (n+1) x base_y space ((l_tunnel id x y nodeS)::acc)
           | Let id ->
-            make_wirings t (n+1) x base_y space ((tunnel id x y nodeS)::acc)
+            make_wirings t (n+1) x base_y space ((l_tunnel id x y nodeS)::acc)
           | Node i ->
             let i_i = Int.make i in
             let pt = IntMap.find i_i map in
@@ -191,6 +191,22 @@ module View = struct
     match n_s with
     | [] -> acc
     | h::t -> collect_wires x_scale y_scale map t (handle_wiring h acc)
+
+
+  (* Finalize Tunnels
+   *
+   * This function finalizes any tunneling we have for this circuit *)
+  let rec finalize_tunnels map (regs: display_register list) acc =
+
+    let process_reg_tunnel reg acc =
+      let id_i = Int.make reg.input in
+      let p = IntMap.find id_i map in
+      (r_tunnel reg.id p.x p.y nodeS)::acc
+    in
+
+    match regs with
+    | [] -> acc
+    | h::t -> finalize_tunnels map t (process_reg_tunnel h acc)
 
 
   (* Collect Nodes
@@ -348,9 +364,9 @@ module View = struct
         let nodes = snd stuff in
         let map   = fst stuff in
         let wires = collect_wires x_n_scale y_n_scale map c_nodes [] in
-
+        let tunnels = finalize_tunnels map registers [] in
         (* Resultant *)
-        regs @ lets @ nodes @ wires
+        regs @ lets @ nodes @ wires @ tunnels
     in
 
     apply_views (collect_views !circ) init
