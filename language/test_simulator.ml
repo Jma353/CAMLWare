@@ -25,6 +25,177 @@ let change_input_test name s1 n lst id_vals =
     let nc = change id_vals circ in 
     test name lst (nc |> step_n n |> register_values|> StringMap.map (bitstream_to_hexstring) |> StringMap.bindings)
 
+let state_machine_tester name s1 lst id_vals = 
+    let circ = s1 |> parse_circuit_no_errors in 
+    let rec change lst circ = 
+       match lst with 
+        | [] -> circ 
+        | h::t -> let nc = change_input (fst h) (snd h) circ in let nc1 = step nc in change t nc1
+    in let nc = change id_vals circ in 
+    test name lst (nc |> register_values |> StringMap.map (bitstream_to_hexstring) |> StringMap.bindings)
+
+
+(* STATE MACHINE EXAMPLE TESTING *)
+let sm_string =  "input in_channel[1]
+            register state[3] = next()
+            output out_channel[1] = state == 3'b100
+            fun next()[3] =
+              if state == 3'd0 then
+                if in_channel
+                then 3'd1
+                else 3'd0
+              else if state == 3'd1 then
+                if in_channel
+                then 3'd1
+                else 3'd2
+              else if state == 3'd2 then
+                if in_channel
+                then 3'd1
+                else 3'd3
+              else if state == 3'd3 then
+                if in_channel
+                then 3'd4
+                else 3'd0
+              else
+                if in_channel
+                then 3'd1
+                else 3'd0"
+
+let state_machine_tests = [
+    state_machine_tester "state machine step2" sm_string 
+        [("in_channel", "1'x1");("out_channel", "1'x0");("state", "3'x1")]
+        [("in_channel", bitstream_of_binstring "1'b1")];
+
+    state_machine_tester "state machine step3" sm_string 
+        [("in_channel", "1'x1");("out_channel", "1'x0");("state", "3'x1")]
+        [("in_channel", bitstream_of_binstring "1'b1"); ("in_channel", bitstream_of_binstring "1'b1")];
+
+    test "state_machine step4" [("in_channel", "1'x0");("out_channel", "1'x0");("state", "3'x2")] 
+                    (sm_string 
+                    |> parse_circuit_no_errors 
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b1")
+                    |> step_n 2 
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b0")
+                    |> step_n 2 
+                    |> register_values 
+                    |> StringMap.map (bitstream_to_hexstring) 
+                    |> StringMap.bindings);
+
+    test "state_machine step5" [("in_channel", "1'x0");("out_channel", "1'x0");("state", "3'x3")] 
+                    (sm_string 
+                    |> parse_circuit_no_errors 
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b1")
+                    |> step_n 2 
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b0")
+                    |> step_n 2 
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b0")
+                    |> step_n 2
+                    |> register_values 
+                    |> StringMap.map (bitstream_to_hexstring) 
+                    |> StringMap.bindings);
+
+    test "state_machine step6" [("in_channel", "1'x1");("out_channel", "1'x1");("state", "3'x4")] 
+                    (sm_string 
+                    |> parse_circuit_no_errors 
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b1")
+                    |> step_n 2 
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b0")
+                    |> step_n 2 
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b0")
+                    |> step_n 2
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b1")
+                    |> step_n 2
+                    |> register_values 
+                    |> StringMap.map (bitstream_to_hexstring) 
+                    |> StringMap.bindings);
+
+     test "state_machine step7" [("in_channel", "1'x0");("out_channel", "1'x0");("state", "3'x0")] 
+                    (sm_string 
+                    |> parse_circuit_no_errors 
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b1")
+                    |> step_n 2 
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b0")
+                    |> step_n 2 
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b0")
+                    |> step_n 2
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b1")
+                    |> step_n 2
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b0")
+                    |> step_n 2
+                    |> register_values 
+                    |> StringMap.map (bitstream_to_hexstring) 
+                    |> StringMap.bindings);
+
+    test "state_machine step7 2" [("in_channel", "1'x1");("out_channel", "1'x0");("state", "3'x1")] 
+                    (sm_string 
+                    |> parse_circuit_no_errors 
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b1")
+                    |> step_n 2 
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b0")
+                    |> step_n 2 
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b0")
+                    |> step_n 2
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b1")
+                    |> step_n 2
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b1")
+                    |> step_n 2
+                    |> register_values 
+                    |> StringMap.map (bitstream_to_hexstring) 
+                    |> StringMap.bindings);
+
+    test "state_machine step8" [("in_channel", "1'x0");("out_channel", "1'x0");("state", "3'x0")] 
+                    (sm_string 
+                    |> parse_circuit_no_errors 
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b1")
+                    |> step_n 2 
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b0")
+                    |> step_n 2 
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b0")
+                    |> step_n 2
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b0")
+                    |> step_n 2
+                    |> register_values 
+                    |> StringMap.map (bitstream_to_hexstring) 
+                    |> StringMap.bindings);
+
+     test "state_machine step9" [("in_channel", "1'x1");("out_channel", "1'x0");("state", "3'x1")] 
+                    (sm_string 
+                    |> parse_circuit_no_errors 
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b1")
+                    |> step_n 2 
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b0")
+                    |> step_n 2 
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b1")
+                    |> step_n 2
+                    |> register_values 
+                    |> StringMap.map (bitstream_to_hexstring) 
+                    |> StringMap.bindings);
+
+    test "state_machine step10" [("in_channel", "1'x1");("out_channel", "1'x0");("state", "3'x1")] 
+                    (sm_string 
+                    |> parse_circuit_no_errors 
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b1")
+                    |> step_n 2 
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b0")
+                    |> step_n 2 
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b1")
+                    |> step_n 2
+                    |> register_values 
+                    |> StringMap.map (bitstream_to_hexstring) 
+                    |> StringMap.bindings);
+
+    test "state_machine step10" [("in_channel", "1'x1");("out_channel", "1'x0");("state", "3'x1")] 
+                    (sm_string 
+                    |> parse_circuit_no_errors 
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b1")
+                    |> step_n 2 
+                    |> change_input "in_channel" (bitstream_of_binstring "1'b1")
+                    |> step_n 2 
+                    |> register_values 
+                    |> StringMap.map (bitstream_to_hexstring) 
+                    |> StringMap.bindings);
+]
+
 
 let tests = [
     create_reg_list "input no step" "input A[32]" 0 [("A", "32'x00000000")];
@@ -233,5 +404,13 @@ let tests = [
                 [("A", (bitstream_of_binstring "1'b1")); 
                 ("B", (bitstream_of_binstring "1'b1"))];
 
-]
+    change_input_test "state_machine" sm_string 0
+        [("in_channel", "1'x0");("out_channel", "1'x0");("state", "3'x0")]
+        [];
+
+    change_input_test "state_machine step1" sm_string 1
+        [("in_channel", "1'x0");("out_channel", "1'x0");("state", "3'x0")]
+        [];
+
+] @ state_machine_tests 
 
