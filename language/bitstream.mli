@@ -6,6 +6,9 @@
 (* The type of bitstream values *)
 type bitstream
 
+(* [max_length] is the maximum allowable bitstream length *)
+val max_length : int
+
 (* [length b] is the number of bits in [b] *)
 val length : bitstream -> int
 

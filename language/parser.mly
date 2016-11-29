@@ -6,7 +6,9 @@ open Circuit
 open Lexing
 
 let check_positive n =
-  if n <= 0 then failwith (Printf.sprintf "%i is an invalid length" n) else ()
+  if n <= 0 || n > max_length then
+  failwith (Printf.sprintf "%i is an invalid length" n)
+  else ()
 
 %}
 
