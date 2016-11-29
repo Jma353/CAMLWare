@@ -225,7 +225,7 @@ let constant b (x:float) (y:float) (edge:float) svg =
 
 (* [register_helper b x y edge float svg] assists in the creation of a
  * component that shows a register *)
-let register_helper b l (x:float) (y:float) (edge:float) (f:unit -> unit) svg =
+let register_helper b l (x:float) (y:float) (edge:float) (f: unit) svg =
   let g = container x y in
   let hex_str = Bitstream.bitstream_to_hexstring b in
   let frame =
@@ -237,7 +237,7 @@ let register_helper b l (x:float) (y:float) (edge:float) (f:unit -> unit) svg =
     |. str style "stroke" "black"
     |. str style "fill" "transparent"
     |. int style "stroke-width" 1)
-    |. E.click (fun _ _ _ -> f ()) in 
+    |. E.click (fun _ _ _ -> f)in
   let line1 = (line_comp 0.
     (0.75 *. edge)
     (0.15 *. edge)
@@ -253,11 +253,11 @@ let register_helper b l (x:float) (y:float) (edge:float) (f:unit -> unit) svg =
 
 (* Rising (UP) Register Component *)
 let u_register b l (x:float) (y:float) (edge:float) svg =
-  (svg |> register_helper b ("Rising: " ^ l) x y edge (fun () -> ()))
+  (svg |> register_helper b ("Rising: " ^ l) x y edge ())
 
 (* Falling (DOWN) Register Component *)
 let d_register b l (x:float) (y:float) (edge:float) svg =
-  (svg |> register_helper b ("Falling: " ^ l) x y edge (fun () -> ()))
+  (svg |> register_helper b ("Falling: " ^ l) x y edge ())
 
 (* Input Register Component *)
 let i_register b l (x:float) (y:float) (edge:float) f svg =
@@ -265,7 +265,7 @@ let i_register b l (x:float) (y:float) (edge:float) f svg =
 
 (* Output Register Component *)
 let o_register b l (x:float) (y:float) (edge:float) svg =
-  (svg |> register_helper b ("Output: " ^ l) x y edge (fun () -> ()))
+  (svg |> register_helper b ("Output: " ^ l) x y edge ())
 
 (* MUX2 Component *)
 let mux2_c (x:float) (y:float) (edge:float) svg =
