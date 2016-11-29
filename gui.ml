@@ -55,7 +55,7 @@ module Event = struct
     let f = (fun k v acc -> (Simulator.change_input
       acc k (Bitstream.bitstream_of_integer v))) in
     match !circ with
-    | Some(c) -> circ := Some(StringMap.fold f map c)
+    | Some c -> circ := Some(StringMap.fold f map c)
     | _ -> failwith "fail"
 
   (* Handle compiling *)
@@ -87,7 +87,7 @@ module View = struct
   let width = 800
   let height = 400
   let padding = 100
-  let nonNodeS = 80.
+  let nonNodeS = 60.
   let nodeS = 50.
 
 
@@ -108,16 +108,16 @@ module View = struct
     match regs with
     | [] -> acc
     | h::t ->
-      let x = x_scale h.x_coord in
-      let y = y_scale h.y_coord in
-      let zeros = Bitstream.zeros 32 in
-      let id = h.id in
-      begin match h.reg_type with
-        | Dis_rising  -> collect_registers x_scale y_scale t ((u_register zeros id x y nonNodeS)::acc)
-        | Dis_falling -> collect_registers x_scale y_scale t ((d_register zeros id x y nonNodeS)::acc)
-        | Dis_input   -> collect_registers x_scale y_scale t ((i_register zeros id x y nonNodeS)::acc)
-        | Dis_output  -> collect_registers x_scale y_scale t ((o_register zeros id x y nonNodeS)::acc)
-      end
+    let x = x_scale h.x_coord in
+    let y = y_scale h.y_coord in
+    let zeros = Bitstream.zeros 32 in
+    let id = h.id in
+    begin match h.reg_type with
+      | Dis_rising  -> collect_registers x_scale y_scale t ((u_register zeros id x y nonNodeS)::acc)
+      | Dis_falling -> collect_registers x_scale y_scale t ((d_register zeros id x y nonNodeS)::acc)
+      | Dis_input   -> collect_registers x_scale y_scale t ((i_register zeros id x y nonNodeS)::acc)
+      | Dis_output  -> collect_registers x_scale y_scale t ((o_register zeros id x y nonNodeS)::acc)
+    end
 
 
   (* Collect Lets
@@ -127,10 +127,10 @@ module View = struct
     match lets with
     | [] -> acc
     | h::t ->
-      let x = x_scale h.x_coord in
-      let y = y_scale h.y_coord in
-      let id = h.id in
-      collect_lets x_scale y_scale t ((let_c id x y nonNodeS)::acc)
+    let x = x_scale h.x_coord in
+    let y = y_scale h.y_coord in
+    let id = h.id in
+    collect_lets x_scale y_scale t ((let_c id x y nonNodeS)::acc)
 
 
   (* Collect Wires
@@ -161,8 +161,8 @@ module View = struct
     let process_node_wirings c_s cx cy acc =
       let side = nodeS in
       let n = List.length c_s in
-      let x = cx -. side /. 2. in
-      let base_y = cy -. side /. 2. in
+      let x = cx in
+      let base_y = cy in
       match n with
       | 1 -> make_wirings c_s 1 x base_y (side /. 2.) acc
       | 2 -> make_wirings c_s 0 x base_y side acc
@@ -199,9 +199,12 @@ module View = struct
   let rec finalize_tunnels map (regs: display_register list) acc =
 
     let process_reg_tunnel reg acc =
-      let id_i = Int.make reg.input in
-      let p = IntMap.find id_i map in
-      (r_tunnel reg.id p.x p.y nodeS)::acc
+      if reg.input <> -1 then
+        let id_i = Int.make reg.input in
+        let p = IntMap.find id_i map in
+        (r_tunnel reg.id p.x p.y nodeS)::acc
+      else
+        acc
     in
 
     match regs with
@@ -220,7 +223,9 @@ module View = struct
       let acc = snd stuff in
       let x = x_scale n.x_coord in
       let y = y_scale n.y_coord in
-      let map = IntMap.add id_i {x = x +. nodeS /. 2.; y} (fst stuff) in
+      let map = (IntMap.add id_i
+        {x = x +. nodeS; y = y +. nodeS /. 2.}
+        (fst stuff)) in
       match n.node with
       | B (g,_,_) ->
         begin match g with
@@ -283,7 +288,7 @@ module View = struct
 
 
   (* Make *)
-  let make k =
+  let make () =
 
     (* An initial, blank view *)
     let init =
@@ -312,7 +317,7 @@ module View = struct
         |. int style "stroke-width" 1) in
       (* Circuit *)
       let bordered_svg = (svg |- border_rect) in
-      let circuit = bordered_svg |- g in
+      let circuit = bordered_svg <.> g in
       (* Compilation box *)
       let input_box =
         static "div"
@@ -320,9 +325,9 @@ module View = struct
             static "textarea"
             |. str attr "class" "code"
             |. int attr "rows" 10
-            |. int attr "cols" 80
-            |. str attr "value" !code] in
-      seq [circuit; input_box] in
+            |. int attr "cols" 80] in
+      (* seq [input_box; circuit] *)
+      circuit in
 
 
     (* Applies all views to a container *)
@@ -336,12 +341,16 @@ module View = struct
      * info regarding inputs & outputs. *)
     let collect_views (op_c: circuit option) =
       match op_c with
-      | None -> []
-      | Some(a_c) ->
-
+      | Some a_c -> [] (* FLAG TESTING *)
+      | None ->
+        (*
         (* Format the circuit *)
         let c = format a_c in
+        *)
+
         let get_second = (fun (_,x) -> x) in
+        (* FLAG TESTING *)
+        let c = test_circ () in
 
         (* Format info *)
         let registers = List.map get_second c.registers in
@@ -366,6 +375,7 @@ module View = struct
         let wires = collect_wires x_n_scale y_n_scale map c_nodes [] in
         let tunnels = finalize_tunnels map registers [] in
         (* Resultant *)
+
         regs @ lets @ nodes @ wires @ tunnels
     in
 
@@ -373,19 +383,10 @@ module View = struct
 
 end
 
-(* Event Loop  *)
-let main_lwt () =
-  let stream, push, _ =
-    let stream, push = Lwt_stream.create () in
-    stream, (fun x -> push (Some x)), (fun () -> push None) in
-  let view = View.make push in
-  let node = (Dom_html.document##body) in
-  run ~node view ();
-  Lwt_stream.fold (fun e m -> run ~node view (); ()) stream ()
 
 
 (* Run the app *)
-let _ = Lwt_js_events.async main_lwt
+let _ = run ~node:(Dom_html.document##body) (View.make ()) ()
 
 
 
