@@ -125,14 +125,21 @@ let rev_string s =
   String.init (String.length s)
     (fun x -> String.get s (String.length s - 1 - x))
 
+(* [bitstream_of_string_helper s arr n helper] is a bitstream constructed
+ * by setting bits [n] through [length arr - 1] of [arr] by parsing [s]
+ * and passing each character to [helper] *)
 let rec bitstream_of_string_helper (s:Scanf.Scanning.in_channel) (arr:bitstream)
-    (n:int) (helper:Scanf.Scanning.in_channel -> char option -> bitstream -> int -> bitstream) : bitstream =
+    (n:int) (helper:Scanf.Scanning.in_channel -> char option -> bitstream
+    -> int -> bitstream) : bitstream =
   if (n >= Array.length arr) then arr else
     let c = try Scanf.bscanf s "%c" (fun x -> Some x) with End_of_file -> None
     in helper s c arr n
 
+(* [bitstream_of_string s base helper] is a bitstream constructed by parsing
+ * [s] as a string with base [base] and passing each digit to [helper] *)
 let bitstream_of_string (s:string) (base:string)
-    (helper:Scanf.Scanning.in_channel -> char option -> bitstream -> int -> bitstream) : bitstream =
+    (helper:Scanf.Scanning.in_channel -> char option -> bitstream ->
+    int -> bitstream) : bitstream =
   let split = Str.split (Str.regexp base) s in
   let (l,str) = if List.length split = 2
     then (int_of_string (List.hd split), List.hd (List.tl split))
