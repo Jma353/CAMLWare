@@ -119,25 +119,26 @@ module type CircuitFormatter = sig
   type display_reg_type = Dis_rising | Dis_falling | Dis_input | Dis_output
 
   type display_node = {
-    id : int;
-    x_coord: float;
-    y_coord: float;
+    n_id : int;
+    n_x_coord: float;
+    n_y_coord: float;
     node : node;
   }
 
-  type display_register = {
-    id : id;
-    reg_type :  display_reg_type;
-    x_coord : float;
-    y_coord : float;
-    input : int;
+  type display_let = {
+    l_id : id;
+    l_x_coord:float;
+    l_y_coord: float;
+    inputs: id list;
   }
 
-  type display_let = {
-    id : id;
-    x_coord:float;
-    y_coord: float;
-    inputs: id list;
+
+  type display_register = {
+    r_id : id;
+    reg_type :  display_reg_type;
+    r_x_coord : float;
+    r_y_coord : float;
+    input : int;
   }
 
   type formatted_circuit = {
