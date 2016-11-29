@@ -221,8 +221,17 @@ let tests = [
 
 
     change_input_test "2 funcs" 
-        "register A[4] = 4'b0101 register B[4] = 4'b1001 fun f(x[4],y[4])[4] = x | y fun h(u[4],v[4])[4] = u && v register D[4] = f(A,B) register F[4] = h(B,A)" 3 
+        "register A[4] = 4'b0101 register B[4] = 4'b1001 fun f(x[4],y[4])[4] = 
+        x | y fun h(u[4],v[4])[4] = u && v register D[4] = f(A,B) 
+        register F[4] = h(B,A)" 3 
                 [("A", "4'x5");("B", "4'x9");("D", "4'xD");("F", "4'x1")] 
                 [];
+
+    change_input_test "adder" 
+        "input A[1] input B[1] output S[1] = A ^ B output C[1] = A & B" 0 
+                [("A", "1'x1");("B", "1'x1");("C", "1'x1");("S", "1'x0")] 
+                [("A", (bitstream_of_binstring "1'b1")); 
+                ("B", (bitstream_of_binstring "1'b1"))];
+
 ]
 

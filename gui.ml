@@ -36,47 +36,6 @@ let code = ref ""
 let circ = ref None
 
 
-(* The Events
- *
- * This module deals with the events that happen during the lifecycle of
- * the application.  They are reported via the application (creation
- * of the particular types of events in dealt with in the handlers on)
- * specific actions by the user. *)
-module Event = struct
-
-  (* Types of events *)
-  type t =
-    | ChangeInputs of int StringMap.t (* Created on reading *)
-    | Compile of string (* Grabbed from the string being compiled *)
-    | Step
-
-  (* Handle changing input *)
-  let change_input_handler map =
-    let f = (fun k v acc ->
-      Simulator.change_input k (Bitstream.bitstream_of_integer v) acc) in
-    match !circ with
-    | Some c -> circ := Some(StringMap.fold f map c)
-    | _ -> failwith "fail"
-
-  (* Handle compiling *)
-  let compile_handler s =
-    circ := Some(s |> Parse.parse_circuit_no_errors)
-
-  (* Handle stepping *)
-  let step_handler =
-    match !circ with
-    | None -> circ := None
-    | Some(c) -> circ := Some(Simulator.step c)
-
-  (* Handler for different types of events *)
-  let handle t m =
-    match t with
-    | ChangeInputs map -> change_input_handler map
-    | Compile s        -> compile_handler s
-    | Step             -> step_handler
-
-end
-
 (* View
  * Handles building the initial view, as well as constructing the proper dom
  * on building a circuit *)
@@ -115,8 +74,10 @@ module View = struct
     begin match h.reg_type with
       | Dis_rising  -> collect_registers x_scale y_scale t ((u_register zeros id x y nonNodeS)::acc)
       | Dis_falling -> collect_registers x_scale y_scale t ((d_register zeros id x y nonNodeS)::acc)
-      | Dis_input   -> collect_registers x_scale y_scale t ((i_register zeros id x y nonNodeS)::acc)
       | Dis_output  -> collect_registers x_scale y_scale t ((o_register zeros id x y nonNodeS)::acc)
+      | Dis_input   ->
+        let f = (fun () -> ()) in
+        collect_registers x_scale y_scale t ((i_register zeros id x y nonNodeS f)::acc)
     end
 
 
@@ -287,7 +248,9 @@ module View = struct
     | h::t -> collect_nodes x_scale y_scale t (handle_node h acc)
 
 
-  (* Make *)
+  (* Make
+   *
+   * Creates a circuit *)
   let make () =
 
     (* An initial, blank view *)
@@ -314,19 +277,12 @@ module View = struct
         |. int attr "height" height
         |. str style "stroke" "black"
         |. str style "fill" "none"
+        |. int attr "rx" 4
+        |. int attr "ry" 4
         |. int style "stroke-width" 1) in
       (* Circuit *)
       let bordered_svg = (svg |- border_rect) in
       let circuit = bordered_svg <.> g in
-      (* Compilation box *)
-      let input_box =
-        static "div"
-        |. seq [
-            static "textarea"
-            |. str attr "class" "code"
-            |. int attr "rows" 10
-            |. int attr "cols" 80] in
-      (* seq [input_box; circuit] *)
       circuit in
 
 
@@ -374,19 +330,40 @@ module View = struct
         let map   = fst stuff in
         let wires = collect_wires x_n_scale y_n_scale map c_nodes [] in
         let tunnels = finalize_tunnels map registers [] in
-        (* Resultant *)
-
         regs @ lets @ nodes @ wires @ tunnels
     in
 
+
+    (* Our resultant *)
     apply_views (collect_views !circ) init
+
+
+
+  (* Initial view for compiling *)
+  let init_view () =
+    static "div"
+    |. str attr "class" "initial"
+    |. seq [
+        static "textarea"
+        |. str attr "class" "code"
+        |. int attr "rows" 10
+        |. int attr "cols" 80;
+        static "button"
+        |. str attr "class" "compile-btn"
+        |. text (fun _ _ _ -> "Compile")
+        |. E.click (fun _ _ _ ->
+          (* Remove this view *)
+          plz_run (select ".initial" |. remove);
+          (* Add the circuit *)
+          plz_run (make ())
+          )]
 
 end
 
 
 
 (* Run the app *)
-let _ = run ~node:(Dom_html.document##body) (View.make ()) ()
+let _ = plz_run (View.init_view ())
 
 
 
