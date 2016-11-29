@@ -76,8 +76,8 @@ module View = struct
       | Dis_falling -> collect_registers x_scale y_scale t ((d_register zeros id x y nonNodeS)::acc)
       | Dis_output  -> collect_registers x_scale y_scale t ((o_register zeros id x y nonNodeS)::acc)
       | Dis_input   ->
-        let f = () in
-        collect_registers x_scale y_scale t ((i_register zeros id x y nonNodeS f)::acc)
+        let f = (fun x -> ()) in
+        collect_registers x_scale y_scale t ((i_register f zeros id x y nonNodeS)::acc)
     end
 
 
@@ -235,8 +235,8 @@ module View = struct
         | Gte -> (map, (greater_than_or_equal_to x y nodeS)::acc)
         | Neq -> (map, (not_equal_to x y nodeS)            ::acc)
         end
-      | Sub (i1,i2,_)   -> (map, (sub_seq_c x y nodeS i1 i2)::acc)
-      | Nth (n,_)       -> (map, (nth_c x y nodeS n)        ::acc)
+      | Sub (i1,i2,_)   -> (map, (sub_seq_c i1 i2 x y nodeS)::acc)
+      | Nth (n,_)       -> (map, (nth_c n x y nodeS)        ::acc)
       | Concat (_)      -> (map, (concat_c x y nodeS)       ::acc)
       | Mux (_,_,_)     -> (map, (mux2_c x y nodeS)         ::acc)
       | Const b         -> (map, (constant b x y nodeS)     ::acc)

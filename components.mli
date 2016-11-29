@@ -5,15 +5,16 @@ val wiring : float -> float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val l_tunnel : string -> float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val r_tunnel : string -> float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 
-val i_register : Bitstream.bitstream -> string -> float -> float -> float -> unit -> ('a, 'b) D3.t -> ('a, 'b) D3.t
+
 val constant   : Bitstream.bitstream -> float  -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val u_register : Bitstream.bitstream -> string -> float -> float -> float         -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val d_register : Bitstream.bitstream -> string -> float -> float -> float         -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val o_register : Bitstream.bitstream -> string -> float -> float -> float         -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 
 val mux2_c    : float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
-val nth_c     : float -> float -> float -> int           -> ('a, 'b) D3.t -> ('a, 'b) D3.t
-val sub_seq_c : float -> float -> float -> int           -> int -> ('a, 'b) D3.t -> ('a, 'b) D3.t
+
+val nth_c     : int -> float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
+val sub_seq_c : int -> int   -> float -> float -> float         -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 
 val arith_not                : float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val arith_and                : float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
@@ -47,3 +48,8 @@ val concat_c                 : float -> float -> float -> ('a, 'b) D3.t -> ('a, 
 
 val let_c      : string -> float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val sub_circ_c : string -> float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
+
+
+
+(* Triggers *)
+val i_register : (string -> unit) -> Bitstream.bitstream -> string -> float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t

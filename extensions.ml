@@ -18,7 +18,7 @@ let make_coord x y =
   c
 
 (* OCaml to coordinates in JavaScript *)
-let list_to_coord_js_array lst =
+let _d lst =
   let n = List.length lst in
   let arr = Js.(jsnew array_length (n)) in
   let rec add_vals l i =
