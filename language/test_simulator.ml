@@ -11,11 +11,6 @@ let test name v1 v2 =
 let create_reg_list name s1 n lst  = 
     test name lst (s1 |> parse_circuit_no_errors |> step_n n |> register_values|> StringMap.map (bitstream_to_hexstring) |> StringMap.bindings)
 
-(*
-let create_change_input name s1 n lst id val = 
-    test name lst (s1 |> parse_circuit_no_errors |> step_n n |> register_values |> StringMap.map (bitstream_to_hexstring) |> StringMap.bindings)
-*)
-
 let change_input_test name s1 n lst id_vals = 
     let circ = s1 |> parse_circuit_no_errors in 
     let rec change lst circ = 
@@ -36,7 +31,7 @@ let state_machine_tester name s1 lst id_vals =
 
 
 (* STATE MACHINE EXAMPLE TESTING *)
-let sm_string =  "input in_channel[1]
+let inf_string =  "input in_channel[1]
             register state[3] = next()
             output out_channel[1] = state == 3'b100
             fun next()[3] =
@@ -61,7 +56,23 @@ let sm_string =  "input in_channel[1]
                 then 3'd1
                 else 3'd0"
 
-let state_machine_tests = [
+let opt_string = "input in_channel[1]
+    register state[3] = next()
+    output out_channel[1] = state[2]
+    fun next()[3] = {
+    state[1] & state[0] & in_channel,
+    ~state[1] & state[0] & ~in_channel | state[1] & ~state[0] & ~in_channel,
+    ~state[1] & in_channel | state[1] & ~state[0]}"
+
+let test_state_machine sm_string = [
+    change_input_test "state_machine" sm_string 0
+        [("in_channel", "1'x0");("out_channel", "1'x0");("state", "3'x0")]
+        [];
+
+    change_input_test "state_machine step1" sm_string 1
+        [("in_channel", "1'x0");("out_channel", "1'x0");("state", "3'x0")]
+        [];
+
     state_machine_tester "state machine step2" sm_string 
         [("in_channel", "1'x1");("out_channel", "1'x0");("state", "3'x1")]
         [("in_channel", bitstream_of_binstring "1'b1")];
@@ -404,13 +415,5 @@ let tests = [
                 [("A", (bitstream_of_binstring "1'b1")); 
                 ("B", (bitstream_of_binstring "1'b1"))];
 
-    change_input_test "state_machine" sm_string 0
-        [("in_channel", "1'x0");("out_channel", "1'x0");("state", "3'x0")]
-        [];
-
-    change_input_test "state_machine step1" sm_string 1
-        [("in_channel", "1'x0");("out_channel", "1'x0");("state", "3'x0")]
-        [];
-
-] @ state_machine_tests 
+] @ (test_state_machine inf_string) @ (test_state_machine opt_string)
 
