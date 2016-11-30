@@ -401,7 +401,6 @@ let tests = [
                     "C", "32'x0000000C")] 
                 [("A",(bitstream_of_decstring "32'd10"))];
 
-
     change_input_test "2 funcs" 
         "register A[4] = 4'b0101 register B[4] = 4'b1001 fun f(x[4],y[4])[4] = 
         x | y fun h(u[4],v[4])[4] = u && v register D[4] = f(A,B) 
