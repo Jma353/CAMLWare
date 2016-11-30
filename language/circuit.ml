@@ -943,7 +943,7 @@ module Formatter : CircuitFormatter = struct
       (n2, new_let::l2)
   in list_helper ast []
 
-  let columnize_ast (lets, nodes) =
+  let columnize_ast (nodes, lets) =
     let new_nodes = List.map (fun x -> (x.n_id, x)) nodes in
     let new_lets = List.map (fun x -> (x.l_id, x)) lets in
     let rec top_sort unfinished finished cols =
@@ -955,7 +955,7 @@ module Formatter : CircuitFormatter = struct
         let new_unfinished = List.filter (fun (id, node) -> not (List.mem_assoc id new_finished)) unfinished in
         top_sort new_unfinished new_finished (new_col::cols)
       in
-    (new_lets, List.rev (top_sort new_nodes [] []))
+    (List.rev (top_sort new_nodes [] []),new_lets)
 
   let r1 = {
     r_id = "A";
@@ -1032,38 +1032,47 @@ module Formatter : CircuitFormatter = struct
     nodes = n;
   }
 
-
-  let make_ast_coordinates x_start x_end y_start y_end ast_columns =
-    let col_len = (x_end -. x_start) in
-
-    let rec y_helper nodes gap curr_y =
+  let make_ast_coordinates x_start x_end y_start y_end ast_columns lets =
+    let x_gap =
+      if lets
+      then (x_end -. x_start)/.(float_of_int ((List.length ast_columns) + 2))
+      else (x_end -. x_start)/.(float_of_int ((List.length ast_columns) + 1)) in
+    let x_c = if lets then (x_start +. (2.*.x_gap)) else (x_start +. x_gap) in
+    let rec y_helper nodes y_gap curr_y =
       match nodes with
       | [] -> []
       | h::t ->
-      {n_id = h.n_id;n_y_coord = curr_y; n_x_coord=h.n_x_coord; node=h.node}::
-      (y_helper t gap (curr_y +. gap)) in
+      (h.n_id, {n_id=h.n_id; n_y_coord=curr_y; n_x_coord=h.n_x_coord; node=h.node})::
+      (y_helper t y_gap (curr_y +. y_gap)) in
 
     let rec x_helper columns curr_x =
       match columns with
-      | [] -> []
+      |[] -> []
       | h::t ->
         (List.map
-          (fun (id, node) ->
-            {n_id=node.n_id; n_y_coord=node.n_y_coord; node=node.node; n_x_coord=curr_x}
+          (fun (id, node) -> {n_id=node.n_id; n_y_coord=node.n_y_coord; node=node.node; n_x_coord=curr_x}
           ) h
-        )::(x_helper t (curr_x +. (col_len))) in
+        )::(x_helper t (curr_x +. (x_gap))) in
 
-    let x_done = x_helper ast_columns x_start in
+    let x_done = x_helper ast_columns x_c in
 
-    List.map (
-      fun col ->
-      let gap = ((y_end -. y_start)/.(float_of_int (List.length col))) in
+    List.map (fun col ->
+      let gap = ((y_end -. y_start)/.(float_of_int ((List.length col) + 1))) in
       y_helper col gap y_start
-      )
-    x_done
+    ) x_done
+
+  let format_lets x_coord y_start y_end lets =
+    let y_gap = (y_end -. y_start)/.(float_of_int ((List.length lets) + 1)) in
+    let rec let_helper unfinished curr_y =
+      match unfinished with
+      | [] -> []
+      | (id, l)::t ->
+        (l.l_id,{l_id=l.l_id; l_x_coord=x_coord; l_y_coord=curr_y; inputs=l.inputs})
+        ::(let_helper t (curr_y +. y_gap))
+    in let_helper lets (y_start +. y_gap)
 
   let return_register_nodes column x_coord =
-    let gap = 100./.(float_of_int (StringMap.cardinal column) -. 1.) in
+    let gap = 100./.(float_of_int (StringMap.cardinal column)) in
     let rec col_helper col y_coord =
       match col with
       | [] -> []
@@ -1072,29 +1081,50 @@ module Formatter : CircuitFormatter = struct
       ::col_helper t (y_coord +. gap) in
     col_helper (StringMap.bindings column) 0.
 
-  (* let process_one_column column x_coord = *)
-
   let make_columns columns gap =
     let rec helper cols x_coord =
       match cols with
       | [] -> []
       | h::t -> (return_register_nodes h x_coord)::(helper t (x_coord +. gap))
     in helper columns gap
-
+  let fot (x, _, _) = x
+  let sot (_, x, _) = x
+  let tot (_, _, x) = x
   let format circ =
+    let reg_list = get_all_registers circ in
     let (inputs, reg_columns, outputs) = columnize_registers circ in
     let all_ast = reg_columns@[outputs] in
     let total_col = float_of_int (List.length all_ast) in
-    let gap = 100./.total_col in
-    let reg_done = make_columns all_ast gap in
+    let x_gap = 100./.total_col in
+    let reg_done = make_columns all_ast x_gap in
+    let rec finish_column curr_x cols = (
+      match cols with
+      | [] -> []
+      | column::t ->
+        let y_gap = (100./.(float_of_int (List.length column))) in
+        let rec reg_helper curr_y col =
+        ( match col with
+          | [] -> []
+          | (id, (display, ast))::tail ->
+          let (nodes, lets) = columnize_ast (tree_to_list ast reg_list) in
+          let formatted_ast =
+            List.flatten (make_ast_coordinates
+              curr_x (curr_x +. x_gap) (curr_y) (curr_y +. y_gap) nodes ((List.length lets) = 0)
+            ) in
+          let formatted_lets = (format_lets curr_x curr_y (curr_y +. y_gap) lets) in
+          let formatted_register = (id, display) in
+          (formatted_ast, formatted_lets, formatted_register)::(reg_helper (curr_y +. y_gap) tail)
+        )
+        in reg_helper 0. column)
+      in let finished = finish_column 0. reg_done in
+      let (ast, lets, reg) = List.fold_left (fun (a_list, l_list, r_list) (a, l, r) -> (a::a_list, l::l_list, r::r_list)) ([],[],[]) finished in
 
+      {
+        registers=reg;
+        nodes=(List.flatten ast);
+        lets=(List.flatten lets);
+      }
 
-
-    {
-      registers = r;
-      lets = lets;
-      nodes = n;
-    }
 
 let format_format_circuit f circ = ()
 
