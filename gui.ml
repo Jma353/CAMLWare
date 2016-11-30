@@ -253,39 +253,6 @@ module View = struct
    * Creates a circuit *)
   let make () =
 
-    (* An initial, blank view *)
-    let init =
-      (* Total SVG Dimensions *)
-      let width = width + 2 * padding in
-      let height = height + 2 * padding in
-      (* Base SVG *)
-      let svg =
-        (append "svg"
-        |. int attr "width" width
-        |. int attr "height" height) in
-      (* Circuit Container *)
-      let g =
-        (append "g"
-        |. str attr "class" "circuit"
-        |. str attr "transform" (translate padding padding)) in
-      (* Border *)
-      let border_rect =
-        (append "rect"
-        |. int attr "x" 0
-        |. int attr "y" 0
-        |. int attr "width" width
-        |. int attr "height" height
-        |. str style "stroke" "black"
-        |. str style "fill" "none"
-        |. int attr "rx" 4
-        |. int attr "ry" 4
-        |. int style "stroke-width" 1) in
-      (* Circuit *)
-      let bordered_svg = (svg |- border_rect) in
-      let circuit = bordered_svg <.> g in
-      circuit in
-
-
     (* Applies all views to a container *)
     let rec apply_views views container =
       match views with
@@ -335,28 +302,61 @@ module View = struct
 
 
     (* Our resultant *)
-    apply_views (collect_views !circ) init
+    apply_views (collect_views !circ) (select ".circuit")
 
 
 
   (* Initial view for compiling *)
   let init_view () =
+    let div =
     static "div"
     |. str attr "class" "initial"
     |. seq [
         static "textarea"
         |. str attr "class" "code"
         |. int attr "rows" 10
-        |. int attr "cols" 80;
+        |. int attr "cols" 50;
         static "button"
         |. str attr "class" "compile-btn"
         |. text (fun _ _ _ -> "Compile")
         |. E.click (fun _ _ _ ->
-          (* Remove this view *)
-          plz_run (select ".initial" |. remove);
-          (* Add the circuit *)
           plz_run (make ())
-          )]
+        )] in
+
+    let init =
+      (* Total SVG Dimensions *)
+      let width = width + 2 * padding in
+      let height = height + 2 * padding in
+      (* Base SVG *)
+      let svg =
+        (append "svg"
+        |. int attr "width" width
+        |. int attr "height" height
+        |. str style "float" "left") in
+      (* Circuit Container *)
+      let g =
+        (append "g"
+        |. str attr "class" "circuit"
+        |. str attr "transform" (translate padding padding)) in
+      (* Border *)
+      let border_rect =
+        (append "rect"
+        |. int attr "x" 2
+        |. int attr "y" 2
+        |. int attr "width" (width-4)
+        |. int attr "height" (height-4)
+        |. str style "stroke" "black"
+        |. str style "fill" "none"
+        |. int attr "rx" 4
+        |. int attr "ry" 4
+        |. int style "stroke-width" 1) in
+      (* Circuit *)
+      let bordered_svg = (svg |- border_rect) in
+      let circuit = bordered_svg <.> g in
+      circuit in
+
+    seq [init; div]
+
 
 end
 

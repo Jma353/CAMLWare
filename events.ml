@@ -8,7 +8,13 @@ module CircuitEvents = struct
   let did_change_input id =
     let msg = "Enter a new integer value for input " ^ id in
     let num = prompt msg "" in
-    print_endline num 
+    (* let s = Bitstream.(bitstream_to_hexstring (bitstream_of_hexstring num)) in *) 
+    let change = (select ("." ^ id)
+                  |. html (fun _ _ _ -> num)) in
+    plz_run change
+
+
+
 
 end
 

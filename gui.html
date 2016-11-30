@@ -10,12 +10,21 @@
         stroke-linejoin: round;
       }
 
+      svg {
+        float: left;
+      }
+
+      .initial {
+        float: left;
+        margin-left: 20px;
+        margin-top: 2px;
+      }
+
       .code {
         font-family: Courier;
         padding: 5px;
-        rows: 10;
-        columns: 80;
         border-radius: 5px;
+        resize: vertical;
       }
 
       .compile-btn {
@@ -30,6 +39,8 @@
         font-size: 16px;
         font-family: Courier;
       }
+
+
 
     </style>
     <script src="d3/d3.min.js" charset="utf-8"></script>
