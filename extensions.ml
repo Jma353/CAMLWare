@@ -43,11 +43,16 @@ let linear dom rng =
     [| inject (Array.of_list [fst rng; snd rng]) |])) in
   lin
 
-(* Wrapper for prompt *)
+(* Wrapper for prompt(query, default) *)
 let prompt query default =
   let a = (Js.Unsafe.(meth_call Dom_html.window "prompt"
-      [| inject (Js.string query); inject (Js.string default) |])) in
+    [| inject (Js.string query); inject (Js.string default) |])) in
   a |> Js.to_string
+
+(* Wrapper for document.getElementsByClassName(class_name) *)
+let get_element_by_class_name class_name =
+  (Js.Unsafe.(meth_call Dom_html.document "getElementsByClassName"
+    [| inject (Js.string ("." ^ class_name)) |]))
 
 (* Create a line function *)
 let line x_scale y_scale interp =

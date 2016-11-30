@@ -427,7 +427,7 @@ register R[32] =
 A binary counter increments its value by one each tick until eventually overflowing and returning to `0`. The following is a 8 bit example:
 ```
 output max_tick[1] = C == 8'b11111111
-register C[8] = C + 1
+register C[8] = C + 8'd1
 ```
 
 #### Universal Binary Counter
@@ -449,6 +449,6 @@ register C[32] =
   if ctrl[3] then 32'x00000000
   else if ctrl[2] then in_channel
   else if ctrl[1] then
-    if ctrl[0] then C + 1 else C - 1
+    C + (if ctrl[0] then 32'd1 else 32'd-1)
   else C
 ```
