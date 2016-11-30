@@ -408,8 +408,8 @@ A universal shift register either shifts to the left, shifts to the right, loads
 | Ctrl[1] | Ctrl[0] | Operation    |
 |---------|---------|--------------|
 |   0     |   0     |  Pause       |
-|   0     |   1     |  Shift Left |
-|   1     |   0     |  Shift Right  |
+|   0     |   1     |  Shift Left  |
+|   1     |   0     |  Shift Right |
 |   1     |   1     |  Load        |
 
 ```

@@ -125,6 +125,18 @@ let rev_string s =
   String.init (String.length s)
     (fun x -> String.get s (String.length s - 1 - x))
 
+let parse_stream s base =
+  let remove_base str =
+    if String.get str 0 = base
+    then String.sub str 1 (String.length str - 1)
+    else str in
+  match try Some (String.index s '\'') with Not_found -> None with
+  | None -> (max_length,remove_base s)
+  | Some i ->
+    let l = if i = 0 then max_length else int_of_string (String.sub s 0 i) in
+    let str = remove_base (String.sub s (i+1) (String.length s - i - 1)) in
+    (l, str)
+
 (* [bitstream_of_string_helper s arr n helper] is a bitstream constructed
  * by setting bits [n] through [length arr - 1] of [arr] by parsing [s]
  * and passing each character to [helper] *)
@@ -137,13 +149,10 @@ let rec bitstream_of_string_helper (s:Scanf.Scanning.in_channel) (arr:bitstream)
 
 (* [bitstream_of_string s base helper] is a bitstream constructed by parsing
  * [s] as a string with base [base] and passing each digit to [helper] *)
-let bitstream_of_string (s:string) (base:string)
+let bitstream_of_string (s:string) (base:char)
     (helper:Scanf.Scanning.in_channel -> char option -> bitstream ->
     int -> bitstream) : bitstream =
-  let split = Str.split (Str.regexp base) s in
-  let (l,str) = if List.length split = 2
-    then (int_of_string (List.hd split), List.hd (List.tl split))
-    else (max_length, List.hd split) in
+  let (l,str) = parse_stream s base in
   let arr = Array.make l false in
   let schan = Scanf.Scanning.from_string (rev_string str) in
   bitstream_of_string_helper schan arr 0 (helper)
@@ -155,7 +164,7 @@ let bitstream_of_binstring s =
       | Some '1' -> arr.(n) <- true;
         bitstream_of_string_helper schan arr (n+1) (helper)
       | _ -> bitstream_of_string_helper schan arr (n+1) (helper) in
-  bitstream_of_string s "'b" (helper)
+  bitstream_of_string s 'b' (helper)
 
 let bitstream_of_hexstring s =
   let eval_hex =
@@ -189,13 +198,10 @@ let bitstream_of_hexstring s =
       | Some h -> (eval_hex h arr n);
         bitstream_of_string_helper schan arr (n+4) (helper)
   in
-  bitstream_of_string s "'x" (helper)
+  bitstream_of_string s 'x' (helper)
 
 let bitstream_of_decstring s =
-  let split = Str.split (Str.regexp "'d") s in
-  let (l,str) = if List.length split = 2
-    then (int_of_string (List.hd split), List.hd (List.tl split))
-    else (max_length, List.hd split) in
+  let (l,str) = parse_stream s 'd' in
   let dec = int_of_string str in
   let abs_val = abs dec in
   let hex = Format.sprintf "%i'x%X" l abs_val in
