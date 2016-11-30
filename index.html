@@ -12,11 +12,12 @@
 
       svg {
         float: left;
+        margin-right: 10px;
+        margin-bottom: 10px;
       }
 
       .initial {
         float: left;
-        margin-left: 20px;
         margin-top: 2px;
       }
 
@@ -25,11 +26,12 @@
         padding: 5px;
         border-radius: 5px;
         resize: vertical;
+        border: 2px solid black;
       }
 
-      .step-btn, .compile-btn {
+      .compile-btn, .step-btn {
         background-color: white;
-        border: 1px solid black;
+        border: 2px solid black;
         color: black;
         padding: 15px 15px;
         border-radius: 5px;
@@ -40,7 +42,11 @@
         font-family: Courier;
       }
 
-
+      .step-btn {
+        clear: both;
+        float: left;
+        margin-left: 2px;
+      }
 
     </style>
     <script src="d3/d3.min.js" charset="utf-8"></script>

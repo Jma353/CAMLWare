@@ -1,5 +1,6 @@
 open D3
 open Extensions
+open Circuit
 
 (* Global Stroke Width *)
 let s_w = 2
@@ -17,8 +18,12 @@ let line_comp (x1:float) (y1:float) (x2:float) (y2:float) =
   |. str style "stroke" "black"
 
 (* Int of Float Alias
- * A int_of_float alias *)
+ * An int_of_float alias *)
 let i_of_f (x:float) = int_of_float x
+
+(* Float of Int Alias
+ * A float_of_int alias *)
+let f_of_i (x:int) = float_of_int x
 
 (* String of Int Alias
  * A string_of_int alias *)
@@ -483,10 +488,26 @@ module Miscs = struct
   let concat_c (x:float) (y:float) (edge:float) svg =
     svg |> box_with_symbol x y edge "Concat"
 
+  (* INITIAL VIEW *)
+  let initial_svg width height padding =
+    let width = width + 2 * padding in
+    let height = height + 2 * padding in
+    let svg =
+      (append "svg"
+      |. int attr "width" width
+      |. int attr "height" height
+      |. str style "float" "left") in
+    let g =
+      (append "g"
+      |. str attr "class" "circuit"
+      |. str attr "transform" (translate padding padding)) in
+    let border_rect =
+      rect_c (f_of_i (width-4)) (f_of_i (height-4)) 2. 2. 4. 4. in
+    let bordered_svg = (svg |- border_rect) in
+    let circuit = bordered_svg <.> g in
+    circuit
+
 end
-
-
-
 
 (* Mini-Module with all view Components that Trigger View Changes *)
 module Triggers = struct
@@ -503,8 +524,31 @@ module Triggers = struct
     let frame      = rect_c edge edge 0. 0. 2. 2. in
     svg |- (g |- frame |- bit_vals |- label |- type_label)
 
-  (* TODO: COMPILE AND STEP BUTTONS *)
+  (* Compilation Area
+   * NOTE: This takes in a function that accepts a reference to a circuit
+   * in order to build the circuit and place it at that reference, followed
+   * by a rendering of that circuit (View Change) *)
+  let compile_area (f:circuit option ref -> unit) circ_ref =
+    static "div"
+    |. str attr "class" "initial"
+    |. seq [
+        (static "textarea"
+        |. str attr "class" "code"
+        |. int attr "rows" 10
+        |. int attr "cols" 50);
+        (static "button"
+        |. html (fun _ _ _ -> "Compile")
+        |. str attr "class" "compile-btn"
+        |. E.click (fun _ _ _ -> f circ_ref))]
 
+  (* Step Button
+   * NOTE: This takes in a function that steps & updates the view dependent
+   * on whether a circuit reference is None or not (View Change per reg) *)
+  let step_btn (f:circuit option ref -> unit) circ_ref =
+    static "button"
+    |. html (fun _ _ _ -> "Step")
+    |. str attr "class" "step-btn"
+    |. E.click (fun _ _ _ -> f circ_ref)
 
 end
 
