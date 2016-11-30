@@ -622,10 +622,12 @@ module Analyzer : StaticAnalyzer = struct
       | [] -> ()
       | h::[] -> Format.fprintf f2 "%s\n" h
       | h::t -> Format.fprintf f2 "%s\n\n%a" h (format_list) t in
-    let l = List.length log in
+    let sorted_log = List.sort_uniq (compare) log in
+    let l = List.length sorted_log in
     if l = 0 then Format.fprintf f "No errors were detected\n" else
       Format.fprintf f "%i %s detected\n\n%a"
-        l (if l = 1 then "error was" else "errors were") (format_list) log
+        l (if l = 1 then "error was" else "errors were")
+        (format_list) sorted_log
 
 end
 

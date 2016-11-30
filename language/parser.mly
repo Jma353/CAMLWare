@@ -104,7 +104,7 @@ array_access:
   | c = array_access; LBRACKET; n = NUM; RBRACKET
     { Nth (n, c) }
   | c = array_access; LBRACKET; n1 = NUM; MINUS; n2 = NUM; RBRACKET
-    { Sub_seq (n1, n2, c) }
+    { if n1 <= n2 then Sub_seq (n1, n2, c) else Sub_seq (n2, n1, c)}
 ;
 
 primary:
