@@ -51,7 +51,7 @@ let prompt query default =
 
 (* Wrapper for document.getElementsByClassName(class_name) *)
 let get_element_by_class_name class_name =
-  (Js.Unsafe.(meth_call Dom_html.document "getElementsByClassName"
+  (Js.Unsafe.(meth_call Dom_html.document "querySelector"
     [| inject (Js.string ("." ^ class_name)) |]))
 
 (* Create a line function *)
