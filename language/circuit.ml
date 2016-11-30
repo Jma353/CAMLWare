@@ -43,8 +43,9 @@ type circuit = {
 module type CircuitSimulator = sig
   val evaluate : circuit -> comb -> bitstream
   val step : circuit -> circuit
-  val step_n : circuit -> int -> circuit
-  val change_input : circuit -> id -> bitstream -> circuit
+  val step_n : int -> circuit -> circuit
+  val change_input : id -> bitstream -> circuit -> circuit
+  val update_outputs: circuit -> circuit
 end
 
 module type StaticAnalyzer = sig
@@ -104,6 +105,7 @@ module type CircuitFormatter = sig
     lets      : (id * display_let) list
   }
 
+  val test_circ : unit -> formatted_circuit
   val format : circuit -> formatted_circuit
   val format_format_circuit : Format.formatter -> formatted_circuit -> unit
 end
@@ -145,17 +147,6 @@ let subcircuit logic length args =
     length = length;
     args = args;
   }
-
-let circuit comps =
-  {
-    comps = comps;
-    clock = false;
-  }
-
-let circuit_from_list l =
-  let map_of_assoclist =
-    List.fold_left (fun acc (k,v) -> StringMap.add k v acc) StringMap.empty in
-  l |> map_of_assoclist |> circuit
 
 let register_values circ =
   circ.comps |> (StringMap.filter (fun k v -> not (is_subcirc k v))) |>
@@ -241,6 +232,9 @@ module Simulator : CircuitSimulator = struct
     else if length b > len then substream b 0 (len - 1)
     else b
 
+  let extend_bits b l1 l2 =
+    if l1 > l2 then zero_extend l1 b else zero_extend l2 b
+
   let rec eval_hlpr circ comb env =
      match comb with
     | Const b -> b
@@ -266,9 +260,13 @@ module Simulator : CircuitSimulator = struct
                       (fun acc c ->
                         concat (eval_hlpr circ c env) acc) (create []) clst
     | Mux2 (c1,c2,c3) -> let s = (eval_hlpr circ c1 env) in
+                          let b2 = (eval_hlpr circ c2 env) in
+                          let b3 = (eval_hlpr circ c3 env) in
+                          let l2 = length b2 in
+                          let l3 = length b3 in
                           if is_zero s
-                          then eval_hlpr circ c3 env
-                          else eval_hlpr circ c2 env
+                          then extend_bits b2 l2 l3
+                          else extend_bits b3 l2 l3
     | Apply (id,clst) -> let subcirc = StringMap.find id circ.comps in
                           let s = (match subcirc with
                               | Subcirc sub -> sub
@@ -332,7 +330,7 @@ module Simulator : CircuitSimulator = struct
       | Register r -> eval_regs r circ
       | _ -> c
 
-  let update_outputs circ c =
+  let update_output circ c =
     match c with
       | Register r -> (match (r.next, r.reg_type) with
                       |(AST comb, Output) -> let new_val =
@@ -343,28 +341,43 @@ module Simulator : CircuitSimulator = struct
                       | _ -> c)
       | _ -> c
 
-
   let step circ =
     let new_comps = StringMap.map (update_rising_falling circ) circ.comps in
     let new_circ = {comps = new_comps; clock = not circ.clock} in
-    let comps_new = StringMap.map (update_outputs new_circ) new_circ.comps in
+    let comps_new = StringMap.map (update_output new_circ) new_circ.comps in
     {comps = comps_new; clock = new_circ.clock}
 
-  let rec step_n circ n =
+  let rec step_n n circ =
     match n with
     | 0 -> circ
-    | i -> let new_circ = step circ in step_n new_circ (i - 1)
+    | i -> let new_circ = step circ in step_n (i - 1) new_circ
 
-  let change_input circ id value =
+  let change_input id value circ =
     let r = match StringMap.find id circ.comps with
       | Register reg -> reg
       | _ -> failwith "tried to change the value of a subcircuit" in
     let new_comps =
       StringMap.add id (Register {r with value = value}) circ.comps in
     let new_circ = {comps = new_comps; clock = circ.clock} in
-    let comps_new = StringMap.map (update_outputs new_circ) new_circ.comps in
+    let comps_new = StringMap.map (update_output new_circ) new_circ.comps in
     {comps = comps_new; clock = new_circ.clock}
+
+  let update_outputs circ =
+    let new_comps = StringMap.map (update_output circ) circ.comps in
+    {circ with comps = new_comps}
+
 end
+
+let circuit comps =
+  let initial = {
+    comps = comps;
+    clock = false; } in
+  Simulator.update_outputs initial
+
+let circuit_from_list l =
+  let map_of_assoclist =
+    List.fold_left (fun acc (k,v) -> StringMap.add k v acc) StringMap.empty in
+  l |> map_of_assoclist |> circuit
 
 module Analyzer : StaticAnalyzer = struct
   (* an error log is a monadic data type containing a circuit and a list of
@@ -990,7 +1003,7 @@ module Formatter : CircuitFormatter = struct
     r_id = "B";
     reg_type = Dis_input;
     r_x_coord = 0.;
-    r_y_coord = 25.;
+    r_y_coord = 50.;
     input = -1;
   }
 
@@ -998,7 +1011,7 @@ module Formatter : CircuitFormatter = struct
     r_id = "C";
     reg_type = Dis_input;
     r_x_coord = 0.;
-    r_y_coord = 50.;
+    r_y_coord = 100.;
     input = -1;
   }
 
@@ -1015,7 +1028,7 @@ module Formatter : CircuitFormatter = struct
     reg_type = Dis_output;
     r_x_coord = 100.;
     r_y_coord = 50.;
-    input=7;
+    input=6;
   }
 
   let r = [("A", r1);("B",r2);("C",r3);("D",r4);("E",r5);]
@@ -1053,20 +1066,19 @@ module Formatter : CircuitFormatter = struct
     nodes = n;
   }
 
-  let make_inputs inputs =
-    let gap = 100./.((float_of_int(StringMap.cardinal inputs)) -. 1.) in
-    let to_display_input (reg_id, register) y_coord = (reg_id, {
+  (* let make_inputs inputs =
+    let to_display_input reg_id register = {
       r_id=reg_id;
       r_x_coord=0.;
       r_y_coord=y_coord;
       reg_type=Dis_input;
-      input=(-1)
-    }) in
+      input=(-1);
+    } in
     let rec input_helper unfinished y =
       match unfinished with
       | [] -> []
       | h::t -> (to_display_input h y)::(input_helper t (y +. gap))
-  in input_helper (StringMap.bindings inputs) 0.
+  in input_helper (StringMap.bindings inputs) 0. *)
 
   let make_ast_coordinates x_start x_end y_start y_end ast_columns =
     let col_len = (x_end -. x_start) in

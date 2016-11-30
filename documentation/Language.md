@@ -1,10 +1,15 @@
+---
+header-includes:
+ - \usepackage{pgf}
+ - \usepackage{tikz}
+ - \usetikzlibrary{arrows,automata}
+ - \usepackage{karnaugh}
+---
+
 # CamelWare
 Ocaml, bit by bit
 
 Documentation of the `CamelWare` language
-
-## Table of Contents
-1. [Overview](#overview)
 
 ## Overview
 `CamelWare` is a functional hardware description language for digital logic. It provides syntactical constructs that make it easy to compactly describe the construction of small to medium scale digital circuits and an interactive simulator for examining their behavior.
@@ -225,11 +230,225 @@ let x = 3'b010 in 1'b1 -->* 1'b1
 ```
 
 ## Subcircuit Definitions
+
+### Syntax
+
 In order to allow for code reuse `CamelWare` allows for defining subcircuits. These are essentially functions with multiple inputs but only one output. The syntax is:
+
 ```
 subcircuit := fun function_name (arg1[length1], ...)[output_length] = expression
 ```
+
 To apply it:
+
 ```
 application := function_name(expression1, ...)
+```
+
+To ensure that indexing isn't out of bounds, input expressions are all zero extended or truncated to become the length specified in the function definition before it is applied. The function's result is similarly adjusted to become `output_length`.
+
+A function corresponds to a subcircuit in hardware. When function `f` calls function `g` it means that subcircuit `f` contains `g` physically. Accordingly any sort of recursion is completely illegal.
+
+### Example Usage
+```
+fun f(x[1],y[1])[1] = x & y
+fun g(x[4])[2] = {g[0],g[3]}
+```
+
+## Large Examples
+
+### State Machine
+The following state machine processes an incoming string of bits via an input. It outputs `1'b1` when it receives the string `1001`
+
+\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=2.8cm,
+                    semithick]
+
+  \tikzstyle{state}=[state with output]
+
+  \node[initial,state]   (0)              {$0$ \nodepart{lower} $0$};
+  \node[state]           (1) [right of=0] {$1$ \nodepart{lower} $0$};
+  \node[state]           (2) [right of=1] {$2$ \nodepart{lower} $0$};
+  \node[state]           (3) [right of=2] {$3$ \nodepart{lower} $0$};
+  \node[state,accepting] (4) [right of=3] {$4$ \nodepart{lower} $1$};
+
+  \path[->] (0) edge [loop above]     node {0} ()
+                edge                  node {1} (1)
+            (1) edge [bend left]      node {0} (2)
+                edge [loop above]     node {1} ()
+            (2) edge                  node {0} (3)
+                edge [bend left]      node {1} (1)
+            (3) edge [bend right=60]  node {0} (0)
+                edge                  node {1} (4)
+            (4) edge [bend left=90]   node {0} (0)
+                edge [bend left=60]   node {1} (1);
+\end{tikzpicture}
+
+A naive `CamelWare` implementation is:
+
+```
+input in_channel[1]
+register state[3] = next()
+output out_channel[1] = state == 3'b100
+fun next()[3] =
+  if state == 3'd0 then
+    if in_channel
+    then 3'd1
+    else 3'd0
+  else if state == 3'd1 then
+    if in_channel
+    then 3'd1
+    else 3'd2
+  else if state == 3'd2 then
+    if in_channel
+    then 3'd1
+    else 3'd3
+  else if state == 3'd3 then
+    if in_channel
+    then 3'd4
+    else 3'd0
+  else
+    if in_channel
+    then 3'd1
+    else 3'd0
+```
+
+Although the above code is very readable, unfortunately it suffers from serious efficiency problems. `CamelWare` does not have an optimizing compiler - there's a one to one correspondence between operators and gates - and this means that the above uses 5 comparators and 9 2 to 1 multiplexers to acheive some fairly simple functionality.
+
+A better approach is to use traditional digital design methods to work out the logic before writing it down. The desired truth table is:
+
+| State[2] | State[1] | State[0]  | In_channel   | Next      | Out_channel |
+|----------|----------|-----------|--------------|-----------|-------------|
+|   0      |     0    |   0       | 0            |   3'b000  | 1'b0        |
+|   0      |     0    |   0       | 1            |   3'b001  | 1'b0        |
+|   0      |     0    |   1       | 0            |   3'b010  | 1'b0        |
+|   0      |     0    |   1       | 1            |   3'b001  | 1'b0        |
+|   0      |     1    |   0       | 0            |   3'b011  | 1'b0        |
+|   0      |     1    |   0       | 1            |   3'b001  | 1'b0        |
+|   0      |     1    |   1       | 0            |   3'b000  | 1'b0        |
+|   0      |     1    |   1       | 1            |   3'b100  | 1'b0        |
+|   1      |     0    |   0       | 0            |   3'b000  | 1'b1        |
+|   1      |     0    |   0       | 1            |   3'b001  | 1'b1        |
+
+The Karnaugh maps are
+
+`Next[2]`:
+
+\begin{Karnaugh}
+    \contingut{0,0,0,0,0,0,0,1,x,x,x,x,0,0,x,x}
+    \implicant{7}{15}{red}
+\end{Karnaugh}
+
+```
+Next[2] = State[1] & State[0] & In_channel
+```
+
+`Next[1]`:
+
+\begin{Karnaugh}
+    \contingut{0,0,1,0,1,0,0,0,0,0,x,x,x,x,x,x}
+    \implicant{4}{12}{green}
+    \implicantdaltbaix{2}{10}{red}
+\end{Karnaugh}
+
+```
+Next[1] = ~State[1] & State[0] & ~In_channel | State[1] & ~State[0] & ~In_channel
+```
+
+`Next[0]`:
+
+\begin{Karnaugh}
+    \contingut{0,1,0,1,1,1,0,0,0,1,x,x,x,x,x,x}
+    \implicant{4}{13}{green}
+    \implicantdaltbaix{1}{11}{red}
+\end{Karnaugh}
+
+```
+Next[0] = ~State[1] & In_channel | State[1] & ~State[0]
+```
+
+`Out_channel`:
+
+\begin{Karnaugh}
+    \contingut{0,0,0,0,0,0,0,0,1,1,x,x,x,x,x,x}
+    \implicant{12}{10}{red}
+\end{Karnaugh}
+
+```
+Out_channel = State[2]
+```
+
+From this we can derive an efficient hardware implementation
+
+```
+input in_channel[1]
+register state[3] = next()
+output out_channel[1] = state[2]
+fun next()[3] = {
+  State[1] & State[0] & In_channel,
+  ~State[1] & State[0] & ~In_channel | State[1] & ~State[0] & ~In_channel,
+  ~State[1] & In_channel | State[1] & ~State[0]
+}
+```
+
+### Shift Registers and Counters
+
+The following examples are inspired by the the example designs in section 4.3 of __FPGA Prototyping By Verilog Examples__ by Pong P. Chu.
+
+#### Free Running Shift Register
+A free running shift register shifts in the input bit on the right and shifts out the output bit on the left each clock cycle. The `CamelWare` code for this is
+```
+input in_channel[1]
+register R[32] = {in_channel,R[1-31]}
+output out_channel[1] = R[0]
+```
+
+#### Universal Shift Register
+A universal shift register either shifts to the left, shifts to the right, loads parallel data, or stays the same depending on a 2 bit control signal. It outputs the current contents of the register.
+
+| Ctrl[1] | Ctrl[0] | Operation    |
+|---------|---------|--------------|
+|   0     |   0     |  Pause       |
+|   0     |   1     |  Shift Left  |
+|   1     |   0     |  Shift Right |
+|   1     |   1     |  Load        |
+
+```
+input in_channel[32]
+input ctrl[2]
+output out_channel[32] = R
+register R[32] =
+  if ctrl == 2'b00 then R
+  else if ctrl == 2'b01 then {R[0-30],in_channel[0]}
+  else if ctrl == 2'b10 then {in_channel[31],R[1-31]}
+  else in_channel
+```
+
+#### Free Running Binary Counter
+A binary counter increments its value by one each tick until eventually overflowing and returning to `0`. The following is a 8 bit example:
+```
+output max_tick[1] = C == 8'b11111111
+register C[8] = C + 1
+```
+
+#### Universal Binary Counter
+A universal binary counter counts up, counts down, pauses, is loaded with a new value or is synchronously cleared depending on the value of a 4 bit control signal.
+
+| Clear | Load | Enable  | Up   | Next         | Operation |
+|-------|------|---------|------|--------------|-----------|
+|   1   |   x  |  x      |   x  | 32'x00000000 |   Clear   |
+|   0   |   1  |  x      |   x  | In_channel   |   Load    |
+|   0   |   0  |  1      |   1  | C + 1        |   Up      |
+|   0   |   0  |  1      |   0  | C - 1        |   Down    |
+|   0   |   0  |  0      |   x  | C            |   Pause   |
+
+```
+input in_channel[32]
+input ctrl[4]
+output max_tick[1] = C == 32'xFFFFFFFF
+register C[32] =
+  if ctrl[3] then 32'x00000000
+  else if ctrl[2] then in_channel
+  else if ctrl[1] then
+    if ctrl[0] then C + 1 else C - 1
+  else C
 ```

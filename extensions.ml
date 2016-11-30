@@ -1,3 +1,10 @@
+(* Extensions
+ *
+ * Extensions is a utility file that contains extensions to the js_of_ocaml
+ * bindings for D3, as well as some helper functions related to working
+ * with JavaScript-esque functionality in OCaml *)
+
+
 (* Global references *)
 let d3 = Js.Unsafe.variable "d3"
 let d3_svg   = d3##svg
@@ -11,14 +18,12 @@ let mb = Js.wrap_meth_callback
 let translate x y =
   "translate(" ^ (string_of_int x) ^ "," ^ (string_of_int y) ^ ")"
 
-(* Makes a JS object representing an (x,y) pair *)
-let make_coord x y =
-  let c = Js.Unsafe.obj [||] in
-  c##x <- x; c##y <- y;
-  c
-
 (* OCaml to coordinates in JavaScript *)
-let list_to_coord_js_array lst =
+let _d lst =
+  let make_coord x y =
+    let c = Js.Unsafe.obj [||] in
+    c##x <- x; c##y <- y;
+    c in
   let n = List.length lst in
   let arr = Js.(jsnew array_length (n)) in
   let rec add_vals l i =
@@ -38,11 +43,15 @@ let linear dom rng =
     [| inject (Array.of_list [fst rng; snd rng]) |])) in
   lin
 
-(* Allows us to use a scale *)
-let use_scale lne x = Js.Unsafe.(fun_call lne [| inject x |])
+(* Wrapper for prompt *)
+let prompt query default =
+  let a = (Js.Unsafe.(meth_call Dom_html.window "prompt"
+      [| inject (Js.string query); inject (Js.string default) |])) in
+  a |> Js.to_string
 
 (* Create a line function *)
 let line x_scale y_scale interp =
+  let use_scale lne x = Js.Unsafe.(fun_call lne [| inject x |]) in
   let dot_line = Js.Unsafe.new_obj (d3_svg##line) [||] in
   let _ = (Js.Unsafe.(meth_call dot_line "x"
     [| inject (mb (fun this d i -> use_scale x_scale d##x)) |])) in
@@ -54,3 +63,7 @@ let line x_scale y_scale interp =
 (* Allows us to use a line-auto path generator function *)
 let use_line lne data =
   Js.Unsafe.(fun_call lne [| inject data |])
+
+(* Shortcut function to run a D3 change *)
+let plz_run a =
+  D3.run ~node:(Dom_html.document##body) a ()
