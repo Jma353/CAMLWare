@@ -93,7 +93,7 @@ module type CircuitFormatter = sig
 
   type display_register = {
     r_id : id;
-    reg_type :  display_reg_type;
+    r_reg_type :  display_reg_type;
     r_x_coord : float;
     r_y_coord : float;
     input : int;
@@ -899,7 +899,7 @@ module Formatter : CircuitFormatter = struct
 
     type display_register = {
       r_id : id;
-      reg_type :  display_reg_type;
+      r_reg_type :  display_reg_type;
       r_x_coord : float;
       r_y_coord : float;
       input : int;
@@ -993,7 +993,7 @@ module Formatter : CircuitFormatter = struct
 
   let r1 = {
     r_id = "A";
-    reg_type = Dis_input;
+    r_reg_type = Dis_input;
     r_x_coord = 0.;
     r_y_coord = 0.;
     input = -1;
@@ -1001,7 +1001,7 @@ module Formatter : CircuitFormatter = struct
 
   let r2 = {
     r_id = "B";
-    reg_type = Dis_input;
+    r_reg_type = Dis_input;
     r_x_coord = 0.;
     r_y_coord = 50.;
     input = -1;
@@ -1009,7 +1009,7 @@ module Formatter : CircuitFormatter = struct
 
   let r3 = {
     r_id = "C";
-    reg_type = Dis_input;
+    r_reg_type = Dis_input;
     r_x_coord = 0.;
     r_y_coord = 100.;
     input = -1;
@@ -1017,7 +1017,7 @@ module Formatter : CircuitFormatter = struct
 
   let r4 = {
     r_id = "D";
-    reg_type = Dis_rising;
+    r_reg_type = Dis_rising;
     r_x_coord = 75.;
     r_y_coord = 50.;
     input = 5;
@@ -1025,7 +1025,7 @@ module Formatter : CircuitFormatter = struct
 
   let r5 = {
     r_id = "E";
-    reg_type = Dis_output;
+    r_reg_type = Dis_output;
     r_x_coord = 100.;
     r_y_coord = 50.;
     input=6;
@@ -1065,6 +1065,7 @@ module Formatter : CircuitFormatter = struct
     lets = lets;
     nodes = n;
   }
+
 
   (* let make_inputs inputs =
     let to_display_input reg_id register = {
@@ -1109,13 +1110,23 @@ module Formatter : CircuitFormatter = struct
       )
     x_done
 
+  let return_register_nodes column x_coord =
+    let gap = 100./.(float_of_int (StringMap.cardinal column) -. 1.) in
+    let rec col_helper col y_coord =
+      match col with
+      | [] -> []
+      | (id,(reg, ast))::t ->
+      {r_x_coord=x_coord; r_y_coord=y_coord; r_reg_type=(reg_type_to_display (reg.reg_type)); input=(get_ids ast); r_id=id}
+      ::col_helper t (y_coord +. gap) in
+    col_helper (StringMap.bindings column) 0.
+
+  (* let process_one_column column x_coord = *)
 
   let format circ =
     let (inputs, reg_columns, outputs) = columnize_registers circ in
     let all_ast = reg_columns@[outputs] in
     let total_col = float_of_int (List.length all_ast) in
     let gap = 100./.total_col in
-
     let y = List.length all_ast in
 
 
