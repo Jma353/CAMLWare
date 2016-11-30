@@ -1087,9 +1087,6 @@ module Formatter : CircuitFormatter = struct
       | [] -> []
       | h::t -> (return_register_nodes h x_coord)::(helper t (x_coord +. gap))
     in helper columns gap
-  let fot (x, _, _) = x
-  let sot (_, x, _) = x
-  let tot (_, _, x) = x
   let format circ =
     let reg_list = get_all_registers circ in
     let (inputs, reg_columns, outputs) = columnize_registers circ in
@@ -1124,8 +1121,55 @@ module Formatter : CircuitFormatter = struct
         nodes=(List.flatten ast);
         lets=(List.flatten lets);
       }
+let string_of_reg_type t =
+  match t with
+  | Dis_input -> "Input\n"
+  | Dis_output -> "Output\n"
+  | Dis_rising -> "Rising\n"
+  | Dis_falling -> "Falling\n"
+let print_node node =
+  let s =
+    match node with
+    | B (b, c1, c2) -> "Bitwise\n"
+    | L (l, c1, c2) -> "Logical\n"
+    | A (a, c1, c2) -> "Arithmetic\n"
+    | N (n, c) -> "Negation\n"
+    | C (c, c1, c2) -> "Comparison\n"
+    | Sub (i1,i2, c) -> "Substream\n"
+    | Nth (i, c) -> "Nth\n"
+    | Red (r, c) -> "Reduce\n"
+    | Concat (c_list) -> "Concat\n"
+    | Mux (c1, c2, c3) -> "Mux\n"
+    | Const b -> "Constant\n"
+    | Apply (a, c_list) -> "Apply\n"
+  in print_string s; ()
 
+let print_display_let (id, l) =
+  print_string ("Let ID " ^ id ^ "\n");
+  print_string ("Postition : (" ^ (string_of_float l.l_x_coord) ^ ", " ^ (string_of_float l.l_y_coord) ^ ")\n");
+  print_string ("Inputs ");
+  List.iter (fun x -> print_string (x^",")) l.inputs;
+  ()
 
-let format_format_circuit f circ = ()
+let print_display_reg (id, r) =
+  print_string ("Display Register " ^ id);
+  print_string ("Register : \n");
+  print_string ("Register type : " ^ (string_of_reg_type r.r_reg_type));
+  print_string ("Postition : (" ^ (string_of_float r.r_x_coord) ^ ", " ^ (string_of_float r.r_y_coord) ^ ")\n");
+  print_string ("Input: " ^ (string_of_int r.input) ^ "\n");
+  ()
+
+let print_display_node (id, n) =
+  print_string ("Display Node " ^ (string_of_int id) ^ "\n");
+  print_string "NODE : ";
+  print_node n.node;
+  print_string ("Postition : (" ^ (string_of_float n.n_x_coord) ^ ", " ^ (string_of_float n.n_y_coord) ^ ")\n");
+  ()
+
+let format_format_circuit f circ =
+  List.iter print_display_node circ.nodes;
+  List.iter print_display_reg circ.registers;
+  List.iter print_display_let circ.lets;
+  ()
 
 end
