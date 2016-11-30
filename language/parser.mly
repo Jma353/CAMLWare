@@ -28,7 +28,8 @@ let check_positive n =
 %token EOF
 
 %nonassoc IF LET
-%left AND OR XOR NAND NOR NXOR LAND LOR
+%left OR XOR NOR NXOR LOR
+%left AND NAND LAND
 %left EQ NEQ GTE LTE GT LT
 %left PLUS MINUS
 %left SLL SRL SRA

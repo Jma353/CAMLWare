@@ -384,9 +384,9 @@ input in_channel[1]
 register state[3] = next()
 output out_channel[1] = state[2]
 fun next()[3] = {
-  State[1] & State[0] & In_channel,
-  ~State[1] & State[0] & ~In_channel | State[1] & ~State[0] & ~In_channel,
-  ~State[1] & In_channel | State[1] & ~State[0]
+  state[1] & state[0] & in_channel,
+  ~state[1] & state[0] & ~in_channel | state[1] & ~state[0] & ~in_channel,
+  ~state[1] & in_channel | state[1] & ~state[0]
 }
 ```
 
