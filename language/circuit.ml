@@ -38,7 +38,7 @@ type component =
 type circuit = {
   comps : component map;
   clock : bool;
-}
+} 
 
 module type CircuitSimulator = sig
   val evaluate : circuit -> comb -> bitstream

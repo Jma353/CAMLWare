@@ -1,7 +1,6 @@
-open Extensions
-
-(* The Global State *)
-let (circ:Circuit.circuit option ref) = ref None
-
 (* Run the app *)
-let _ = plz_run (View.init_view circ)
+let _ =
+  (* Empty initial storage *)
+  Storage.set Model.to_json (Model.make None);
+  (* Present view *)
+  Extensions.plz_run (View.init_view circ)

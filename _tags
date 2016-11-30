@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 87862be1237c5af349e7604e4cb537e5)
+# DO NOT EDIT (digest: 2d39fa79837b7c71fa25bbfe692f8290)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -19,14 +19,20 @@ true: annot, bin_annot
 <language/*.ml{,i,y}>: package(str)
 # Executable gui
 "gui.byte": package(d3)
+"gui.byte": package(deriving)
 "gui.byte": package(js_of_ocaml)
+"gui.byte": package(js_of_ocaml.deriving)
+"gui.byte": package(js_of_ocaml.deriving.syntax)
 "gui.byte": package(js_of_ocaml.syntax)
 "gui.byte": package(lwt)
 "gui.byte": package(str)
 "gui.byte": package(yojson)
 "gui.byte": use_main
 <*.ml{,i,y}>: package(d3)
+<*.ml{,i,y}>: package(deriving)
 <*.ml{,i,y}>: package(js_of_ocaml)
+<*.ml{,i,y}>: package(js_of_ocaml.deriving)
+<*.ml{,i,y}>: package(js_of_ocaml.deriving.syntax)
 <*.ml{,i,y}>: package(js_of_ocaml.syntax)
 <*.ml{,i,y}>: package(lwt)
 <*.ml{,i,y}>: package(str)

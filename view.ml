@@ -39,6 +39,18 @@ let make_node_scale dim = make_scale dim nodeS
 let make_non_node_scale dim = make_scale dim nonNodeS
 
 
+(* Update Registers
+ *
+ * Given a circuit, select on all the registers & update them *)
+let update_registers circ =
+  let map = Circuit.register_values circ in
+  let f k bit_s acc =
+    ((select ("." ^ k)
+    |. html (fun _ _ _ -> Bitstream.bitstream_to_hexstring bit_s))::acc) in
+  let result = Circuit.StringMap.fold f map [] in
+  plz_run (seq result)
+
+
 (* Collect Registers
  *
  * This function collects all the registers in this variant of the circuit *)
@@ -55,7 +67,7 @@ let rec collect_registers x_scale y_scale (regs: display_register list) acc =
     | Dis_falling -> collect_registers x_scale y_scale t ((d_register zeros id x y nonNodeS)::acc)
     | Dis_output  -> collect_registers x_scale y_scale t ((o_register zeros id x y nonNodeS)::acc)
     | Dis_input   ->
-      let f = Events.did_change_input in
+      let f = Controller.did_change_input update_registers in
       collect_registers x_scale y_scale t ((i_register f zeros id x y nonNodeS)::acc)
   end
 
@@ -287,19 +299,11 @@ let make circ =
   (* Apply it to the view *)
   plz_run result
 
-(* Update registers given a circuit *)
-let update_registers circ =
-  let map = Circuit.register_values circ in
-  let f k bit_s acc =
-    ((select ("." ^ k)
-    |. html (fun _ _ _ -> Bitstream.bitstream_to_hexstring bit_s))::acc) in
-  let result = Circuit.StringMap.fold f map [] in
-  plz_run (seq result)
 
 
 (* Initial view for compiling *)
-let init_view circ_ref =
+let init_view () =
   let init = initial_svg width height padding in
-  let div = compile_area (Events.did_compile make) circ_ref in
-  let step_b = step_btn (Events.did_step update_registers) circ_ref in
+  let div = compile_area (Controller.did_compile make) in
+  let step_b = step_btn (Controller.did_step update_registers) in
   seq [init; div; step_b]

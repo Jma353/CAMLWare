@@ -19,4 +19,4 @@ Library main
 Executable gui
   Path:         .
   MainIs:       gui.ml
-  BuildDepends: js_of_ocaml, js_of_ocaml.syntax, d3, lwt, yojson, main
+  BuildDepends: js_of_ocaml, js_of_ocaml.syntax, js_of_ocaml.deriving.syntax, js_of_ocaml.deriving, deriving, d3, lwt, yojson, main
