@@ -651,27 +651,27 @@ module Formatter : CircuitFormatter = struct
   let new_id = ref 0
 
   (** generate an unused type variable *)
-  let newvar =
+  let newvar () =
     new_id := 1 + !(new_id);
     !new_id
 
   let attach_ids ast =
     let rec id_helper ast =
       match ast with
-      | Const b -> Id_Const (newvar, b)
-      | Var v -> Id_Var (newvar, v)
-      | Sub_seq(i1, i2, comb) -> Id_Sub_seq (newvar, i1, i2, id_helper comb)
-      | Nth (n, comb) -> Id_Nth (newvar, n, id_helper comb)
-      | Gate (g, c1, c2) ->  Id_Gate (newvar, g, id_helper c1, id_helper c2)
-      | Logical(l, c1, c2) -> Id_Logical(newvar, l, id_helper c1, id_helper c2)
-      | Reduce (g, comb) -> Id_Reduce (newvar, g, id_helper comb)
-      | Neg (n, comb) -> Id_Neg (newvar, n, id_helper comb)
-      | Comp(c, c1, c2) -> Id_Comp (newvar, c, id_helper c1, id_helper c2)
-      | Arith (o, c1, c2) -> Id_Arith (newvar, o, id_helper c1, id_helper c2)
-      | Concat (c_list) -> Id_Concat (newvar, (List.map (function x -> id_helper x) c_list))
-      | Mux2 (c1, c2, c3) -> Id_Mux2 (newvar, id_helper c1, id_helper c2, id_helper c3)
-      | Apply (id, c_list) -> Id_Apply (newvar, id, (List.map (function x -> id_helper x) c_list))
-      | Let (id, c1, c2) -> Id_Let (newvar, id, id_helper c1, id_helper c2)
+      | Const b -> Id_Const (newvar (), b)
+      | Var v -> Id_Var (newvar (), v)
+      | Sub_seq(i1, i2, comb) -> Id_Sub_seq (newvar (), i1, i2, id_helper comb)
+      | Nth (n, comb) -> Id_Nth (newvar (), n, id_helper comb)
+      | Gate (g, c1, c2) ->  Id_Gate (newvar (), g, id_helper c1, id_helper c2)
+      | Logical(l, c1, c2) -> Id_Logical(newvar (), l, id_helper c1, id_helper c2)
+      | Reduce (g, comb) -> Id_Reduce (newvar (), g, id_helper comb)
+      | Neg (n, comb) -> Id_Neg (newvar (), n, id_helper comb)
+      | Comp(c, c1, c2) -> Id_Comp (newvar (), c, id_helper c1, id_helper c2)
+      | Arith (o, c1, c2) -> Id_Arith (newvar (), o, id_helper c1, id_helper c2)
+      | Concat (c_list) -> Id_Concat (newvar (), (List.map (function x -> id_helper x) c_list))
+      | Mux2 (c1, c2, c3) -> Id_Mux2 (newvar (), id_helper c1, id_helper c2, id_helper c3)
+      | Apply (id, c_list) -> Id_Apply (newvar (), id, (List.map (function x -> id_helper x) c_list))
+      | Let (id, c1, c2) -> Id_Let (newvar (), id, id_helper c1, id_helper c2)
     in id_helper ast
 
   let get_all_registers circ =
@@ -944,6 +944,7 @@ module Formatter : CircuitFormatter = struct
   in list_helper ast []
 
   let columnize_ast (nodes, lets) =
+    let p1 = print_string "analyzing asts" in
     let new_nodes = List.map (fun x -> (x.n_id, x)) nodes in
     let new_lets = List.map (fun x -> (x.l_id, x)) lets in
     let rec top_sort unfinished finished cols =
@@ -955,7 +956,166 @@ module Formatter : CircuitFormatter = struct
         let new_unfinished = List.filter (fun (id, node) -> not (List.mem_assoc id new_finished)) unfinished in
         top_sort new_unfinished new_finished (new_col::cols)
       in
+    let p2 = print_string (string_of_int (List.length (top_sort new_nodes [] []))) in
     (List.rev (top_sort new_nodes [] []),new_lets)
+
+  let make_ast_coordinates x_start x_end y_start y_end ast_columns lets =
+    let x_gap =
+      if lets
+      then (x_end -. x_start)/.(float_of_int ((List.length ast_columns) + 2))
+      else (x_end -. x_start)/.(float_of_int ((List.length ast_columns) + 1)) in
+    let x_c = if lets then (x_start +. (2.*.x_gap)) else (x_start +. x_gap) in
+    let rec y_helper nodes y_gap curr_y =
+      match nodes with
+      | [] -> []
+      | h::t ->
+      (h.n_id, {n_id=h.n_id; n_y_coord=curr_y; n_x_coord=h.n_x_coord; node=h.node})::
+      (y_helper t y_gap (curr_y +. y_gap)) in
+
+    let rec x_helper columns curr_x =
+      match columns with
+      |[] -> []
+      | h::t ->
+        (List.map
+          (fun (id, node) -> {n_id=node.n_id; n_y_coord=node.n_y_coord; node=node.node; n_x_coord=curr_x}
+          ) h
+        )::(x_helper t (curr_x +. (x_gap))) in
+
+    let x_done = x_helper ast_columns x_c in
+
+    List.map (fun col ->
+      let gap = ((y_end -. y_start)/.(float_of_int ((List.length col) + 1))) in
+      y_helper col gap y_start
+    ) x_done
+
+  let format_lets x_coord y_start y_end lets =
+    let y_gap = (y_end -. y_start)/.(float_of_int ((List.length lets) + 1)) in
+    let rec let_helper unfinished curr_y =
+      match unfinished with
+      | [] -> []
+      | (id, l)::t ->
+        (l.l_id,{l_id=l.l_id; l_x_coord=x_coord; l_y_coord=curr_y; inputs=l.inputs})
+        ::(let_helper t (curr_y +. y_gap))
+    in let_helper lets (y_start +. y_gap)
+
+  let return_register_nodes column x_coord =
+    let gap = 100./.(float_of_int (StringMap.cardinal column)) in
+    let rec col_helper col y_coord =
+      match col with
+      | [] -> []
+      | (id,(reg, ast))::t ->
+      (id, ({r_x_coord=x_coord; r_y_coord=y_coord; r_reg_type=(reg_type_to_display (reg.reg_type)); input=(get_ids ast); r_id=id}, ast))
+      ::col_helper t (y_coord +. gap) in
+    col_helper (StringMap.bindings column) 0.
+
+  let make_columns columns gap =
+    let rec helper cols x_coord =
+      match cols with
+      | [] -> []
+      | h::t -> (return_register_nodes h x_coord)::(helper t (x_coord +. gap))
+    in helper columns gap
+
+  let make_inputs inputs =
+    let gap = 100./.(float_of_int(StringMap.cardinal inputs))  in
+    let to_display_input (reg_id, register) y_coord = (reg_id, {
+      r_id=reg_id;
+      r_x_coord=0.;
+      r_y_coord=y_coord;
+      r_reg_type=Dis_input;
+      input=(-1)
+    }) in
+    let rec input_helper unfinished y =
+      match unfinished with
+      | [] -> []
+      | h::t -> (to_display_input h y)::(input_helper t (y +. gap))
+  in input_helper (StringMap.bindings inputs) 0.
+
+  let format circ =
+    let reg_list = get_all_registers circ in
+    let (inputs, reg_columns, outputs) = columnize_registers circ in
+    let all_ast = reg_columns@[outputs] in
+    let total_col = float_of_int (List.length all_ast) in
+    let final_inputs = make_inputs inputs in
+    let x_gap = 100./.total_col in
+    let reg_done = make_columns all_ast x_gap in
+    let rec reg_helper curr_y curr_x y_gap col  =
+      match col with
+      | [] -> []
+      | (id, (display, ast))::tail ->
+        let (nodes, lets) = columnize_ast (tree_to_list ast reg_list) in
+        let formatted_ast = List.flatten (
+          make_ast_coordinates curr_x (curr_x +. x_gap) (curr_y) (curr_y +. y_gap) nodes ((List.length lets) = 0)
+          ) in
+        let formatted_lets = (format_lets curr_x curr_y (curr_y +. y_gap) lets) in
+        let formatted_register = (id, display) in
+        (formatted_ast, formatted_lets, formatted_register)::(reg_helper (curr_y +. y_gap) (curr_x +. x_gap) y_gap tail)
+    in
+
+    let rec finish_column curr_x cols =
+      match cols with
+      | [] -> []
+      | column::t ->
+        let y_gap = (100./.(float_of_int (List.length column))) in
+        (reg_helper 0. curr_x y_gap column)::(finish_column (curr_x +. x_gap) t) in
+    let finished = List.flatten (finish_column 0. reg_done) in
+
+    let (ast, lets, reg) = List.fold_left (fun (a_list, l_list, r_list) (a, l, r) -> (a::a_list, l::l_list, r::r_list)) ([],[],[]) finished in
+    {
+      registers=final_inputs@reg;
+      nodes=(List.flatten ast);
+      lets=(List.flatten lets);
+    }
+let string_of_reg_type t =
+  match t with
+  | Dis_input -> "Input\n"
+  | Dis_output -> "Output\n"
+  | Dis_rising -> "Rising\n"
+  | Dis_falling -> "Falling\n"
+let print_node node =
+  let s =
+    match node with
+    | B (b, c1, c2) -> "Bitwise\n"
+    | L (l, c1, c2) -> "Logical\n"
+    | A (a, c1, c2) -> "Arithmetic\n"
+    | N (n, c) -> "Negation\n"
+    | C (c, c1, c2) -> "Comparison\n"
+    | Sub (i1,i2, c) -> "Substream\n"
+    | Nth (i, c) -> "Nth\n"
+    | Red (r, c) -> "Reduce\n"
+    | Concat (c_list) -> "Concat\n"
+    | Mux (c1, c2, c3) -> "Mux\n"
+    | Const b -> "Constant\n"
+    | Apply (a, c_list) -> "Apply\n"
+  in print_string s; ()
+
+let print_display_let (id, l) =
+  print_string ("Let ID " ^ id ^ "\n");
+  print_string ("Postition : (" ^ (string_of_float l.l_x_coord) ^ ", " ^ (string_of_float l.l_y_coord) ^ ")\n");
+  print_string ("Inputs ");
+  List.iter (fun x -> print_string (x^",")) l.inputs;
+  ()
+
+let print_display_reg (id, r) =
+  print_string ("Display Register " ^ id);
+  print_string ("Register : \n");
+  print_string ("Register type : " ^ (string_of_reg_type r.r_reg_type));
+  print_string ("Postition : (" ^ (string_of_float r.r_x_coord) ^ ", " ^ (string_of_float r.r_y_coord) ^ ")\n");
+  print_string ("Input: " ^ (string_of_int r.input) ^ "\n");
+  ()
+
+let print_display_node (id, n) =
+  print_string ("Display Node " ^ (string_of_int id) ^ "\n");
+  print_string "NODE : ";
+  print_node n.node;
+  print_string ("Postition : (" ^ (string_of_float n.n_x_coord) ^ ", " ^ (string_of_float n.n_y_coord) ^ ")\n");
+  ()
+
+let format_format_circuit f circ =
+  print_string "BLAHHHHHHHHHH";
+  List.iter print_display_node circ.nodes;
+  List.iter print_display_reg circ.registers;
+  List.iter print_display_let circ.lets;
+  ()
 
   let r1 = {
     r_id = "A";
@@ -1031,145 +1191,5 @@ module Formatter : CircuitFormatter = struct
     lets = lets;
     nodes = n;
   }
-
-  let make_ast_coordinates x_start x_end y_start y_end ast_columns lets =
-    let x_gap =
-      if lets
-      then (x_end -. x_start)/.(float_of_int ((List.length ast_columns) + 2))
-      else (x_end -. x_start)/.(float_of_int ((List.length ast_columns) + 1)) in
-    let x_c = if lets then (x_start +. (2.*.x_gap)) else (x_start +. x_gap) in
-    let rec y_helper nodes y_gap curr_y =
-      match nodes with
-      | [] -> []
-      | h::t ->
-      (h.n_id, {n_id=h.n_id; n_y_coord=curr_y; n_x_coord=h.n_x_coord; node=h.node})::
-      (y_helper t y_gap (curr_y +. y_gap)) in
-
-    let rec x_helper columns curr_x =
-      match columns with
-      |[] -> []
-      | h::t ->
-        (List.map
-          (fun (id, node) -> {n_id=node.n_id; n_y_coord=node.n_y_coord; node=node.node; n_x_coord=curr_x}
-          ) h
-        )::(x_helper t (curr_x +. (x_gap))) in
-
-    let x_done = x_helper ast_columns x_c in
-
-    List.map (fun col ->
-      let gap = ((y_end -. y_start)/.(float_of_int ((List.length col) + 1))) in
-      y_helper col gap y_start
-    ) x_done
-
-  let format_lets x_coord y_start y_end lets =
-    let y_gap = (y_end -. y_start)/.(float_of_int ((List.length lets) + 1)) in
-    let rec let_helper unfinished curr_y =
-      match unfinished with
-      | [] -> []
-      | (id, l)::t ->
-        (l.l_id,{l_id=l.l_id; l_x_coord=x_coord; l_y_coord=curr_y; inputs=l.inputs})
-        ::(let_helper t (curr_y +. y_gap))
-    in let_helper lets (y_start +. y_gap)
-
-  let return_register_nodes column x_coord =
-    let gap = 100./.(float_of_int (StringMap.cardinal column)) in
-    let rec col_helper col y_coord =
-      match col with
-      | [] -> []
-      | (id,(reg, ast))::t ->
-      (id, ({r_x_coord=x_coord; r_y_coord=y_coord; r_reg_type=(reg_type_to_display (reg.reg_type)); input=(get_ids ast); r_id=id}, ast))
-      ::col_helper t (y_coord +. gap) in
-    col_helper (StringMap.bindings column) 0.
-
-  let make_columns columns gap =
-    let rec helper cols x_coord =
-      match cols with
-      | [] -> []
-      | h::t -> (return_register_nodes h x_coord)::(helper t (x_coord +. gap))
-    in helper columns gap
-  let format circ =
-    let reg_list = get_all_registers circ in
-    let (inputs, reg_columns, outputs) = columnize_registers circ in
-    let all_ast = reg_columns@[outputs] in
-    let total_col = float_of_int (List.length all_ast) in
-    let x_gap = 100./.total_col in
-    let reg_done = make_columns all_ast x_gap in
-    let rec finish_column curr_x cols = (
-      match cols with
-      | [] -> []
-      | column::t ->
-        let y_gap = (100./.(float_of_int (List.length column))) in
-        let rec reg_helper curr_y col =
-        ( match col with
-          | [] -> []
-          | (id, (display, ast))::tail ->
-          let (nodes, lets) = columnize_ast (tree_to_list ast reg_list) in
-          let formatted_ast =
-            List.flatten (make_ast_coordinates
-              curr_x (curr_x +. x_gap) (curr_y) (curr_y +. y_gap) nodes ((List.length lets) = 0)
-            ) in
-          let formatted_lets = (format_lets curr_x curr_y (curr_y +. y_gap) lets) in
-          let formatted_register = (id, display) in
-          (formatted_ast, formatted_lets, formatted_register)::(reg_helper (curr_y +. y_gap) tail)
-        )
-        in reg_helper 0. column)
-      in let finished = finish_column 0. reg_done in
-      let (ast, lets, reg) = List.fold_left (fun (a_list, l_list, r_list) (a, l, r) -> (a::a_list, l::l_list, r::r_list)) ([],[],[]) finished in
-
-      {
-        registers=reg;
-        nodes=(List.flatten ast);
-        lets=(List.flatten lets);
-      }
-let string_of_reg_type t =
-  match t with
-  | Dis_input -> "Input\n"
-  | Dis_output -> "Output\n"
-  | Dis_rising -> "Rising\n"
-  | Dis_falling -> "Falling\n"
-let print_node node =
-  let s =
-    match node with
-    | B (b, c1, c2) -> "Bitwise\n"
-    | L (l, c1, c2) -> "Logical\n"
-    | A (a, c1, c2) -> "Arithmetic\n"
-    | N (n, c) -> "Negation\n"
-    | C (c, c1, c2) -> "Comparison\n"
-    | Sub (i1,i2, c) -> "Substream\n"
-    | Nth (i, c) -> "Nth\n"
-    | Red (r, c) -> "Reduce\n"
-    | Concat (c_list) -> "Concat\n"
-    | Mux (c1, c2, c3) -> "Mux\n"
-    | Const b -> "Constant\n"
-    | Apply (a, c_list) -> "Apply\n"
-  in print_string s; ()
-
-let print_display_let (id, l) =
-  print_string ("Let ID " ^ id ^ "\n");
-  print_string ("Postition : (" ^ (string_of_float l.l_x_coord) ^ ", " ^ (string_of_float l.l_y_coord) ^ ")\n");
-  print_string ("Inputs ");
-  List.iter (fun x -> print_string (x^",")) l.inputs;
-  ()
-
-let print_display_reg (id, r) =
-  print_string ("Display Register " ^ id);
-  print_string ("Register : \n");
-  print_string ("Register type : " ^ (string_of_reg_type r.r_reg_type));
-  print_string ("Postition : (" ^ (string_of_float r.r_x_coord) ^ ", " ^ (string_of_float r.r_y_coord) ^ ")\n");
-  print_string ("Input: " ^ (string_of_int r.input) ^ "\n");
-  ()
-
-let print_display_node (id, n) =
-  print_string ("Display Node " ^ (string_of_int id) ^ "\n");
-  print_string "NODE : ";
-  print_node n.node;
-  print_string ("Postition : (" ^ (string_of_float n.n_x_coord) ^ ", " ^ (string_of_float n.n_y_coord) ^ ")\n");
-  ()
-
-let format_format_circuit f circ =
-  List.iter print_display_node circ.nodes;
-  List.iter print_display_reg circ.registers;
-  List.iter print_display_let circ.lets;
-  ()
 
 end

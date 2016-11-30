@@ -55,6 +55,7 @@ val format_comp : Format.formatter -> component -> unit
 (* formatting function for circuits *)
 val format_circuit : Format.formatter -> circuit -> unit
 
+
 module type CircuitSimulator = sig
   (* [evaluate circ comb] is the bitstream that results from evaluating
    * [comb] in the context of circuit [circ] *)
