@@ -731,9 +731,7 @@ module Formatter : CircuitFormatter = struct
     | AST ast -> (r, attach_ids ast)
     | _ -> failwith "invalid ast"
 
-  (*
-  not_finished : id ->
-  *)
+
   let rec dependency_helper not_finished finished cols reg_deps =
     if (StringMap.is_empty not_finished) then cols
     else
@@ -744,6 +742,7 @@ module Formatter : CircuitFormatter = struct
       let new_not_finished = StringMap.filter (fun k _ -> not (StringMap.mem k new_finished)) not_finished in
 
       dependency_helper new_not_finished new_finished (new_col::cols) reg_deps
+
   (* type formatted_circuit = register StringMap.t list *)
   let columnize_registers circ =
     let reg = get_all_registers circ in
@@ -769,39 +768,6 @@ module Formatter : CircuitFormatter = struct
         (r, new_ast)
       ) (find_outputs reg) in
   (inputs, final_registers, final_outputs)
-
-  (* let columnize_registers circ =
-    let reg = get_all_registers circ in
-    let inputs = find_inputs reg in
-    let outputs = find_outputs reg in
-    let asts = (no_outputs (no_inputs reg)) in
-
-    let list_dep_of_register r =
-      (match r.reg_type with
-      | Rising | Falling -> (
-        match r.next with
-        | AST ast -> list_dependencies (attach_ids ast) reg
-        | _ -> []
-      )
-      | _ -> []) in
-    let reg_deps = (StringMap.map (fun v -> list_dep_of_register v) (no_inputs reg)) in
-    let rec dep_helper not_done d cols =
-      (match (StringMap.is_empty not_done) with
-      | true -> cols
-      | false ->
-        let resolved k v =
-          (List.for_all (fun x -> StringMap.mem x d) (StringMap.find k reg_deps)) in
-        let new_col = StringMap.filter resolved not_done in
-        let new_done = StringMap.union (fun k v1 v2 -> Some v2) d new_col in
-        let new_not_done = StringMap.filter (fun k v -> not (StringMap.mem k new_done)) not_done in
-
-        dep_helper new_not_done new_done (new_col::cols))
-
-    in
-      let registers = List.rev (dep_helper asts inputs []) in
-      (inputs, registers, outputs) *)
-
-
 
   let get_ids ast =
   match ast with
@@ -977,7 +943,7 @@ module Formatter : CircuitFormatter = struct
       (n2, new_let::l2)
   in list_helper ast []
 
-  let format_reg_ast (lets, nodes) =
+  let columnize_ast (lets, nodes) =
     let new_nodes = List.map (fun x -> (x.n_id, x)) nodes in
     let new_lets = List.map (fun x -> (x.l_id, x)) lets in
     let rec top_sort unfinished finished cols =
@@ -989,7 +955,7 @@ module Formatter : CircuitFormatter = struct
         let new_unfinished = List.filter (fun (id, node) -> not (List.mem_assoc id new_finished)) unfinished in
         top_sort new_unfinished new_finished (new_col::cols)
       in
-    (new_lets, (top_sort new_nodes [] []))
+    (new_lets, List.rev (top_sort new_nodes [] []))
 
   let r1 = {
     r_id = "A";
@@ -1067,20 +1033,6 @@ module Formatter : CircuitFormatter = struct
   }
 
 
-  (* let make_inputs inputs =
-    let to_display_input reg_id register = {
-      r_id=reg_id;
-      r_x_coord=0.;
-      r_y_coord=y_coord;
-      reg_type=Dis_input;
-      input=(-1);
-    } in
-    let rec input_helper unfinished y =
-      match unfinished with
-      | [] -> []
-      | h::t -> (to_display_input h y)::(input_helper t (y +. gap))
-  in input_helper (StringMap.bindings inputs) 0. *)
-
   let make_ast_coordinates x_start x_end y_start y_end ast_columns =
     let col_len = (x_end -. x_start) in
 
@@ -1116,18 +1068,26 @@ module Formatter : CircuitFormatter = struct
       match col with
       | [] -> []
       | (id,(reg, ast))::t ->
-      {r_x_coord=x_coord; r_y_coord=y_coord; r_reg_type=(reg_type_to_display (reg.reg_type)); input=(get_ids ast); r_id=id}
+      (id, ({r_x_coord=x_coord; r_y_coord=y_coord; r_reg_type=(reg_type_to_display (reg.reg_type)); input=(get_ids ast); r_id=id}, ast))
       ::col_helper t (y_coord +. gap) in
     col_helper (StringMap.bindings column) 0.
 
   (* let process_one_column column x_coord = *)
+
+  let make_columns columns gap =
+    let rec helper cols x_coord =
+      match cols with
+      | [] -> []
+      | h::t -> (return_register_nodes h x_coord)::(helper t (x_coord +. gap))
+    in helper columns gap
 
   let format circ =
     let (inputs, reg_columns, outputs) = columnize_registers circ in
     let all_ast = reg_columns@[outputs] in
     let total_col = float_of_int (List.length all_ast) in
     let gap = 100./.total_col in
-    let y = List.length all_ast in
+    let reg_done = make_columns all_ast gap in
+
 
 
     {
