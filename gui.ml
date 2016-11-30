@@ -76,7 +76,7 @@ module View = struct
       | Dis_falling -> collect_registers x_scale y_scale t ((d_register zeros id x y nonNodeS)::acc)
       | Dis_output  -> collect_registers x_scale y_scale t ((o_register zeros id x y nonNodeS)::acc)
       | Dis_input   ->
-        let f = (fun x -> ()) in
+        let f = Events.CircuitEvents.did_change_input in
         collect_registers x_scale y_scale t ((i_register f zeros id x y nonNodeS)::acc)
     end
 

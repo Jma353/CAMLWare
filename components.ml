@@ -102,9 +102,9 @@ module Wiring = struct
   (* Tunnel Helper
    * Assists in the creation of a tunnel component *)
   let tunnel op (l:string) (x:float) (y:float) (edge:float) svg =
-    let x1 = op x (edge *. 0.1) in
+    let x1        = op x (edge *. 0.1) in
     let mini_wire = line_comp x1 y x y in
-    let label = text (op x1 (edge *. 0.1)) y (edge /. 4.) "" l in
+    let label     = text (op x1 (edge *. 0.1)) y (edge /. 4.) "" l in
     svg |- mini_wire |- label
 
   (* COMPONENTS *)
@@ -132,7 +132,7 @@ module Gates = struct
   (* Negative Dot Helper
    * Assists in the creation of a negative dot for a logic gate *)
   let neg_dot (x:float) (y:float) (edge:float) =
-    let r = (0.07*.edge) in
+    let r  = (0.07*.edge) in
     let cx = (x+.edge*.0.83+.r) in
     let cy = (y+.0.5*.edge) in
     circ_c cx cy r
@@ -141,32 +141,32 @@ module Gates = struct
    * Assists in the creation of a NOT gate
    * NOTE: Adds it to an SVG `svg` *)
   let not_helper (x:float) (y:float) (edge:float) svg =
-    let tl = (x +. edge *. 0.2, y +. edge *. 0.2) in
-    let mr = (x +. edge *. 0.7, y +. edge *. 0.5) in
-    let bl = (x +. edge *. 0.2, y +. edge *. 0.8) in
-    let d = _d [tl;mr;bl;tl] in
+    let tl      = (x +. edge *. 0.2, y +. edge *. 0.2) in
+    let mr      = (x +. edge *. 0.7, y +. edge *. 0.5) in
+    let bl      = (x +. edge *. 0.2, y +. edge *. 0.8) in
+    let d       = _d [tl;mr;bl;tl] in
     let my_path = path d "linear" in
-    let r = 0.1 *. edge in
-    let cx = (x +. edge *. 0.7 +. r) in
-    let cy = (y +. 0.5 *. edge) in
-    let circ = circ_c cx cy r in
+    let r       = 0.1 *. edge in
+    let cx      = (x +. edge *. 0.7 +. r) in
+    let cy      = (y +. 0.5 *. edge) in
+    let circ    = circ_c cx cy r in
     svg |- my_path |- circ
 
   (* And Helper
    * Assists in the creation of an AND gate
    * NOTE: Adds it to an SVG `svg` *)
   let and_helper (x:float) (y:float) (edge:float) svg =
-    let tl = (x, y +. 0.1 *. edge) in
-    let tm = (x +. 0.5 *. edge, y +. 0.1 *. edge) in
-    let mr = (x +. edge, y +. 0.5 *. edge) in
-    let mm = (x +. 0.85 *. edge, y +. 0.5 *. edge) in
-    let bm = (x +. 0.5 *. edge, y +. 0.9 *. edge) in
-    let bl = (x, y +. 0.9 *. edge) in
-    let d_1 = _d [tl;tm;mr;bm;bl] in
+    let tl     = (x, y +. 0.1 *. edge) in
+    let tm     = (x +. 0.5 *. edge, y +. 0.1 *. edge) in
+    let mr     = (x +. edge, y +. 0.5 *. edge) in
+    let mm     = (x +. 0.85 *. edge, y +. 0.5 *. edge) in
+    let bm     = (x +. 0.5 *. edge, y +. 0.9 *. edge) in
+    let bl     = (x, y +. 0.9 *. edge) in
+    let d_1    = _d [tl;tm;mr;bm;bl] in
     let path_1 = path d_1 "basis" in
-    let d_2 = _d [tl;bl] in
+    let d_2    = _d [tl;bl] in
     let path_2 = path d_2 "linear" in
-    let d_3 = _d [mm;mr] in
+    let d_3    = _d [mm;mr] in
     let path_3 = path d_3 "linear" in
     svg |- path_1 |- path_2 |- path_3
 
@@ -174,18 +174,18 @@ module Gates = struct
    * Assists int he creation of an OR gate
    * NOTE: Adds it to an SVG `svg` *)
   let or_helper (x:float) (y:float) (edge:float)  svg =
-    let tl = (x, y +. 0.1 *. edge) in
-    let tm = (x +. 0.5 *. edge, y +. 0.1 *. edge) in
-    let mr = (x +. edge, y +. 0.5 *. edge) in
-    let bm = (x +. 0.5 *. edge, y +. 0.9 *. edge) in
-    let bl = (x, y +. 0.9 *. edge) in
-    let mm = (x +. 0.2 *. edge, y +. 0.5 *. edge) in
-    let mm2 = (x +. 0.85 *. edge, y +. 0.5 *. edge) in
-    let d_1 = _d [tl;tm;mr;bm;bl] in
+    let tl     = (x, y +. 0.1 *. edge) in
+    let tm     = (x +. 0.5 *. edge, y +. 0.1 *. edge) in
+    let mr     = (x +. edge, y +. 0.5 *. edge) in
+    let bm     = (x +. 0.5 *. edge, y +. 0.9 *. edge) in
+    let bl     = (x, y +. 0.9 *. edge) in
+    let mm     = (x +. 0.2 *. edge, y +. 0.5 *. edge) in
+    let mm2    = (x +. 0.85 *. edge, y +. 0.5 *. edge) in
+    let d_1    = _d [tl;tm;mr;bm;bl] in
     let path_1 = path d_1 "basis" in
-    let d_2 = _d [tl;mm;bl] in
+    let d_2    = _d [tl;mm;bl] in
     let path_2 = path d_2 "basis" in
-    let d_3 = _d [mm2;mr] in
+    let d_3    = _d [mm2;mr] in
     let path_3 = path d_3 "linear" in
     svg |- path_1 |- path_2 |- path_3
 
@@ -193,23 +193,23 @@ module Gates = struct
    * Assists int he creation of an XOR gate
    * NOTE: Adds it to an SVG `svg` *)
   let xor_helper (x:float) (y:float) (edge:float) svg =
-    let tl = (x +. 0.1 *. edge, y +. 0.1 *. edge) in
-    let tm = (x +. 0.5 *. edge, y +. 0.1 *. edge) in
-    let mr = (x +. edge, y +. 0.5 *. edge) in
-    let bm = (x +. 0.5 *. edge, y +. 0.9 *. edge) in
-    let bl = (x +. 0.1 *. edge, y +. 0.9 *. edge) in
-    let mm = (x +. 0.2 *. edge, y +. 0.5 *. edge) in
-    let mm2 = (x +. 0.85 *. edge, y +. 0.5 *. edge) in
-    let d_1 = _d [tl;tm;mr;bm;bl] in
-    let path_1 = path d_1  "basis" in
-    let d_2 = _d [tl;mm;bl] in
+    let tl     = (x +. 0.1 *. edge, y +. 0.1 *. edge) in
+    let tm     = (x +. 0.5 *. edge, y +. 0.1 *. edge) in
+    let mr     = (x +. edge, y +. 0.5 *. edge) in
+    let bm     = (x +. 0.5 *. edge, y +. 0.9 *. edge) in
+    let bl     = (x +. 0.1 *. edge, y +. 0.9 *. edge) in
+    let mm     = (x +. 0.2 *. edge, y +. 0.5 *. edge) in
+    let mm2    = (x +. 0.85 *. edge, y +. 0.5 *. edge) in
+    let d_1    = _d [tl;tm;mr;bm;bl] in
+    let path_1 = path d_1 "basis" in
+    let d_2    = _d [tl;mm;bl] in
     let path_2 = path d_2 "basis" in
     let xor_tl = (x, y +. 0.1 *. edge) in
     let xor_mm = (x +. 0.1 *. edge, y +. 0.5 *. edge) in
     let xor_bl = (x, y +. 0.9 *. edge) in
-    let d_3 = _d [xor_tl;xor_mm;xor_bl] in
+    let d_3    = _d [xor_tl;xor_mm;xor_bl] in
     let path_3 = path d_3 "basis" in
-    let d_4 = _d [mm2;mr] in
+    let d_4    = _d [mm2;mr] in
     let path_4 = path d_4 "linear" in
     svg |- path_1 |- path_2 |- path_3 |- path_4
 
@@ -307,7 +307,7 @@ module SubBits = struct
    * Assists in the creation of a component that expresses some sort of
    * filtering of bits in a bitstream *)
   let sub_bits edge width height x y txt_x txt_y msg svg =
-    let box = rect_c width height x y 2. 2. in
+    let box      = rect_c width height x y 2. 2. in
     let num_bits = text txt_x txt_y (edge /. 3.) "" msg in
     svg |- box |- num_bits
 
@@ -353,18 +353,18 @@ module Registers = struct
   (* Register Helper
    * Assists in the creation of a base register *)
   let base_register_helper b l type_l (x:float) (y:float) (edge:float) =
-    let g = container x y in
-    let hex_str = bs_to_hs b in
-    let frame = rect_c edge edge 0. 0. 2. 2. in
-    let bit_vals = text (edge *. 0.5) (edge *. 0.5) (edge /. 7.5) l hex_str in
-    let label = text (edge *. 0.75) (edge *. 0.2) (edge /. 7.5) "" l in
+    let g          = container x y in
+    let hex_str    = bs_to_hs b in
+    let frame      = rect_c edge edge 0. 0. 2. 2. in
+    let bit_vals   = text (edge *. 0.5) (edge *. 0.5) (edge /. 7.5) l hex_str in
+    let label      = text (edge *. 0.75) (edge *. 0.2) (edge /. 7.5) "" l in
     let type_label = text (edge *. 0.3) (edge *. 0.2) (edge /. 7.5) "" type_l in
     g |- frame |- bit_vals |- label |- type_label
 
   (* Register (Non-Input/Output) Helper
    * Assists in the creation of a u/d_register component *)
   let ud_register_helper b l type_l (x:float) (y:float) (edge:float) =
-    let b = base_register_helper b l type_l x y edge in
+    let b     = base_register_helper b l type_l x y edge in
     let line1 = (line_comp 0.
       (0.75 *. edge) (0.15 *. edge)
       (0.80 *. edge)) in
@@ -449,27 +449,26 @@ module Miscs = struct
   (* Constant Component *)
   let constant b (x:float) (y:float) (edge:float) svg =
     let hex_str = Bitstream.bitstream_to_hexstring b in
-    let w = edge in
-    let h = w *. 0.3 in
-    let g = container x y in
-    let frame = rect_c w h 0. (edge *. 0.5 -. h *. 0.5) 6. 6. in
-    let words = text (w *. 0.5) (edge *. 0.5) (w /. 7.5) "" hex_str in
-    let gnode = g |- frame |- words in
-    svg |- gnode
+    let w       = edge in
+    let h       = w *. 0.3 in
+    let g       = container x y in
+    let frame   = rect_c w h 0. (edge *. 0.5 -. h *. 0.5) 6. 6. in
+    let words   = text (w *. 0.5) (edge *. 0.5) (w /. 7.5) "" hex_str in
+    svg |- (g |- frame |- words)
 
   (* MUX2 Component *)
   let mux2_c (x:float) (y:float) (edge:float) svg =
-    let g = container x y in
-    let one   = (0., 0.) in
-    let two   = (edge *. 0.6, edge *. 0.2) in
-    let three = (edge *. 0.6, edge *. 0.8) in
-    let four  = (0., edge) in
-    let d = _d [one;two;three;four;one] in
-    let my_path = path d "linear" in
-    let i0_label = text (edge *. 0.2) (edge *. 0.3) (edge /. 7.5) "" "i_0" in
-    let i1_label = text (edge *. 0.2) (edge *. 0.5) (edge /. 7.5) "" "i_1" in
+    let g         = container x y in
+    let one       = (0., 0.) in
+    let two       = (edge *. 0.6, edge *. 0.2) in
+    let three     = (edge *. 0.6, edge *. 0.8) in
+    let four      = (0., edge) in
+    let d         = _d [one;two;three;four;one] in
+    let my_path   = path d "linear" in
+    let i0_label  = text (edge *. 0.2) (edge *. 0.3) (edge /. 7.5) "" "i_0" in
+    let i1_label  = text (edge *. 0.2) (edge *. 0.5) (edge /. 7.5) "" "i_1" in
     let sel_label = text (edge *. 0.2) (edge *. 0.7) (edge /. 7.5) "" "sel" in
-    let out_wire = (line_comp (edge *. 0.6) (edge /. 2.) edge (edge /. 2.)) in
+    let out_wire  = (line_comp (edge *. 0.6) (edge /. 2.) edge (edge /. 2.)) in
     svg |- g |- my_path |- i0_label |- i1_label |- sel_label |- out_wire
 
   (* Let-statement Component *)
@@ -496,17 +495,12 @@ module Triggers = struct
    * NOTE: This register takes in a function that accepts the id of this input
    * register to perform a View Change *)
   let i_register f b l (x:float) (y:float) (edge:float) svg =
-    let g = container x y in
-    let hex_str = bs_to_hs b in
-    let frame = rect_c edge edge 0. 0. 2. 2. in
-    let label = text (edge *. 0.75) (edge *. 0.2) (edge /. 7.5) "" l in
+    let g          = (container x y) |. E.click (fun _ _ _ -> f l) in
+    let hex_str    = bs_to_hs b in
+    let label      = text (edge *. 0.75) (edge *. 0.2) (edge /. 7.5) "" l in
     let type_label = text (edge *. 0.3) (edge *. 0.2) (edge /. 7.5) "" "Input" in
-    let bit_vals =
-      ((text
-        (edge *. 0.5)
-        (edge *. 0.5)
-        (edge /. 7.5) l hex_str)
-        |. E.click (fun _ _ _ -> f l)) in
+    let bit_vals   = (text (edge *. 0.5) (edge *. 0.5) (edge /. 7.5) l hex_str) in
+    let frame      = rect_c edge edge 0. 0. 2. 2. in
     svg |- (g |- frame |- bit_vals |- label |- type_label)
 
   (* TODO: COMPILE AND STEP BUTTONS *)

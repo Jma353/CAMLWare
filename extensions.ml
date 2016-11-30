@@ -43,6 +43,12 @@ let linear dom rng =
     [| inject (Array.of_list [fst rng; snd rng]) |])) in
   lin
 
+(* Wrapper for prompt *)
+let prompt query default =
+  let a = (Js.Unsafe.(meth_call Dom_html.window "prompt"
+      [| inject (Js.string query); inject (Js.string default) |])) in
+  a |> Js.to_string
+
 (* Create a line function *)
 let line x_scale y_scale interp =
   let use_scale lne x = Js.Unsafe.(fun_call lne [| inject x |]) in
