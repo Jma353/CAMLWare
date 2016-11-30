@@ -65,16 +65,16 @@ module type CircuitSimulator = sig
   val step : circuit -> circuit
 
   (* [step_n circ n] is the circuit that results from stepping [circ] [n] times *)
-  val step_n : int -> circuit -> circuit 
+  val step_n : int -> circuit -> circuit
 
   (* [change_input circ in value] is the circuit that results from replacing the
    * value of input [in] in [circ] with [value] and updating and dependent
    * outputs *)
   val change_input : id -> bitstream -> circuit -> circuit
 
-  (* [update_outputs circ] is the circuit with all outputs updates via current 
+  (* [update_outputs circ] is the circuit with all outputs updates via current
   register values *)
-  val update_outputs: circuit -> circuit 
+  val update_outputs: circuit -> circuit
 
 end
 
@@ -135,7 +135,7 @@ module type CircuitFormatter = sig
 
   type display_register = {
     r_id : id;
-    reg_type :  display_reg_type;
+    r_reg_type :  display_reg_type;
     r_x_coord : float;
     r_y_coord : float;
     input : int;
@@ -146,7 +146,7 @@ module type CircuitFormatter = sig
     nodes     : (int * display_node) list;
     lets      : (id * display_let) list
   }
-  
+
   val test_circ : unit -> formatted_circuit
 
   (* [format circ] is a representation of [circ] with coordinate information
