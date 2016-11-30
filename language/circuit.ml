@@ -1038,17 +1038,17 @@ module Formatter : CircuitFormatter = struct
     let final_inputs = make_inputs inputs in
     let x_gap = 100./.total_col in
     let reg_done = make_columns all_ast x_gap in
-    let rec reg_helper curr_y curr_x y_gap col  =
+    let rec reg_helper curr_y curr_x y_gap col len =
       match col with
       | [] -> []
       | (id, (display, ast))::tail ->
         let (nodes, lets) = columnize_ast (tree_to_list ast reg_list) in
         let formatted_ast = List.flatten (
-          make_ast_coordinates curr_x (curr_x +. x_gap) (curr_y) (curr_y +. y_gap) nodes ((List.length lets) = 0)
+          make_ast_coordinates curr_x (curr_x +. (x_gap/.len)) (curr_y) (curr_y +. y_gap) nodes ((List.length lets) = 0)
           ) in
         let formatted_lets = (format_lets curr_x curr_y (curr_y +. y_gap) lets) in
         let formatted_register = (id, display) in
-        (formatted_ast, formatted_lets, formatted_register)::(reg_helper (curr_y +. y_gap) (curr_x +. x_gap) y_gap tail)
+        (formatted_ast, formatted_lets, formatted_register)::(reg_helper (curr_y +. y_gap) (curr_x +. (x_gap/.len)) y_gap tail len)
     in
 
     let rec finish_column curr_x cols =
@@ -1056,7 +1056,7 @@ module Formatter : CircuitFormatter = struct
       | [] -> []
       | column::t ->
         let y_gap = (100./.(float_of_int (List.length column))) in
-        (reg_helper 0. curr_x y_gap column)::(finish_column (curr_x +. x_gap) t) in
+        (reg_helper 0. curr_x y_gap column (float_of_int (List.length column)))::(finish_column (curr_x +. x_gap) t) in
     let finished = List.flatten (finish_column 0. reg_done) in
 
     let (ast, lets, reg) = List.fold_left (fun (a_list, l_list, r_list) (a, l, r) -> (a::a_list, l::l_list, r::r_list)) ([],[],[]) finished in
