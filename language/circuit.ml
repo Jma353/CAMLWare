@@ -713,13 +713,56 @@ module Formatter : CircuitFormatter = struct
   StringMap.filter
   (fun k v -> match v.reg_type with |Output -> true | _ -> false) reg_list
 
-  (* type formatted_circuit = register StringMap.t list *)
+  let normalize_reg r =
+    match r.next with
+    | AST ast -> (r, attach_ids ast)
+    | _ -> failwith "invalid ast"
 
+  (*
+  not_finished : id ->
+  *)
+  let rec dependency_helper not_finished finished cols reg_deps =
+    if (StringMap.is_empty not_finished) then cols
+    else
+      let resolved k ( _, _, deps) =
+        List.for_all (fun x -> StringMap.mem x finished) deps in
+      let new_col = StringMap.filter resolved not_finished in
+      let new_finished = StringMap.union (fun k vi v2 -> Some v2) finished new_col in
+      let new_not_finished = StringMap.filter (fun k _ -> not (StringMap.mem k new_finished)) not_finished in
+
+      dependency_helper new_not_finished new_finished (new_col::cols) reg_deps
+  (* type formatted_circuit = register StringMap.t list *)
   let columnize_registers circ =
+    let reg = get_all_registers circ in
+    let inputs = find_inputs reg in
+    let asts = no_outputs (no_inputs reg) in
+    let new_asts = StringMap.map normalize_reg asts in (*now have id -> (register, Id_Comb)*)
+    let reg_deps = StringMap.map (fun (r, ast) -> (r, ast, (list_dependencies ast reg))) new_asts in  (*now id -> register, id_ast, dependencies*)
+    let fake_inputs = StringMap.map (fun value -> (value, Id_Const (1, create [true;]), [])) inputs in
+    let registers = List.rev (dependency_helper reg_deps fake_inputs [] reg_deps) in
+
+     let final_registers = List.map (
+       fun reg_col -> (
+          StringMap.map (fun (reg, ast, dep) -> (reg, ast)) reg_col
+         )
+       ) registers in
+     let final_outputs =
+      StringMap.map (
+        fun r ->
+        let new_ast =
+          match r.next with
+          | AST ast -> attach_ids ast
+          | _ -> failwith "invalid output" in
+        (r, new_ast)
+      ) (find_outputs reg) in
+  (inputs, final_registers, final_outputs)
+
+  (* let columnize_registers circ =
     let reg = get_all_registers circ in
     let inputs = find_inputs reg in
     let outputs = find_outputs reg in
     let asts = (no_outputs (no_inputs reg)) in
+
     let list_dep_of_register r =
       (match r.reg_type with
       | Rising | Falling -> (
@@ -743,7 +786,8 @@ module Formatter : CircuitFormatter = struct
 
     in
       let registers = List.rev (dep_helper asts inputs []) in
-      (inputs, registers, outputs)
+      (inputs, registers, outputs) *)
+
 
 
   let get_ids ast =
@@ -1009,56 +1053,65 @@ module Formatter : CircuitFormatter = struct
     nodes = n;
   }
 
-  let make_register_column reg_col x_coord =
-    let l = float_of_int (List.length reg_col) in
-    let rec col_helper unfinished current_y =
-    match unfinished with
-    | [] ->  []
-    | h::t -> {r_id=h.r_id; reg_type=h.reg_type; input=h.input; r_y_coord=current_y; r_x_coord=x_coord}::
-              (col_helper t (current_y +. (100./.l))) in
-    col_helper reg_col 0.
-
-  (* let make_lists (inputs, registers, outputs) = 
-    let to_display_input reg_id register = {
+  let make_inputs inputs =
+    let gap = 100./.((float_of_int(StringMap.cardinal inputs)) -. 1.) in
+    let to_display_input (reg_id, register) y_coord = (reg_id, {
       r_id=reg_id;
       r_x_coord=0.;
-      r_y_coord=0.;
+      r_y_coord=y_coord;
       reg_type=Dis_input;
       input=(-1)
-    } in
-    let new_inputs =  *)
+    }) in
+    let rec input_helper unfinished y =
+      match unfinished with
+      | [] -> []
+      | h::t -> (to_display_input h y)::(input_helper t (y +. gap))
+  in input_helper (StringMap.bindings inputs) 0.
+
+  let make_ast_coordinates x_start x_end y_start y_end ast_columns =
+    let col_len = (x_end -. x_start) in
+
+    let rec y_helper nodes gap curr_y =
+      match nodes with
+      | [] -> []
+      | h::t ->
+      {n_id = h.n_id;n_y_coord = curr_y; n_x_coord=h.n_x_coord; node=h.node}::
+      (y_helper t gap (curr_y +. gap)) in
+
+    let rec x_helper columns curr_x =
+      match columns with
+      | [] -> []
+      | h::t ->
+        (List.map
+          (fun (id, node) ->
+            {n_id=node.n_id; n_y_coord=node.n_y_coord; node=node.node; n_x_coord=curr_x}
+          ) h
+        )::(x_helper t (curr_x +. (col_len))) in
+
+    let x_done = x_helper ast_columns x_start in
+
+    List.map (
+      fun col ->
+      let gap = ((y_end -. y_start)/.(float_of_int (List.length col))) in
+      y_helper col gap y_start
+      )
+    x_done
+
 
   let format circ =
     let (inputs, reg_columns, outputs) = columnize_registers circ in
-    let x = StringMap.is_empty inputs in
-    let y = List.map (fun x-> StringMap.is_empty x) reg_columns in
-    let z = StringMap.is_empty outputs in
-    let to_display_input reg_id register = {
-      r_id=reg_id;
-      r_x_coord=0.;
-      r_y_coord=0.;
-      reg_type=Dis_input;
-      input=(-1)
-    } in
-    let new_inputs = StringMap.mapi to_display_input inputs in
-    let k = make_register_column (List.map (fun (k,v) -> v) (StringMap.bindings new_inputs)) 0. in
+    let all_ast = reg_columns@[outputs] in
+    let total_col = float_of_int (List.length all_ast) in
+    let gap = 100./.total_col in
 
-    (*let format_one_register reg =
-      let ast =
-        match reg.next with
-        | User_input-> failwith "invalid map error"
-        | AST ast -> ast
-      in format_reg_ast (tree_to_list ast reg_list) in
-
-    let processed_outputs *)
+    let y = List.length all_ast in
 
 
-
-  {
-    registers = r;
-    lets = lets;
-    nodes = n;
-  }
+    {
+      registers = r;
+      lets = lets;
+      nodes = n;
+    }
 
 let format_format_circuit f circ = ()
 
