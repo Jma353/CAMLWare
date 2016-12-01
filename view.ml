@@ -259,15 +259,15 @@ let make circ =
     match op_c with
     | None -> []
     | Some a_c ->
-      (*
 
       (* Format the circuit *)
       let c = Circuit.Formatter.format a_c in
 
-      *)
 
-      (* FLAG TESTING *)
+
+      (* FLAG TESTING
       let c = test_circ () in
+      *)
 
       (* Helper function *)
       let get_second = (fun (_,x) -> x) in

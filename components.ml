@@ -96,7 +96,7 @@ let rect_c (w:float) (h:float) (x:float) (y:float) (rx:float) (ry:float) =
 let box_with_symbol (x:float) (y:float) (edge:float) sym svg =
   let g = container x y in
   let frame = rect_c edge edge 0. 0. 1. 1. in
-  let sym_c = text (edge *. 0.5) (edge *. 0.5) (edge /. 2.) "" sym in
+  let sym_c = text (edge *. 0.5) (edge *. 0.5) (edge /. 4.) "" sym in
   svg |- (g |- frame |- sym_c)
 
 (* Mini-Module with all Wiring Components *)
@@ -161,12 +161,12 @@ module Gates = struct
    * Assists in the creation of an AND gate
    * NOTE: Adds it to an SVG `svg` *)
   let and_helper (x:float) (y:float) (edge:float) svg =
-    let tl     = (x, y +. 0.1 *. edge) in
+    let tl     = (x, y) in
     let tm     = (x +. 0.5 *. edge, y +. 0.1 *. edge) in
     let mr     = (x +. edge, y +. 0.5 *. edge) in
     let mm     = (x +. 0.85 *. edge, y +. 0.5 *. edge) in
     let bm     = (x +. 0.5 *. edge, y +. 0.9 *. edge) in
-    let bl     = (x, y +. 0.9 *. edge) in
+    let bl     = (x, y +. edge) in
     let d_1    = _d [tl;tm;mr;bm;bl] in
     let path_1 = path d_1 "basis" in
     let d_2    = _d [tl;bl] in
@@ -179,11 +179,11 @@ module Gates = struct
    * Assists int he creation of an OR gate
    * NOTE: Adds it to an SVG `svg` *)
   let or_helper (x:float) (y:float) (edge:float)  svg =
-    let tl     = (x, y +. 0.1 *. edge) in
+    let tl     = (x, y) in
     let tm     = (x +. 0.5 *. edge, y +. 0.1 *. edge) in
     let mr     = (x +. edge, y +. 0.5 *. edge) in
     let bm     = (x +. 0.5 *. edge, y +. 0.9 *. edge) in
-    let bl     = (x, y +. 0.9 *. edge) in
+    let bl     = (x, y +. edge) in
     let mm     = (x +. 0.2 *. edge, y +. 0.5 *. edge) in
     let mm2    = (x +. 0.85 *. edge, y +. 0.5 *. edge) in
     let d_1    = _d [tl;tm;mr;bm;bl] in
@@ -198,11 +198,11 @@ module Gates = struct
    * Assists int he creation of an XOR gate
    * NOTE: Adds it to an SVG `svg` *)
   let xor_helper (x:float) (y:float) (edge:float) svg =
-    let tl     = (x +. 0.1 *. edge, y +. 0.1 *. edge) in
-    let tm     = (x +. 0.5 *. edge, y +. 0.1 *. edge) in
+    let tl     = (x +. 0.1 *. edge, y) in
+    let tm     = (x +. 0.5 *. edge, y) in
     let mr     = (x +. edge, y +. 0.5 *. edge) in
-    let bm     = (x +. 0.5 *. edge, y +. 0.9 *. edge) in
-    let bl     = (x +. 0.1 *. edge, y +. 0.9 *. edge) in
+    let bm     = (x +. 0.5 *. edge, y +. edge) in
+    let bl     = (x +. 0.1 *. edge, y +. edge) in
     let mm     = (x +. 0.2 *. edge, y +. 0.5 *. edge) in
     let mm2    = (x +. 0.85 *. edge, y +. 0.5 *. edge) in
     let d_1    = _d [tl;tm;mr;bm;bl] in
@@ -486,7 +486,7 @@ module Miscs = struct
 
   (* Concat Component *)
   let concat_c (x:float) (y:float) (edge:float) svg =
-    svg |> box_with_symbol x y edge "Concat"
+    svg |> box_with_symbol x y edge "CC"
 
   (* Initial View Component *)
   let initial_svg width height padding =

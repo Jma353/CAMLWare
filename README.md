@@ -3,7 +3,6 @@
 To prepare:
 
 ```
-opam install deriving 
 opam install d3
 ```
 

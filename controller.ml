@@ -2,6 +2,12 @@ open D3
 open Extensions
 open Model
 
+(* Clock UI update *)
+let set_clock num =
+  let clock_lol = get_element_by_class_name "clock" in
+  let new_content = "Clock: " ^ string_of_int num in
+  Js.Unsafe.set (clock_lol) "innerHTML" (Js.string new_content)
+
 
 (* On clicking on an input register *)
 let did_change_input f id =
@@ -20,9 +26,7 @@ let did_change_input f id =
 (* On stepping a circuit *)
 let did_step f () =
   let clock_val, new_circ = step_and_return () in
-  let clock_lol = get_element_by_class_name "clock" in
-  let new_content = "Clock: " ^ string_of_int clock_val in
-  Js.Unsafe.set (clock_lol) "innerHTML" (Js.string new_content);
+  set_clock clock_val;
   match new_circ with
   | None -> ()
   | Some (c) -> f c; ()
@@ -32,6 +36,7 @@ let did_step f () =
  * call function f *)
 let did_compile f () =
   let comp_helper msg circ =
+    Model.clock := 0; set_clock 0;
     let debug = get_element_by_class_name "debug-output" in
     Js.Unsafe.set (debug) "innerHTML" (Js.string msg);
     Model.circ := circ;
