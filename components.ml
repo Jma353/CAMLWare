@@ -106,10 +106,11 @@ module Wiring = struct
 
   (* Tunnel Helper
    * Assists in the creation of a tunnel component *)
-  let tunnel op (l:string) (x:float) (y:float) (edge:float) svg =
+  let tunnel op (l:string) (x:float) (y:float) (edge:float) anchor svg =
     let x1        = op x (edge *. 0.5) in
     let mini_wire = line_comp x1 y x y in
-    let label     = text (op x1 (edge *. 0.3)) y (edge /. 6.) "" l in
+    let label     = ((text (op x1 (edge *. 0.1)) y (edge /. 4.5) "" l)
+                      |. str attr "text-anchor" anchor) in
     svg |- mini_wire |- label
 
   (* COMPONENTS *)
@@ -121,11 +122,11 @@ module Wiring = struct
 
   (* Left Tunnel Component *)
   let l_tunnel (l:string) (x:float) (y:float) (edge:float) svg =
-    tunnel (-.) l x y edge svg
+    tunnel (-.) l x y edge "end" svg
 
   (* Right Tunnel Component *)
   let r_tunnel (l:string) (x:float) (y:float) (edge:float) svg =
-    tunnel (+.) l x y edge svg
+    tunnel (+.) l x y edge "start" svg
 
 end
 

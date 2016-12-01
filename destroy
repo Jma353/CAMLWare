@@ -6,3 +6,4 @@ rm setup.data
 rm _tags
 rm */*.*lib
 rm */META
+rm *.exe
