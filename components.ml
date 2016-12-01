@@ -488,7 +488,7 @@ module Miscs = struct
   let concat_c (x:float) (y:float) (edge:float) svg =
     svg |> box_with_symbol x y edge "Concat"
 
-  (* INITIAL VIEW *)
+  (* Initial View Component *)
   let initial_svg width height padding =
     let width = width + 2 * padding in
     let height = height + 2 * padding in
@@ -506,6 +506,12 @@ module Miscs = struct
     let bordered_svg = (svg |- border_rect) in
     let circuit = bordered_svg <.> g in
     circuit
+
+  (* Clock Component *)
+  let clock () =
+    static "div"
+    |. str attr "class" "clock"
+    |. html (fun _ _ _ -> "Clock: 0")
 
 end
 
@@ -528,7 +534,7 @@ module Triggers = struct
    * NOTE: This takes in a function that accepts a reference to a circuit
    * in order to build the circuit and place it at that reference, followed
    * by a rendering of that circuit (View Change) *)
-  let compile_area (f:circuit option ref -> unit) circ_ref =
+  let compile_area (f:unit -> unit) =
     static "div"
     |. str attr "class" "initial"
     |. seq [
@@ -539,16 +545,16 @@ module Triggers = struct
         (static "button"
         |. html (fun _ _ _ -> "Compile")
         |. str attr "class" "compile-btn"
-        |. E.click (fun _ _ _ -> f circ_ref))]
+        |. E.click (fun _ _ _ -> f ()))]
 
   (* Step Button
    * NOTE: This takes in a function that steps & updates the view dependent
    * on whether a circuit reference is None or not (View Change per reg) *)
-  let step_btn (f:circuit option ref -> unit) circ_ref =
+  let step_btn (f:unit -> unit) =
     static "button"
     |. html (fun _ _ _ -> "Step")
     |. str attr "class" "step-btn"
-    |. E.click (fun _ _ _ -> f circ_ref)
+    |. E.click (fun _ _ _ -> f ())
 
 end
 

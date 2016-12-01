@@ -257,16 +257,20 @@ let make circ =
     (* Clears the view *)
     plz_run (select ".circuit" |. html (fun _ _ _ -> ""));
     match op_c with
-    | Some a_c -> [] (* FLAG TESTING *)
-    | None ->
+    | None -> []
+    | Some a_c ->
       (*
+
       (* Format the circuit *)
-      let c = format a_c in
+      let c = Circuit.Formatter.format a_c in
+
       *)
 
-      let get_second = (fun (_,x) -> x) in
       (* FLAG TESTING *)
       let c = test_circ () in
+
+      (* Helper function *)
+      let get_second = (fun (_,x) -> x) in
 
       (* Format info *)
       let registers  = List.map get_second c.registers in
@@ -294,16 +298,15 @@ let make circ =
   in
 
   (* Our resultant *)
-  let result = apply_views (collect_views !circ) (select ".circuit") in
+  let result = apply_views (collect_views circ) (select ".circuit") in
 
   (* Apply it to the view *)
   plz_run result
-
-
 
 (* Initial view for compiling *)
 let init_view () =
   let init = initial_svg width height padding in
   let div = compile_area (Controller.did_compile make) in
   let step_b = step_btn (Controller.did_step update_registers) in
-  seq [init; div; step_b]
+  let clock_c = clock () in
+  seq [init; div; step_b; clock_c]

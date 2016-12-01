@@ -57,6 +57,7 @@ val let_c       : string              -> float -> float -> float         -> ('a,
 val sub_circ_c  : string              -> float -> float -> float         -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val concat_c    : float               -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val initial_svg : int                 -> int   -> int   -> ('a, 'a) D3.t
+val clock       : unit -> ('a, 'a) D3.t
 
 (* Triggers *)
 val i_register : (string -> unit) -> Bitstream.bitstream -> string ->
