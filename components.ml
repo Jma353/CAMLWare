@@ -107,9 +107,9 @@ module Wiring = struct
   (* Tunnel Helper
    * Assists in the creation of a tunnel component *)
   let tunnel op (l:string) (x:float) (y:float) (edge:float) svg =
-    let x1        = op x (edge *. 0.1) in
+    let x1        = op x (edge *. 0.5) in
     let mini_wire = line_comp x1 y x y in
-    let label     = text (op x1 (edge *. 0.1)) y (edge /. 4.) "" l in
+    let label     = text (op x1 (edge *. 0.3)) y (edge /. 6.) "" l in
     svg |- mini_wire |- label
 
   (* COMPONENTS *)
@@ -161,6 +161,7 @@ module Gates = struct
    * Assists in the creation of an AND gate
    * NOTE: Adds it to an SVG `svg` *)
   let and_helper (x:float) (y:float) (edge:float) svg =
+    print_endline (string_of_float y);
     let tl     = (x, y) in
     let tm     = (x +. 0.5 *. edge, y +. 0.1 *. edge) in
     let mr     = (x +. edge, y +. 0.5 *. edge) in
@@ -362,8 +363,8 @@ module Registers = struct
     let hex_str    = bs_to_hs b in
     let frame      = rect_c edge edge 0. 0. 2. 2. in
     let bit_vals   = text (edge *. 0.5) (edge *. 0.5) (edge /. 7.5) l hex_str in
-    let label      = text (edge *. 0.75) (edge *. 0.2) (edge /. 7.5) "" l in
-    let type_label = text (edge *. 0.3) (edge *. 0.2) (edge /. 7.5) "" type_l in
+    let label      = text (edge *. 0.6) (edge *. 0.2) (edge /. 7.5) "" l in
+    let type_label = text (edge *. 0.1) (edge *. 0.2) (edge /. 7.5) "" type_l in
     g |- frame |- bit_vals |- label |- type_label
 
   (* Register (Non-Input/Output) Helper
@@ -382,15 +383,15 @@ module Registers = struct
 
   (* Rising (UP) Register Component *)
   let u_register b l (x:float) (y:float) (edge:float) svg =
-    svg |- (ud_register_helper b l "Rising" x y edge)
+    svg |- (ud_register_helper b l "R" x y edge)
 
   (* Falling (DOWN) Register Component *)
   let d_register b l (x:float) (y:float) (edge:float) svg =
-    svg |- (ud_register_helper b l "Falling" x y edge)
+    svg |- (ud_register_helper b l "F" x y edge)
 
   (* Output Register Component *)
   let o_register b l (x:float) (y:float) (edge:float) svg =
-    svg |- (base_register_helper b l "Falling" x y edge)
+    svg |- (base_register_helper b l "O" x y edge)
 
 end
 
@@ -524,8 +525,8 @@ module Triggers = struct
   let i_register f b l (x:float) (y:float) (edge:float) svg =
     let g          = (container x y) |. E.click (fun _ _ _ -> f l) in
     let hex_str    = bs_to_hs b in
-    let label      = text (edge *. 0.75) (edge *. 0.2) (edge /. 7.5) "" l in
-    let type_label = text (edge *. 0.3) (edge *. 0.2) (edge /. 7.5) "" "Input" in
+    let label      = text (edge *. 0.6) (edge *. 0.2) (edge /. 7.5) "" l in
+    let type_label = text (edge *. 0.1) (edge *. 0.2) (edge /. 7.5) "" "I" in
     let bit_vals   = (text (edge *. 0.5) (edge *. 0.5) (edge /. 7.5) l hex_str) in
     let frame      = rect_c edge edge 0. 0. 2. 2. in
     svg |- (g |- frame |- bit_vals |- label |- type_label)
