@@ -545,7 +545,10 @@ module Triggers = struct
         (static "button"
         |. html (fun _ _ _ -> "Compile")
         |. str attr "class" "compile-btn"
-        |. E.click (fun _ _ _ -> f ()))]
+        |. E.click (fun _ _ _ -> f ()));
+        (static "div"
+        |. str attr "class" "debug-output"
+        |. html (fun _ _ _ -> "Debug output"))]
 
   (* Step Button
    * NOTE: This takes in a function that steps & updates the view dependent

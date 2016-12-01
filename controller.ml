@@ -19,8 +19,9 @@ let did_change_input f id =
 
 (* On stepping a circuit *)
 let did_step f () =
-  let clock_lol, new_circ = step_and_return () in
-  let new_content = "Clock: " ^ string_of_int clock_lol in
+  let clock_val, new_circ = step_and_return () in
+  let clock_lol = get_element_by_class_name "clock" in
+  let new_content = "Clock: " ^ string_of_int clock_val in
   Js.Unsafe.set (clock_lol) "innerHTML" (Js.string new_content);
   match new_circ with
   | None -> ()
@@ -30,9 +31,16 @@ let did_step f () =
 (* On compiling - update the state of the reference we're dealing with and
  * call function f *)
 let did_compile f () =
+  let comp_helper msg circ =
+    let debug = get_element_by_class_name "debug-output" in
+    Js.Unsafe.set (debug) "innerHTML" (Js.string msg);
+    Model.circ := circ;
+    f circ; () in
   let text_area = get_element_by_class_name "code" in
   let code = Js.Unsafe.get (text_area) "value" |> Js.to_string in
-  let circ = Some(Parse.parse_circuit_no_errors code) in
-  (* TODO: If errors, make None *)
-  Model.circ := circ;
-  f circ; ()
+  let parse_result = Parse.parse_circuit code in
+  match parse_result with
+  | Parse.Error s ->
+      comp_helper s None
+  | Parse.Result c ->
+      comp_helper "Debug output" (Some(c))

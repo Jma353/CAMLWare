@@ -5,30 +5,36 @@
     <meta charset="utf-8" />
     <style>
 
+      /* All path styling */
       line, path {
         stroke-linecap: round;
         stroke-linejoin: round;
       }
 
+      /* SVG styling */
       svg {
         float: left;
         margin-right: 10px;
         margin-bottom: 10px;
       }
 
+      /* Sidebar */
       .initial {
         float: left;
         margin-top: 2px;
       }
 
+      /* Code textarea */
       .code {
         font-family: Courier;
         padding: 5px;
         border-radius: 5px;
         resize: vertical;
         border: 2px solid black;
+        max-height: 400px; 
       }
 
+      /* Buttons */
       .compile-btn, .step-btn {
         background-color: white;
         border: 2px solid black;
@@ -42,6 +48,20 @@
         font-family: Courier;
       }
 
+      /* Debug output */
+      .debug-output {
+        background-color: white;
+        border: 2px solid black;
+        color: black;
+        padding: 10px 10px;
+        border-radius: 5px;
+        display: block;
+        font-size: 16px;
+        font-family: Courier;
+        margin-top: 10px;
+      }
+
+      /* Clock label */
       .clock {
         float: left;
         background-color: white;
@@ -52,6 +72,7 @@
         font-family: Courier;
       }
 
+      /* Step button */
       .step-btn {
         clear: both;
         float: left;
