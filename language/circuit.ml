@@ -38,7 +38,7 @@ type component =
 type circuit = {
   comps : component map;
   clock : bool;
-} 
+}
 
 module type CircuitSimulator = sig
   val evaluate : circuit -> comb -> bitstream
@@ -357,7 +357,13 @@ module Simulator : CircuitSimulator = struct
       | Register reg -> reg
       | _ -> failwith "tried to change the value of a subcircuit" in
     let new_comps =
-      StringMap.add id (Register {r with value = value}) circ.comps in
+      let adjusted_value =
+        if length value > r.length
+        then substream value 0 (r.length - 1)
+        else if length value < r.length
+        then zero_extend r.length value
+        else value in
+      StringMap.add id (Register {r with value = adjusted_value}) circ.comps in
     let new_circ = {comps = new_comps; clock = circ.clock} in
     let comps_new = StringMap.map (update_output new_circ) new_circ.comps in
     {comps = comps_new; clock = new_circ.clock}
