@@ -32,6 +32,21 @@ let did_step f () =
   | Some (c) -> f c; ()
 
 
+let rec make_lines s =
+  match try Some (String.index s '\n') with Not_found -> None with
+  | None -> s::[]
+  | Some i -> (String.sub s 0 i) ::
+              (make_lines (String.sub s (i+1) (String.length s - i - 1)))
+
+let change_newlines s =
+  let lines = make_lines s in
+  let rec helper = function
+    | [] -> ""
+    | h::[] -> h
+    | h::t -> h ^ "<br>" ^ (helper t) in
+  helper lines
+
+
 (* On compiling - update the state of the reference we're dealing with and
  * call function f *)
 let did_compile f () =
@@ -46,6 +61,6 @@ let did_compile f () =
   let parse_result = Parse.parse_circuit code in
   match parse_result with
   | Parse.Error s ->
-      comp_helper s None
+    comp_helper (change_newlines s) None
   | Parse.Result c ->
       comp_helper "Debug output" (Some(c))

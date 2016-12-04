@@ -27,8 +27,8 @@ let parse_with_errors parser lexbuf =
 let parse_logic s =
   parse_with_errors (Parser.logic) (Lexing.from_string s)
 
-let parse_circuit s =
-  let c = parse_with_errors (Parser.circuit) (Lexing.from_string s) in
+let parse_circuit_from_lexer lexer =
+  let c = parse_with_errors (Parser.circuit) lexer in
   match c with
   | Error _ -> c
   | Result circ ->
@@ -39,10 +39,13 @@ let parse_circuit s =
       (Circuit.Analyzer.format_log Format.str_formatter log;
        Error (Format.flush_str_formatter ()))
 
+let parse_circuit s =
+  parse_circuit_from_lexer (Lexing.from_string s)
+
 type filename = string
 
 let parse_logic_from_file f =
   parse_with_errors (Parser.logic) (Lexing.from_channel (open_in f))
 
 let parse_circuit_from_file f =
-  parse_with_errors (Parser.circuit) (Lexing.from_channel (open_in f))
+  parse_circuit_from_lexer (Lexing.from_channel (open_in f))
