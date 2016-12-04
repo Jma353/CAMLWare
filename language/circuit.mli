@@ -116,7 +116,6 @@ module type CircuitFormatter = sig
     | Const of bitstream
     | Apply of id * connection list
 
-
   type display_reg_type = Dis_rising | Dis_falling | Dis_input | Dis_output
 
   type display_node = {
