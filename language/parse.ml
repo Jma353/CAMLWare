@@ -14,7 +14,8 @@ let parse_logic_no_errors s =
   Parser.logic token (Lexing.from_string s)
 
 let parse_circuit_no_errors s =
-  Parser.circuit token (Lexing.from_string s)
+  let c = Parser.circuit token (Lexing.from_string s) in
+  Circuit.Simulator.initialize c
 
 let parse_with_errors parser lexbuf =
   try Result (parser token lexbuf) with
@@ -27,7 +28,16 @@ let parse_logic s =
   parse_with_errors (Parser.logic) (Lexing.from_string s)
 
 let parse_circuit s =
-  parse_with_errors (Parser.circuit) (Lexing.from_string s)
+  let c = parse_with_errors (Parser.circuit) (Lexing.from_string s) in
+  match c with
+  | Error _ -> c
+  | Result circ ->
+    let log = Circuit.Analyzer.validate circ in
+    if Circuit.Analyzer.valid log
+    then Result (Circuit.Simulator.initialize circ)
+    else
+      (Circuit.Analyzer.format_log Format.str_formatter log;
+       Error (Format.flush_str_formatter ()))
 
 type filename = string
 

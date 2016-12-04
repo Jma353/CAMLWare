@@ -57,6 +57,10 @@ val format_circuit : Format.formatter -> circuit -> unit
 
 
 module type CircuitSimulator = sig
+  (* [initialize circ] returns [circ] with its outputs set to their initial
+   * values *)
+  val initialize : circuit -> circuit
+
   (* [evaluate circ comb] is the bitstream that results from evaluating
    * [comb] in the context of circuit [circ] *)
   val evaluate : circuit -> comb -> bitstream

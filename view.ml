@@ -301,7 +301,12 @@ let make circ =
   let result = apply_views (collect_views circ) (select ".circuit") in
 
   (* Apply it to the view *)
-  plz_run result
+  plz_run result;
+
+  (* Set the registers to their starting values *)
+  match circ with
+  | None -> ()
+  | Some c -> update_registers c
 
 (* Initial view for compiling *)
 let init_view () =
