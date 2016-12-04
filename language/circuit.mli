@@ -57,8 +57,12 @@ val format_circuit : Format.formatter -> circuit -> unit
 
 
 module type CircuitSimulator = sig
-  (* [initialize circ] returns [circ] with its outputs set to their initial
-   * values *)
+  (* This module contains all of the simulator functions for stepping a circuit.
+   * Functions in this module have the implicit precondition that their
+   * circ argument passes static analysis *)
+
+  (* [initialize circ] returns [circ] with its components set to their initial
+   * values. This should be called before stepping the circuit *)
   val initialize : circuit -> circuit
 
   (* [evaluate circ comb] is the bitstream that results from evaluating
@@ -69,17 +73,14 @@ module type CircuitSimulator = sig
    * in [circ] and updating each clocked register *)
   val step : circuit -> circuit
 
-  (* [step_n circ n] is the circuit that results from stepping [circ] [n] times *)
+  (* [step_n n circ] is the circuit that results from stepping [circ] [n] times *)
   val step_n : int -> circuit -> circuit
 
-  (* [change_input circ in value] is the circuit that results from replacing the
-   * value of input [in] in [circ] with [value] and updating and dependent
-   * outputs *)
+  (* [change_input id value circ] is the circuit that results from replacing the
+   * value of input [id] in [circ] with [value] and updating and dependent
+   * outputs
+   * Requires [id] refers to an input in [circ]*)
   val change_input : id -> bitstream -> circuit -> circuit
-
-  (* [update_outputs circ] is the circuit with all outputs updates via current
-  register values *)
-  val update_outputs: circuit -> circuit
 
 end
 
@@ -96,7 +97,7 @@ module type StaticAnalyzer = sig
   (* [valid log] returns whether a circuit with error log [log] is valid*)
   val valid : error_log -> bool
 
-  (* [print_log lf og] formats an error log for printing *)
+  (* [print_log f log] formats an error log for printing *)
   val format_log : Format.formatter -> error_log -> unit
 end
 

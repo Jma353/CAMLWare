@@ -46,7 +46,6 @@ module type CircuitSimulator = sig
   val step : circuit -> circuit
   val step_n : int -> circuit -> circuit
   val change_input : id -> bitstream -> circuit -> circuit
-  val update_outputs: circuit -> circuit
 end
 
 module type StaticAnalyzer = sig

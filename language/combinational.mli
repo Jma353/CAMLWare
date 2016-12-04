@@ -54,4 +54,5 @@ type comb =
   | Apply     of id * comb list
   | Let       of id * comb * comb
 
+(* formatter function for printing out combinational logic *)
 val format_logic : Format.formatter -> comb -> unit
