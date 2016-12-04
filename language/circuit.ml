@@ -954,40 +954,42 @@ module Formatter : CircuitFormatter = struct
   let columnize_ast(nodes, lets, register) =
     let new_nodes = List.map (fun x-> (x.n_id, x)) nodes in
     let new_lets = List.map (fun x -> (x.l_id, x)) lets in
-    let head = (List.find (fun (id, _) -> (id = register.input)) new_nodes); in
-    let rec unwrap c_list =
-      match c_list with
-      | [] -> []
-      | h::t -> (
-        match h with
-        | Node i -> [List.find (fun (id, _) -> id = i) new_nodes]
-        | _ -> []
-      )@(unwrap t) in
-    let find_connections node =
-      match node with
-      | B(_, c1, c2) -> unwrap [c1;c2]
-      | L(_, c1, c2) -> unwrap [c1;c2]
-      | A(_, c1, c2) -> unwrap [c1;c2]
-      | N(_, c) -> unwrap [c;]
-      | C(_, c1, c2) -> unwrap [c1;c2;]
-      | Sub(_, _, c) -> unwrap [c;]
-      | Nth(_, c) -> unwrap [c;]
-      | Red(_, c) -> unwrap [c;]
-      | Concat c_list -> unwrap c_list
-      | Mux (c1,c2,c3) -> unwrap [c1;c2;c3]
-      | Const _ -> []
-      | Apply(_, c_list) -> unwrap c_list in
-    let rec col_helper finished unfinished cols =
-      match unfinished with
-      |[] -> (List.rev cols)
-      |h::t ->
-        let next_col = List.map (fun (_, x)-> find_connections x.node) (List.hd cols) in
-        let now_finished = List.flatten next_col in
-        let new_cols = now_finished::cols in
-        let new_finished = now_finished@finished in
-        let new_unfinished = List.filter (fun x -> not (List.mem x now_finished)) unfinished in
-        col_helper new_finished new_unfinished new_cols
-    in ((col_helper [head;] (List.filter (fun x-> x <> head) new_nodes) [[head;];]), new_lets)
+    if (List.length new_nodes) = 0 then ([], new_lets)
+    else
+      let head = (List.find (fun (id, _) -> (id = register.input)) new_nodes); in
+      let rec unwrap c_list =
+        match c_list with
+        | [] -> []
+        | h::t -> (
+          match h with
+          | Node i -> [List.find (fun (id, _) -> id = i) new_nodes]
+          | _ -> []
+        )@(unwrap t) in
+      let find_connections node =
+        match node with
+        | B(_, c1, c2) -> unwrap [c1;c2]
+        | L(_, c1, c2) -> unwrap [c1;c2]
+        | A(_, c1, c2) -> unwrap [c1;c2]
+        | N(_, c) -> unwrap [c;]
+        | C(_, c1, c2) -> unwrap [c1;c2;]
+        | Sub(_, _, c) -> unwrap [c;]
+        | Nth(_, c) -> unwrap [c;]
+        | Red(_, c) -> unwrap [c;]
+        | Concat c_list -> unwrap c_list
+        | Mux (c1,c2,c3) -> unwrap [c1;c2;c3]
+        | Const _ -> []
+        | Apply(_, c_list) -> unwrap c_list in
+      let rec col_helper finished unfinished cols =
+        match unfinished with
+        |[] -> (List.rev cols)
+        |h::t ->
+          let next_col = List.map (fun (_, x)-> find_connections x.node) (List.hd cols) in
+          let now_finished = List.flatten next_col in
+          let new_cols = now_finished::cols in
+          let new_finished = now_finished@finished in
+          let new_unfinished = List.filter (fun x -> not (List.mem x now_finished)) unfinished in
+          col_helper new_finished new_unfinished new_cols
+      in ((col_helper [head;] (List.filter (fun x-> x <> head) new_nodes) [[head;];]), new_lets)
 
   let reg_width = 4.
 
@@ -1064,18 +1066,28 @@ module Formatter : CircuitFormatter = struct
 
   let format circ =
     let reg_list = get_all_registers circ in
+    let p1 = print_string "made it here 1\n" in
     let (inputs, reg_columns, outputs) = columnize_registers circ in
+    let p1 = print_string "made it here 2\n" in
     let all_ast = reg_columns@[outputs] in
+    let p1 = print_string "made it here 3\n" in
     let total_col = float_of_int (List.length all_ast) in
+    let p1 = print_string "made it here 4\n" in
     let final_inputs = make_inputs inputs in
+    let p1 = print_string "made it here 5\n" in
     let x_gap = 100./.total_col in
+    let p1 = print_string "made it here 6\n" in
     let reg_done = make_columns all_ast x_gap in
+    let p1 = print_string "made it here 7\n" in
     let rec reg_helper curr_y curr_x y_gap col len =
+      let p1 = print_string "made it here 8\n" in
       match col with
       | [] -> []
       | (id, (display, ast))::tail ->
         let (n, l) = tree_to_list ast reg_list in
+        let p1 = print_string "made it here 9\n" in
         let (nodes, lets) = columnize_ast (n, l, display) in
+        let p1 = print_string "made it here 10\n" in
         let formatted_ast = List.flatten (
           make_ast_coordinates curr_x (curr_x +. (x_gap/.len)) (curr_y) (curr_y +. y_gap) nodes ((List.length lets) = 0)
           ) in
@@ -1083,16 +1095,19 @@ module Formatter : CircuitFormatter = struct
         let formatted_register = (id, display) in
         (formatted_ast, formatted_lets, formatted_register)::(reg_helper (curr_y +. y_gap) (curr_x +. (x_gap/.len)) y_gap tail len)
     in
-
+    let p1 = print_string "made it here 11\n" in
     let rec finish_column curr_x cols =
       match cols with
       | [] -> []
       | column::t ->
+        let p1 = print_string "made it here 12\n" in
         let y_gap = (100./.(float_of_int (List.length column))) in
+        let p1 = print_string "made it here 13\n" in
         (reg_helper 0. curr_x y_gap column (float_of_int (List.length column)))::(finish_column (curr_x +. x_gap) t) in
     let finished = List.flatten (finish_column 0. reg_done) in
-
+    let p1 = print_string "made it here 14\n" in
     let (ast, lets, reg) = List.fold_left (fun (a_list, l_list, r_list) (a, l, r) -> (a::a_list, l::l_list, r::r_list)) ([],[],[]) finished in
+    let p1 = print_string "made it here 15\n" in
     {
       registers=final_inputs@reg;
       nodes=(List.flatten ast);
