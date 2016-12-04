@@ -105,12 +105,16 @@
     input input1[32] 
     input input2[32]
     input input3[32]
-    register D[4] = if input1 == input2 then input3 else register F
+    register D[4] = if input1 == input2 then input3 else F
     register F[4] = !input2
     register E[32] = input2 != input3
     fun subcirc(x[32], y[4], z[32], u[32], v[1])[32] = ( x + y - z + u - v) << 32'd10
-    fun subcirc2() = let x = input1 in x
-    output D = subcirc2()
+    fun subcirc2(a[32])[32] = let x = input1 in x
+    output G[32] = subcirc2(input3)
+
+(2)
+	register A[7] = B
+	register B[32] = 32'd10
 
 
 ######### Examples from our documentation #########
