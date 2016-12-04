@@ -745,19 +745,27 @@ module Formatter : CircuitFormatter = struct
     else
       let resolved k ( _, _, deps) =
         List.for_all (fun x -> StringMap.mem x finished) deps in
-      let new_col = StringMap.filter resolved not_finished in
+      let new_col =
+        let f = StringMap.filter resolved not_finished in
+        if (StringMap.cardinal f = 0) then not_finished
+        else f in
       let new_finished = StringMap.union (fun k vi v2 -> Some v2) finished new_col in
       let new_not_finished = StringMap.filter (fun k _ -> not (StringMap.mem k new_finished)) not_finished in
 
       dependency_helper new_not_finished new_finished (new_col::cols) reg_deps
 
-  (* type formatted_circuit = register StringMap.t list *)
   let columnize_registers circ =
     let reg = get_all_registers circ in
     let inputs = find_inputs reg in
     let asts = no_outputs (no_inputs reg) in
     let new_asts = StringMap.map normalize_reg asts in (*now have id -> (register, Id_Comb)*)
-    let reg_deps = StringMap.map (fun (r, ast) -> (r, ast, (list_dependencies ast reg))) new_asts in  (*now id -> register, id_ast, dependencies*)
+    let reg_deps =
+      StringMap.mapi
+      (fun id (r, ast) ->
+        let dependencies = List.filter (fun x -> x <> id) (list_dependencies ast reg) in
+        (r, ast, dependencies)
+      )
+      new_asts in(*now id -> register, id_ast, dependencies*)
     let fake_inputs = StringMap.map (fun value -> (value, Id_Const (1, create [true;]), [])) inputs in
     let registers = List.rev (dependency_helper reg_deps fake_inputs [] reg_deps) in
 
@@ -778,21 +786,21 @@ module Formatter : CircuitFormatter = struct
   (inputs, final_registers, final_outputs)
 
   let get_ids ast =
-  match ast with
-  | Id_Const (id, _ ) -> id
-  | Id_Var (id, _ ) -> id
-  | Id_Sub_seq(id, _, _, _ ) -> id
-  | Id_Nth (id, _, _ ) -> id
-  | Id_Gate (id, _ , _, _ ) -> id
-  | Id_Logical(id, _, _, _ ) -> id
-  | Id_Reduce (id, _, _ ) -> id
-  | Id_Neg (id, _, _ ) -> id
-  | Id_Comp(id, _, _, _ ) -> id
-  | Id_Arith (id, _, _, _ ) -> id
-  | Id_Concat (id, _ ) -> id
-  | Id_Mux2 (id, _, _, _ ) -> id
-  | Id_Apply (id, _, _ ) -> id
-  | Id_Let (id, _, _, _ ) -> id
+    match ast with
+    | Id_Const (id, _ ) -> id
+    | Id_Var (id, _ ) -> id
+    | Id_Sub_seq(id, _, _, _ ) -> id
+    | Id_Nth (id, _, _ ) -> id
+    | Id_Gate (id, _ , _, _ ) -> id
+    | Id_Logical(id, _, _, _ ) -> id
+    | Id_Reduce (id, _, _ ) -> id
+    | Id_Neg (id, _, _ ) -> id
+    | Id_Comp(id, _, _, _ ) -> id
+    | Id_Arith (id, _, _, _ ) -> id
+    | Id_Concat (id, _ ) -> id
+    | Id_Mux2 (id, _, _, _ ) -> id
+    | Id_Apply (id, _, _ ) -> id
+    | Id_Let (id, _, _, _ ) -> id
 
   (* Categorizes a register or node connection *)
   type connection = Reg of id | Node of int | Let of id
@@ -869,7 +877,6 @@ module Formatter : CircuitFormatter = struct
       l_y_coord: float;
       inputs: id list;
     }
-
 
     type display_register = {
       r_id : id;
@@ -1018,7 +1025,7 @@ module Formatter : CircuitFormatter = struct
   let x_done = x_helper ast_columns x_c in
 
   List.map (fun col ->
-    let gap = ((y_end -. y_start)/.(float_of_int ((List.length col) + 1))) in
+    let gap = ((y_end -. y_start)/.(float_of_int (List.length col))) in
     y_helper col gap (y_start +. (gap/.2.))
   ) x_done
 

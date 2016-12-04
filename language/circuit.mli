@@ -132,7 +132,6 @@ module type CircuitFormatter = sig
     inputs: id list;
   }
 
-
   type display_register = {
     r_id : id;
     r_reg_type :  display_reg_type;
