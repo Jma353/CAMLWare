@@ -41,11 +41,11 @@ type circuit = {
 }
 
 module type CircuitSimulator = sig
+  val initialize : circuit -> circuit
   val evaluate : circuit -> comb -> bitstream
   val step : circuit -> circuit
   val step_n : int -> circuit -> circuit
   val change_input : id -> bitstream -> circuit -> circuit
-  val update_outputs: circuit -> circuit
 end
 
 module type StaticAnalyzer = sig
@@ -147,6 +147,15 @@ let subcircuit logic length args =
     length = length;
     args = args;
   }
+
+let circuit comps = {
+    comps = comps;
+    clock = false; }
+
+let circuit_from_list l =
+  let map_of_assoclist =
+    List.fold_left (fun acc (k,v) -> StringMap.add k v acc) StringMap.empty in
+  l |> map_of_assoclist |> circuit
 
 let register_values circ =
   circ.comps |> (StringMap.filter (fun k v -> not (is_subcirc k v))) |>
@@ -372,18 +381,9 @@ module Simulator : CircuitSimulator = struct
     let new_comps = StringMap.map (update_output circ) circ.comps in
     {circ with comps = new_comps}
 
+  let initialize = update_outputs
+
 end
-
-let circuit comps =
-  let initial = {
-    comps = comps;
-    clock = false; } in
-  Simulator.update_outputs initial
-
-let circuit_from_list l =
-  let map_of_assoclist =
-    List.fold_left (fun acc (k,v) -> StringMap.add k v acc) StringMap.empty in
-  l |> map_of_assoclist |> circuit
 
 module Analyzer : StaticAnalyzer = struct
   (* an error log is a monadic data type containing a circuit and a list of

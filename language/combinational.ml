@@ -30,6 +30,7 @@ type comb =
   | Apply     of id * comb list
   | Let       of id * comb * comb
 
+(* [string_of_gate g] is a string representation of g *)
 let string_of_gate g =
   match g with
    | And -> "&"
@@ -39,6 +40,7 @@ let string_of_gate g =
    | Nor -> "~|"
    | Nxor -> "~^"
 
+(* [string_of_logical_gate g] is a string representation of g *)
 let string_of_logical_gate g =
   match g with
    | And -> "&&"
@@ -48,12 +50,14 @@ let string_of_logical_gate g =
    | Nor -> "!|"
    | Nxor -> "!^"
 
+(* [string_of_negation n] is a string representation of n *)
 let string_of_negation n =
   match n with
   | Neg_bitwise -> "~"
   | Neg_logical -> "!"
   | Neg_arithmetic -> "-"
 
+(* [string_of_comparison comp] is a string representation of comp *)
 let string_of_comparison comp =
   match comp with
   | Lt -> "<"
@@ -63,6 +67,7 @@ let string_of_comparison comp =
   | Eq -> "=="
   | Neq -> "!="
 
+(* [string_of_gate a] is a string representation of a *)
 let string_of_arithmetic a =
   match a with
   | Add -> "+"

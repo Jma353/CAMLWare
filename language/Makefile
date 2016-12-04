@@ -1,8 +1,10 @@
+# Makefile for language components of the project
+
 main:
-	ocamlbuild -use-menhir -yaccflag --explain -pkgs str main.byte
+	ocamlbuild -use-menhir main.byte
 
 test:
-	ocamlbuild -use-menhir -pkgs oUnit,str,unix test_main.byte && ./test_main.byte
+	ocamlbuild -use-menhir -pkgs oUnit,unix test_main.byte && ./test_main.byte
 
 clean:
 	ocamlbuild -clean

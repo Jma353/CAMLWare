@@ -11,7 +11,7 @@
 
 (* AF: The array [|b_0; ... ; b_n|] represents the binary whose ith bit (with i
  * ordered from least to most significant) is [1] if [b_i] is [true] and [0] if
- * [b_i] is false. [||] does not represent anything
+ * [b_i] is false. [ [||] ] does not represent anything
  * RI: Once created a bitstream is treated as immutable in all other functions*)
 type bitstream = bool array
 
@@ -94,7 +94,7 @@ let logical_not b =
   singleton (not r.(0))
 
 (* [adder c_in b1 b2 n out] is an internal function that simulates the behavior
- * of a carry lookahead adder. When it finishes it imperatively sets the bits
+ * of a ripple carry adder. When it finishes it imperatively sets the bits
  * of [out] from bit [n] to bit [length out - 1] to be the result of
  * [b1 + b2 + c_in] and returns a reference to [out]
  * Requires: [length b1 = length b2] *)
