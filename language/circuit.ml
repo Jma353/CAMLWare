@@ -988,7 +988,7 @@ module Formatter : CircuitFormatter = struct
         | Apply(_, c_list) -> unwrap c_list in
       let rec col_helper finished unfinished cols =
         match unfinished with
-        |[] -> (List.rev cols)
+        |[] -> cols
         |h::t ->
           let next_col = List.map (fun (_, x)-> find_connections x.node) (List.hd cols) in
           let now_finished = List.flatten next_col in
