@@ -1017,7 +1017,7 @@ module Formatter : CircuitFormatter = struct
 
   List.map (fun col ->
     let gap = ((y_end -. y_start)/.(float_of_int ((List.length col) + 1))) in
-    y_helper col gap y_start
+    y_helper col gap (y_start +. (gap/.2.))
   ) x_done
 
   let format_lets x_coord y_start y_end lets =
