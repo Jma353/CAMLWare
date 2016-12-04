@@ -1,10 +1,13 @@
 (* This lexer is based on the one provided with A4: OCalf *)
 
+(* Lexer for CamlWare language *)
+
 {
 open Parser
 open Printf
 open Bitstream
 
+(* Taken directly from A4 release code *)
 let incr_linenum lexbuf =
   let pos = lexbuf.Lexing.lex_curr_p in
     lexbuf.Lexing.lex_curr_p <- { pos with

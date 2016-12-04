@@ -6,6 +6,8 @@ type 'a parser_output =
   | Result of 'a
   | Error of string
 
+(* [format_position _ lexbuf] is a string representing the current position
+ * of [lexbuf] *)
 let format_position _ lexbuf =
   let pos = lexbuf.lex_curr_p in
   Printf.sprintf "line %i:%i" pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
@@ -17,6 +19,9 @@ let parse_circuit_no_errors s =
   let c = Parser.circuit token (Lexing.from_string s) in
   Circuit.Simulator.initialize c
 
+(* [parse_with_errors parser lexbuf] parses [lexbuf] with [parser] and catches
+ * parsing errors, returning [Result output] if no errors occur or
+ * [Error error_msg] if one does *)
 let parse_with_errors parser lexbuf =
   try Result (parser token lexbuf) with
   | Failure msg -> Error (Printf.sprintf "%a: %s"
@@ -27,6 +32,8 @@ let parse_with_errors parser lexbuf =
 let parse_logic s =
   parse_with_errors (Parser.logic) (Lexing.from_string s)
 
+(* [parse_circuit_from_lexer lexer] parses a circuit from [lexer] and if
+ * there are no parsing errors runs it through static analysis *)
 let parse_circuit_from_lexer lexer =
   let c = parse_with_errors (Parser.circuit) lexer in
   match c with

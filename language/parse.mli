@@ -13,16 +13,22 @@ val parse_logic_no_errors : string -> Combinational.comb
  * this function does no error handling *)
 val parse_circuit_no_errors : string -> Circuit.circuit
 
-(* [parse_logic s] is the combinational AST built by parsing [s] *)
+(* [parse_logic s] is either the combinational AST built by parsing [s]
+ * or [Error error_msg] if a parsing error occurs*)
 val parse_logic : string -> Combinational.comb parser_output
 
-(* [parse_circuit s] is the circuit state built by parsing [s] *)
+(* [parse_circuit s] is either the circuit state built by parsing [s]
+ * or [Error error_msg] if a parsing error occurs or the circuit fails to
+ * pass static analysis *)
 val parse_circuit : string -> Circuit.circuit parser_output
 
 type filename = string
 
-(* [parse_logic_from_file f] is the combinational AST built by parsing [f] *)
+(* [parse_logic_from_file f] is either the combinational AST built by parsing
+ * [f] or [Error error_msg] if a parsing error occurs*)
 val parse_logic_from_file   : filename -> Combinational.comb parser_output
 
-(* [parse_circuit_from_file f] is the circuit state built by parsing [f] *)
+(* [parse_circuit_from_file f] is either the circuit state built by parsing [f]
+ * or [Error error_msg] if a parsing error occurs or the circuit fails to
+ * pass static analysis *)
 val parse_circuit_from_file : filename -> Circuit.circuit parser_output

@@ -11,7 +11,7 @@ let set_clock num =
 
 (* On clicking on an input register *)
 let did_change_input f id =
-  let msg = "Enter a new integer value for input " ^ id in
+  let msg = "Enter a new hexadecimal value for input " ^ id in
   let num = prompt msg "" in
   let b = Bitstream.bitstream_of_hexstring num in
   let old_circ = !(Model.circ) in

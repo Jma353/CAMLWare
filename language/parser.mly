@@ -1,3 +1,5 @@
+(* Parser for CamelWare language *)
+
 %{
 
 open Bitstream
@@ -5,7 +7,9 @@ open Combinational
 open Circuit
 open Lexing
 
-let check_positive n =
+(* [check_valid_length n] returns [()] if [n] is a valid lenght, otherwise fails
+ * with an informative error message *)
+let check_valid_length n =
   if n <= 0 || n > max_length then
   failwith (Printf.sprintf "%i is an invalid length" n)
   else ()
@@ -52,23 +56,23 @@ component:
 
 %inline register:
   | RISING?; REGISTER; id = VAR; LBRACKET; l = NUM; RBRACKET; ASSIGN; ast = comb
-    { check_positive l; (id, rising_register l ast) }
+    { check_valid_length l; (id, rising_register l ast) }
   | FALLING; REGISTER; id = VAR; LBRACKET; l = NUM; RBRACKET; ASSIGN; ast = comb
-    { check_positive l; (id, falling_register l ast) }
+    { check_valid_length l; (id, falling_register l ast) }
   | OUTPUT; id = VAR; LBRACKET; l = NUM; RBRACKET; ASSIGN; ast = comb
-    { check_positive l; (id, output l ast) }
+    { check_valid_length l; (id, output l ast) }
   | INPUT; id = VAR; LBRACKET; l = NUM; RBRACKET;
-    { check_positive l; (id, input l) }
+    { check_valid_length l; (id, input l) }
 ;
 
 %inline subcircuit:
   | FUN; id = VAR; LPAREN; args = separated_list(COMMA, arg); RPAREN;
     LBRACKET; l = NUM; RBRACKET; ASSIGN; ast = comb
-    { check_positive l; (id, subcircuit ast l args) }
+    { check_valid_length l; (id, subcircuit ast l args) }
 ;
 
 arg:
-  | id = VAR; LBRACKET; l = NUM; RBRACKET { check_positive l; (id,l) }
+  | id = VAR; LBRACKET; l = NUM; RBRACKET { check_valid_length l; (id,l) }
 ;
 
 logic:
