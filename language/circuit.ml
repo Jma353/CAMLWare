@@ -1217,7 +1217,7 @@ module Formatter : CircuitFormatter = struct
 
   let handle_ast (id, (reg, nodes, lets)) x_start x_end y_start y_end = 
     let final_y_coord = (y_start +. y_end) /. 2. in 
-    let final_reg = {input=reg.input; r_id = reg.r_id; r_x_coord = x_end; r_y_coord = y_end; r_reg_type = reg.r_reg_type} in
+    let final_reg = (id, {input=reg.input; r_id = reg.r_id; r_x_coord = x_end; r_y_coord = y_end; r_reg_type = reg.r_reg_type}) in
     let final_lets = 
       if (List.length lets = 0) then []
       else (format_lets x_start y_start y_end lets) in 
@@ -1264,10 +1264,17 @@ module Formatter : CircuitFormatter = struct
         (handle_col h x_start x_end)::(x_helper t new_x_start)
     in
 
+    let all_nodes_done = x_helper all_columns x_gap in
+    let almost_there = List.flatten all_nodes_done in
+    let all_registers = List.map (fun (_, _, x) -> x) almost_there in 
+    let all_lets = List.flatten (List.map (fun (_, x, _) -> x) almost_there) in 
+    let all_nodes = List.flatten(List.flatten (List.map (fun (x, _ , _) -> x) almost_there)) in 
+
+
     {
-      registers = r;
-      lets = lets;
-      nodes = n;
+      registers = all_registers;
+      lets = all_lets;
+      nodes = all_nodes;
     }
 
     (* let rec reg_helper curr_y curr_x y_gap col len =
