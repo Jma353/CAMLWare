@@ -71,7 +71,7 @@ This submodule contains static analysis functions which, given a circuit determi
 #### Formatter
 This submodule provides an intermediate data structure for representing circuits that's easy to render as an SVG, and an array of functions for converting our internal circuit representation to this renderable format.
 
-In a formatted_circuit, all registers are assigned a column depending on the other registers they depend on.  For example, in the circuit `C = A & B`, Registers A and B would be assigned column 0 and Register C would be assigned column 1.  
+In a formatted_circuit, all registers are assigned a column depending on the other registers they depend on.  For example, in the circuit `C = A & B`, Registers A and B would be assigned column 0 and Register C would be assigned column 1.
 
 ### Lexer
 This module is an OCamllex lexer, based in part off the one provided in A4: OCalf. We use it to convert source files into token streams.
@@ -82,23 +82,23 @@ This module is an Menhir parser, based in part off the one provided in A4: Ocalf
 ### Parse
 This module is an OCaml wrapper that makes it easy to pass strings and files through the Lexer -> Parser pipeline.
 
-### GUI 
-This module drives the GUI. It uses the intermediate data structures defined in the Formatter module to render circuits.  It allows a user to compile a circuit, change the inputs of the circuit by clicking on the input-register's bit values, and allows the user to step-through the circuit via clock-changes. 
+### GUI
+This module drives the GUI. It uses the intermediate data structures defined in the Formatter module to render circuits.  It allows a user to compile a circuit, change the inputs of the circuit by clicking on the input-register's bit values, and allows the user to step-through the circuit via clock-changes.  See GUIDoc.pdf for instructions on interacting with the GUI.  
 
 #### Model
-This module houses the entire state of that front-end application (current compiled circuit and clock value).  It has functions to abstract away all state-changes.  
+This module houses the entire state of that front-end application (current compiled circuit and clock value).  It has functions to abstract away all state-changes.
 
 #### View
-This module generates a circuit / the initial GUI and sets up the view to appropriately call controller methods (see **Controller**) to augment the state of the app and faciliate view-changes as necessary.  
+This module generates a circuit / the initial GUI and sets up the view to appropriately call controller methods (see **Controller**) to augment the state of the app and facilitate view-changes as necessary.
 
 #### Controller
-This module connections view and model, calling model state-changing functions and initiating view changes based on view-altering functions that it is provided.  
+This module connects view and model, calling model state-changing functions and initiating view changes based on view-altering functions that it is provided.
 
 #### Components
-This module contains a suite of functions that generate SVG elements for circuit components (gates, registers, arithmetic, etc.) 
+This module contains a suite of functions that generate SVG elements for circuit components (gates, registers, arithmetic, etc.)
 
 #### Extensions
-This module extends the `D3` module that the front-end leverages, increasing the amount of OCaml to JavaScript bindings that the front-end can use.  
+This module extends the `D3` module that the front-end leverages, increasing the amount of OCaml-to-JavaScript bindings that the front-end can use.
 
 ### Module Dependency Diagram
 
@@ -239,13 +239,15 @@ type formatted_circuit = {
 ```
 
 ## Language Definition
-Please refer to a fully written Language documentation under documentation/Language.pdf. This document outlines our language and provides interesting example cases.
+Please refer to a fully written Language documentation under `documentation/Language.pdf`. This document outlines our language and provides interesting example cases.
 
 ## External Dependencies
 
 We will be using Js_of_ocaml, D3, Deriving, OcamlLex, and Menhir. The latter two, will allow us to easily lex and parse source files, the former will make building an interactive GUI significantly less challenging by binding our OCaml code to javascript.
 
-## Testing Plan
+## Testing
+
+### Testing Plan
 For testing, we used a mix of unit-, integration-, and hand-testing techniques to ensure our project works.
 
 Our `Bitstream` module was unit-tested via the `Test_bitstream` module to ensure that the representations of bitstreams and input values are well-constructed and correct.  The functions in this module were unit-tested on a per-function basis, and its testing ensured that this utility was correct for use in other modules.
@@ -256,13 +258,21 @@ Our `Formatter` module was tested via unit tests defined in `Test_formatter`. In
 
 We hand-tested our GUI (the product of our `Gui` module) with tests found in `test_gui`. These tests involved testing creating circuits on our gui, chaning inputs, and stepping them. The tests go through all features in our language including simple register values, basic gate, arithmatic, comparators, functions, substreams, concatanation, and lets as well as long examples and edge cases.
 
+### Results of Testing - Known Bugs and Limitations
+- In particulary complicated circuits, wires occasionally overlap in a way that's difficult to read
+- There's no way to view the internals of a subcircuit. We would have liked to add this but we ran out of time and the GUI is a fully functional top level view of the circuit without this feature.
+- There's no way to define a mux that's larger than two inputs. We would have liked to add this feature to the language but we ran out of time. Luckily this can be approximated by a routing network of 2 to 1 muxes.
+- Long register names result in the text overlapping the wires.
+- The maximum bitstream length is 32 bits. This is a little shorter than is ideal.
+- There's no way for a subcircuit to have multiple outputs.
+
 
 ## Division of Labor
 Reuben designed the language syntax and wrote up most of the language reference found in `documenation/language.pdf`. He wrote the lexer, the parser and the static analyzer as well as their test suites. He designed the data types in `Combinational` and `Circuit` When we decided to change the implementation of `Bitstream` to obtain $O(1)$ access time he rewrote the module and its test suite. He estimates he spent ~60 hours on the project.
 
 Natasha wrote the Simulator and the unit tests for the simulator. She also wrote the GUI tests and helped with the language documentation and MS1/MS2 documentation. She wrote the `Circuit.Simulator` and `Bitstream`. However, `Bitstream `was re-written by Reuben after the group decided we wanted an $O(1)$ access time and a 32 bit maximum on the registers. She esitmates she put in ~40 hours on the project between planning, designing, implementing, and testing.
 
-Celine wrote the Formatter and the tests for the Formatter. This module went through several iterations as the group learned the limitations the GUI would present.  Celine worked with Joe extensively to design an appropriate intermediate representation of a circuit (the formatted_circuit) that took as much processing responsibility as possible from the GUI itself.  This helped preserve the MVC design.  She esitmates she put in ~40 hours on the project between planning, designing, implementing, and testing.
+Celine wrote the Formatter and the tests for the Formatter. This module went through several iterations as the group learned the limitations the GUI would present.  Celine worked with Joe extensively to design an appropriate intermediate representation of a circuit (the formatted_circuit) that took as much processing responsibility as possible from the GUI itself.  This helped preserve the MVC design.  She estimates she put in ~40 hours on the project between planning, designing, implementing, and testing.
 
 
-Joe wrote the entire front-end at the top level of the project.  He utilized an open-source project, [`ocaml-d3`](https://github.com/seliopou/ocaml-d3) and extended its functionality to bind OCaml to the JavaScript library `D3` (extensions found in `Extensions`).  He wrote a suite of components in `Components` representing all essential components of the circuits that can be expressed via CAMLWare.  He utilized the `Model-View-Controller` design pattern to establish a web interface, built-entirely in OCaml, that allows one to compile the a written circuit in-browser, change inputs to that circuit, step through the circuit's progression, and recompile as necessary.  Modules contributing to the `MVC` setup are `Model`, `View`, and `Controller`.  `Model` handles state changes, `View` parses a clean intermediate representation of the circuit (involving fundamental circuit display info), generated by Celine, into a visible circuit, and `Controller` binds the two together, calling view-augmenting functions after facilitating model state-changes.  Joe, with Reuben's help, set up all compilation configurations at the top level, to transpile the entire project into a JavaScript file that can run in a browser.  He estimates he spent ~60 hours on the project.  
+Joe wrote the entire front-end at the top level of the project.  He utilized an open-source project, [`ocaml-d3`](https://github.com/seliopou/ocaml-d3) and extended its functionality to help bind OCaml to the JavaScript library `D3` (extensions found in `Extensions`).  He wrote a suite of SVG elements in `Components` representing all essential components of the circuits that can be expressed via CAMLWare.  He utilized the `Model-View-Controller` design pattern to establish a web interface, built-entirely in OCaml, that allows one to compile a written circuit in-browser, change inputs to that circuit, step through the circuit's progression, and recompile as necessary.  Modules contributing to the `MVC` setup are `Model`, `View`, and `Controller`.  `Model` handles state changes, `View` parses a clean intermediate representation of the circuit (involving fundamental circuit display info), generated by Celine, into a visible circuit, and `Controller` binds the two together, calling view-augmenting functions after facilitating model state-changes.  Joe, with Reuben's help, set up all compilation configurations at the top level, to transpile the entire project into a JavaScript file that can run in a browser.  He estimates he spent ~60 hours on the project.
