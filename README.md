@@ -3,6 +3,8 @@
 To prepare:
 
 ```
+opam install oasis 
+opam install deriving
 opam install d3
 ```
 
