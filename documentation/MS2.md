@@ -71,9 +71,7 @@ This submodule contains static analysis functions which, given a circuit determi
 #### Formatter
 This submodule provides an intermediate data structure for representing circuits that's easy to render as an SVG, and an array of functions for converting our internal circuit representation to this renderable format.
 
-In a formatted_circuit, all registers are assigned a column depending on the other registers they depend on.  For example, in the circuit `C = A & B`, Registers A and B would be assigned column 0 and Register C would be assigned column 1.
-
-The formatter also assigns wiring positions between circuits and gate placement.  All placements are given in percents rather than pixels, etc to make for a more flexible display.
+In a formatted_circuit, all registers are assigned a column depending on the other registers they depend on.  For example, in the circuit `C = A & B`, Registers A and B would be assigned column 0 and Register C would be assigned column 1.  
 
 ### Lexer
 This module is an OCamllex lexer, based in part off the one provided in A4: OCalf. We use it to convert source files into token streams.
@@ -259,6 +257,8 @@ Reuben designed the language syntax and wrote up most of the language reference 
 
 Natasha wrote the Simulator and the unit tests for the simulator. She also wrote the GUI tests and helped with the language documentation and MS1/MS2 documentation. She wrote the `Circuit.Simulator` and `Bitstream`. However, `Bitstream `was re-written by Reuben after the group decided we wanted an $O(1)$ access time and a 32 bit maximum on the registers. She esitmates she put in ~40 hours on the project between planning, designing, implementing, and testing.
 
-Celine wrote the Formatter. FLAG - Celine
+Celine wrote the Formatter and the tests for the Formatter. This module went through several iterations as the group learned the limitations the GUI would present.  Celine worked with Joe extensively to design an appropriate intermediate representation of a circuit (the formatted_circuit) that took as much processing responsibility as possible from the GUI itself.  This helped preserve the MVC design.  
+
+
 
 Joe wrote the GUI. FLAG - Joe
