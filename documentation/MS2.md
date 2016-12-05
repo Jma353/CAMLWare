@@ -83,7 +83,7 @@ This module is an Menhir parser, based in part off the one provided in A4: Ocalf
 This module is an OCaml wrapper that makes it easy to pass strings and files through the Lexer -> Parser pipeline.
 
 ### GUI
-This module drives the GUI. It uses the intermediate data structures defined in the Formatter module to render circuits.  It allows a user to compile a circuit, change the inputs of the circuit by clicking on the input-register's bit values, and allows the user to step-through the circuit via clock-changes.  See GUIDoc.pdf for instructions on interacting with the GUI.  
+This module drives the GUI. It uses the intermediate data structures defined in the Formatter module to render circuits.  It allows a user to compile a circuit, change the inputs of the circuit by clicking on the input-register's bit values, and allows the user to step-through the circuit via clock-changes.  See GUIDoc.pdf for instructions on interacting with the GUI.
 
 #### Model
 This module houses the entire state of that front-end application (current compiled circuit and clock value).  It has functions to abstract away all state-changes.
@@ -240,6 +240,9 @@ type formatted_circuit = {
 
 ## Language Definition
 Please refer to a fully written Language documentation under `documentation/Language.pdf`. This document outlines our language and provides interesting example cases.
+
+## GUI behavior
+Please refer to the GUI reference document under `documentation/GUIDoc.pdf`
 
 ## External Dependencies
 
