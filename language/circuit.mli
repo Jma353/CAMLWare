@@ -142,7 +142,7 @@ module type CircuitFormatter = sig
     r_reg_type :  display_reg_type;
     r_x_coord : float;
     r_y_coord : float;
-    input : int;
+    input : connection;
   }
 
   type formatted_circuit = {
