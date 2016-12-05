@@ -161,9 +161,9 @@ let rec finalize_tunnels map (regs: display_register list) acc =
   let process_reg_tunnel reg acc =
     match reg.input with
     | Reg id | Let id ->
-      let x_r = x_n_scale reg.r_x_coord in
-      let y_r = y_n_scale reg.r_y_coord in
-      (l_tunnel id (x_r +. nodeS) y_r nodeS)::acc
+      let x_r = x_nn_scale reg.r_x_coord in
+      let y_r = y_nn_scale reg.r_y_coord in
+      (l_tunnel id x_r (y_r +. nonNodeS /. 2.) nonNodeS)::acc
     | Node i ->
       if i <> -1 then
         let id_i = Int.make i in
