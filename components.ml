@@ -96,7 +96,7 @@ let rect_c (w:float) (h:float) (x:float) (y:float) (rx:float) (ry:float) =
 let box_with_symbol (x:float) (y:float) (edge:float) sym svg =
   let g = container x y in
   let frame = rect_c edge edge 0. 0. 1. 1. in
-  let sym_c = text (edge *. 0.5) (edge *. 0.5) (edge /. 4.) "" sym in
+  let sym_c = text (edge *. 0.5) (edge *. 0.5) (edge /. 4.5) "" sym in
   svg |- (g |- frame |- sym_c)
 
 (* Mini-Module with all Wiring Components *)
@@ -488,7 +488,7 @@ module Miscs = struct
 
   (* Concat Component *)
   let concat_c (x:float) (y:float) (edge:float) svg =
-    svg |> box_with_symbol x y edge "CC"
+    svg |> box_with_symbol x y edge "Concat"
 
   (* Initial View Component *)
   let initial_svg width height padding =
