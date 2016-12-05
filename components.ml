@@ -460,7 +460,7 @@ module Miscs = struct
     let h       = w *. 0.3 in
     let g       = container x y in
     let frame   = rect_c w h 0. (edge *. 0.5 -. h *. 0.5) 6. 6. in
-    let words   = text (w *. 0.5) (edge *. 0.5) (w /. 7.5) "" hex_str in
+    let words   = text (w *. 0.5) (edge *. 0.5) (w /. 8.) "" hex_str in
     svg |- (g |- frame |- words)
 
   (* MUX2 Component *)
@@ -549,7 +549,7 @@ module Triggers = struct
    * NOTE: This takes in a function that accepts a reference to a circuit
    * in order to build the circuit and place it at that reference, followed
    * by a rendering of that circuit (View Change) *)
-  let compile_area (f:unit -> unit) =
+  let compile_area (f:unit -> unit) thing1 thing2 =
     static "div"
     |. str attr "class" "initial"
     |. seq [
@@ -563,7 +563,7 @@ module Triggers = struct
         |. E.click (fun _ _ _ -> f ()));
         (static "div"
         |. str attr "class" "debug-output"
-        |. html (fun _ _ _ -> "Debug output"))]
+        |. html (fun _ _ _ -> "Debug output"));thing1;thing2]
 
   (* Step Button
    * NOTE: This takes in a function that steps & updates the view dependent
@@ -575,7 +575,6 @@ module Triggers = struct
     |. E.click (fun _ _ _ -> f ())
 
 end
-
 
 
 (* Include all of the above modules *)
