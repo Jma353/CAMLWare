@@ -314,4 +314,4 @@ let init_view () =
   let div = compile_area (Controller.did_compile make) in
   let step_b = step_btn (Controller.did_step update_registers) in
   let clock_c = clock () in
-  seq [init; div; step_b; clock_c]
+  seq [div; init; step_b; clock_c]
