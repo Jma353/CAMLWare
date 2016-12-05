@@ -8,15 +8,15 @@ To prepare:
 opam install oasis deriving d3 yojson
 ```
 
-To run
-1.
+### To run
+
 ```
 ./build
 ./run
 ```
-2. Open up webpage `localhost:8000` in browser
+Open up webpage `localhost:8000` in browser
 
-To clean up:
+### To clean up
 
 ```
 ./clean

@@ -467,16 +467,23 @@ module Miscs = struct
   let mux2_c (x:float) (y:float) (edge:float) svg =
     let g         = container x y in
     let one       = (0., 0.) in
-    let two       = (edge *. 0.6, edge *. 0.2) in
-    let three     = (edge *. 0.6, edge *. 0.8) in
-    let four      = (0., edge) in
-    let d         = _d [one;two;three;four;one] in
-    let my_path   = path d "linear" in
-    let i0_label  = text (edge *. 0.2) (edge *. 0.3) (edge /. 7.5) "" "i_0" in
-    let i1_label  = text (edge *. 0.2) (edge *. 0.5) (edge /. 7.5) "" "i_1" in
-    let sel_label = text (edge *. 0.2) (edge *. 0.7) (edge /. 7.5) "" "sel" in
-    let out_wire  = (line_comp (edge *. 0.6) (edge /. 2.) edge (edge /. 2.)) in
-    svg |- (g |- my_path |- i0_label |- i1_label |- sel_label |- out_wire)
+    let two       = (edge *. 0.6, edge *. 0.1)  in
+    let three     = (edge *. 0.6, edge *. 0.4)  in
+    let four      = (0., edge *. 0.5) in
+    let d_1       = _d [one;two;three;four;one] in
+    let my_path_1 = path d_1 "linear" in
+    let one_1     = (edge *. 0.6, edge *. 0.25) in
+    let two_1     = (edge *. 0.8, edge *. 0.25) in
+    let three_1   = (edge *. 0.8, edge *. 0.5) in
+    let four_1    = (edge, edge *. 0.5) in
+    let d_2       = _d [one_1;two_1;three_1;four_1] in
+    let my_path_2 = path d_2 "linear" in
+    let one_2     = (0., edge) in
+    let two_2     = (edge *. 0.3, edge) in
+    let three_2   = (edge *. 0.3, edge *. 0.45) in
+    let d_3       = _d [one_2;two_2;three_2] in
+    let my_path_3 = path d_3 "linear" in
+    svg |- (g |- my_path_1 |- my_path_2 |- my_path_3)
 
   (* Let-statement Component *)
   let let_c v (x:float) (y:float) (edge:float) svg =
