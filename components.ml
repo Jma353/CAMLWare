@@ -549,7 +549,7 @@ module Triggers = struct
    * NOTE: This takes in a function that accepts a reference to a circuit
    * in order to build the circuit and place it at that reference, followed
    * by a rendering of that circuit (View Change) *)
-  let compile_area (f:unit -> unit) =
+  let compile_area (f:unit -> unit) thing1 thing2 =
     static "div"
     |. str attr "class" "initial"
     |. seq [
@@ -563,7 +563,7 @@ module Triggers = struct
         |. E.click (fun _ _ _ -> f ()));
         (static "div"
         |. str attr "class" "debug-output"
-        |. html (fun _ _ _ -> "Debug output"))]
+        |. html (fun _ _ _ -> "Debug output"));thing1;thing2]
 
   (* Step Button
    * NOTE: This takes in a function that steps & updates the view dependent
@@ -575,7 +575,6 @@ module Triggers = struct
     |. E.click (fun _ _ _ -> f ())
 
 end
-
 
 
 (* Include all of the above modules *)

@@ -63,5 +63,5 @@ val clock       : unit -> ('a, 'a) D3.t
 (* Triggers *)
 val i_register : (string -> unit) -> Bitstream.bitstream -> string ->
   float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
-val compile_area : (unit -> unit) -> ('a, 'a) D3.t
+val compile_area : (unit -> unit) -> ('a, 'a) D3.t -> ('a, 'a) D3.t -> ('a, 'a) D3.t
 val step_btn     : (unit -> unit) -> ('a, 'a) D3.t

@@ -396,7 +396,7 @@ let make circ =
 let init_view () =
   let init = initial_svg 600 300 padding in
   let svg_container = svg_container_div init in
-  let div = compile_area (Controller.did_compile make) in
   let step_b = step_btn (Controller.did_step update_registers) in
   let clock_c = clock () in
-  seq [div; svg_container; step_b; clock_c]
+  let div = compile_area (Controller.did_compile make) step_b clock_c in
+  seq [div; svg_container; clock_c]
