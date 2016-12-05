@@ -7,7 +7,7 @@ open Combinational
 
 
 (* Sizes *)
-let padding = 100
+let padding = 90
 let nonNodeS = 60.
 let nodeS = 50.
 
@@ -54,7 +54,8 @@ type point = { x : float; y : float }
 
 (* Get Dimensions
  *
- * Gets the dimensions based on the overall coordinates of the formatted circuit *)
+ * Gets the dimensions based on the overall coordinates of the formatted
+ * circuit *)
 let get_dims (f_circ: formatted_circuit) =
   let xSet = FloatSet.empty in
   let ySet = FloatSet.empty in
@@ -127,9 +128,12 @@ let rec collect_registers (regs: display_register list) acc =
   let zeros = Bitstream.zeros 32 in
   let id = h.r_id in
   begin match h.r_reg_type with
-    | Dis_rising  -> collect_registers t ((u_register zeros id x y nonNodeS)::acc)
-    | Dis_falling -> collect_registers t ((d_register zeros id x y nonNodeS)::acc)
-    | Dis_output  -> collect_registers t ((o_register zeros id x y nonNodeS)::acc)
+    | Dis_rising  -> (collect_registers t
+                      ((u_register zeros id x y nonNodeS)::acc))
+    | Dis_falling -> (collect_registers t
+                      ((d_register zeros id x y nonNodeS)::acc))
+    | Dis_output  -> (collect_registers t
+                      ((o_register zeros id x y nonNodeS)::acc))
     | Dis_input   ->
       let f = Controller.did_change_input update_registers in
       collect_registers t ((i_register f zeros id x y nonNodeS)::acc)
@@ -390,7 +394,7 @@ let make circ =
 
 (* Initial view for compiling *)
 let init_view () =
-  let init = initial_svg 800 400 padding in
+  let init = initial_svg 600 300 padding in
   let svg_container = svg_container_div init in
   let div = compile_area (Controller.did_compile make) in
   let step_b = step_btn (Controller.did_step update_registers) in
