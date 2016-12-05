@@ -1,7 +1,6 @@
 (* load up the compiled packages *)
 #directory "_build";;
 #load "str.cma";;
-#load "base_conversions.cmo"
 #load "bitstream.cmo";;
 #load "combinational.cmo";;
 #load "circuit.cmo";;
@@ -13,7 +12,6 @@
 open Bitstream;;
 open Combinational;;
 open Circuit;;
-open Base_conversions;;
 open Parse;;
 open Analyzer;;
 

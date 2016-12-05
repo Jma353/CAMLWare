@@ -287,27 +287,27 @@ A naive `CamelWare` implementation is:
 
 ```
 input in_channel[1]
-register state[3] = next()
+register state[3] = next(in_channel, state)
 output out_channel[1] = state == 3'b100
-fun next()[3] =
-  if state == 3'd0 then
-    if in_channel
+fun next(i[1],s[3])[3] =
+  if s == 3'd0 then
+    if i
     then 3'd1
     else 3'd0
-  else if state == 3'd1 then
-    if in_channel
+  else if s == 3'd1 then
+    if i
     then 3'd1
     else 3'd2
-  else if state == 3'd2 then
-    if in_channel
+  else if s == 3'd2 then
+    if i
     then 3'd1
     else 3'd3
-  else if state == 3'd3 then
-    if in_channel
+  else if s == 3'd3 then
+    if i
     then 3'd4
     else 3'd0
   else
-    if in_channel
+    if i
     then 3'd1
     else 3'd0
 ```
@@ -381,12 +381,12 @@ From this we can derive an efficient hardware implementation
 
 ```
 input in_channel[1]
-register state[3] = next()
+register state[3] = next(in_channel,state)
 output out_channel[1] = state[2]
-fun next()[3] = {
-  state[1] & state[0] & in_channel,
-  ~state[1] & state[0] & ~in_channel | state[1] & ~state[0] & ~in_channel,
-  ~state[1] & in_channel | state[1] & ~state[0]
+fun next(i[1],s[3])[3] = {
+  s[1] & s[0] & i,
+  ~s[1] & s[0] & ~i | s[1] & ~s[0] & ~i,
+  ~s[1] & i | s[1] & ~s[0]
 }
 ```
 
@@ -399,7 +399,7 @@ A free running shift register shifts in the input bit on the right and shifts ou
 ```
 input in_channel[1]
 register R[32] = {in_channel,R[1-31]}
-output out_channel[1] = R[0]
+output out_channel[1] = R
 ```
 
 #### Universal Shift Register
@@ -415,12 +415,13 @@ A universal shift register either shifts to the left, shifts to the right, loads
 ```
 input in_channel[32]
 input ctrl[2]
+register R[32] = next(in_channel,ctrl,R)
 output out_channel[32] = R
-register R[32] =
-  if ctrl == 2'b00 then R
-  else if ctrl == 2'b01 then {R[0-30],in_channel[0]}
-  else if ctrl == 2'b10 then {in_channel[31],R[1-31]}
-  else in_channel
+fun next(i[32],c[2],r[32])[32] =
+  if c == 2'b00 then r
+  else if c == 2'b01 then {r[0-30],i[0]}
+  else if c == 2'b10 then {i[31],r[1-31]}
+  else i
 ```
 
 #### Free Running Binary Counter
@@ -444,11 +445,12 @@ A universal binary counter counts up, counts down, pauses, is loaded with a new 
 ```
 input in_channel[32]
 input ctrl[4]
+register C[32] = next(in_channel,ctrl,C)
 output max_tick[1] = C == 32'xFFFFFFFF
-register C[32] =
-  if ctrl[3] then 32'x00000000
-  else if ctrl[2] then in_channel
-  else if ctrl[1] then
-    C + (if ctrl[0] then 32'd1 else 32'd-1)
-  else C
+fun next(i[32],c[4],counter[32])[32] =
+  if c[3] then 32'x00000000
+  else if c[2] then i
+  else if c[1] then
+    counter + (if c[0] then 32'd1 else 32'd-1)
+  else counter
 ```

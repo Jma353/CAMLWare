@@ -1,0 +1,184 @@
+######### GUI TESTS ###########
+
+
+######### Test input, output, registers #########
+
+(1) 
+    input A[32]
+
+(2)   
+    input A[4]
+
+(3)
+    input A[32]
+    input B[32]
+    register C[32] = 32'd10
+
+(4)  
+    input A[32]
+    input B[32]
+    register C[32] = 32'd10
+    output D[4] = C
+
+(5)    
+    output D[2] 
+
+(6)
+    register HELLOIHAVEAREALLYLONGNAME[32]
+
+(7)
+    register A[32] = 32'b10101010101
+    register B[32] = 32'b10101010101
+    register C[32] = 32'b10101010101
+    register D[32] = 32'b10101010101
+    register E[32] = 32'b10101010101
+    register F[32] = 32'b10101010101
+    register G[32] = 32'b10101010101
+    register H[32] = 32'b10101010101
+    register I[32] = 32'b10101010101
+    register J[32] = 32'b10101010101
+    register K[32] = 32'b10101010101
+    register L[32] = 32'b10101010101
+    register M[32] = 32'b10101010101
+    register N[32] = 32'b10101010101
+    register O[32] = 32'b10101010101
+    register P[32] = 32'b10101010101
+    register Q[32] = 32'b10101010101
+    register R[32] = 32'b10101010101
+    register S[32] = 32'b10101010101
+    register T[32] = 32'b10101010101
+    register U[32] = 32'b10101010101
+    register V[32] = 32'b10101010101
+    register W[32] = 32'b10101010101
+    register X[32] = 32'b10101010101
+    register Y[32] = 32'b10101010101
+    register Z[32] = 32'b10101010101
+
+######### Test basic gates, comparators, and arithmetic #########
+
+(1) Multiple times with gates |, ||, &, &&, ~&, ~|, ^, ~^
+
+    input A[32] register C[32] = 32'd10 register B[32] = A | C
+
+(2) Multiple times with comparators <, >=, <=, ==, != 
+    
+    input A[32] register C[32] = 32'd10 register B[32] = A >= C
+
+(3) Multiple times with arithmetic +,-
+    
+    input A[32] register C[32] = 32'd10 register B[32] = A + C
+
+(4)
+    input A[4] register C[4] = 4'x1 output D[32] = !C output E[32] = ~A
+    
+
+######### Test basic substream, functions, lets #########
+
+(1) 
+    input A[32] register C[32] = 32'd10 register B[32] = {A, C}
+
+(2)
+    input A[32] register C[32] = 32'd10 register B[32] = {A[0-16], C[0-13]}
+
+(3)
+    input A[32] register C[32] = 32'd10 register B[16] = if A == C then 16'd14 else 16'd15
+
+(4)
+    input A[32] register C[32] = 32'd12 fun sub(x[32],y[32])[32] = x + y register B[32] = sub(A,C)
+
+(5)
+    input A[32] register C[32] = 32'd12 fun sub(x[32],y[32])[32] = let z = x + y in z register B[32] = sub(A,C)
+
+(6)
+    input A[32] register C[32] = 32'd12 output B[32] = A[1]
+
+(7)
+    register A[4] = 4'b0101 register B[4] = 4'b1001 fun f(x[4],y[4])[4] = 
+        x | y fun h(u[4],v[4])[4] = u && v register D[4] = f(A,B) 
+        register F[4] = h(B,A)
+
+
+
+######### Long examples #########
+
+(1)
+    input input1[32] 
+    input input2[32]
+    input input3[32]
+    register D[4] = if input1 == input2 then input3 else F
+    register F[4] = !input2
+    register E[32] = input2 != input3
+    fun subcirc(x[32], y[4], z[32], u[32], v[1])[32] = ( x + y - z + u - v) << 32'd10
+    fun subcirc2(a[32])[32] = let x = input1 in x
+    output G[32] = subcirc2(input3)
+
+(2)
+	register A[7] = B
+	register B[32] = 32'd10
+
+
+######### Examples from our documentation #########
+
+(1)
+    input in_channel[1]
+    register state[3] = next()
+    output out_channel[1] = state == 3'b100
+    fun next()[3] =
+      if state == 3'd0 then
+        if in_channel
+        then 3'd1
+        else 3'd0
+      else if state == 3'd1 then
+        if in_channel
+        then 3'd1
+        else 3'd2
+      else if state == 3'd2 then
+        if in_channel
+        then 3'd1
+        else 3'd3
+      else if state == 3'd3 then
+        if in_channel
+        then 3'd4
+        else 3'd0
+      else
+        if in_channel
+        then 3'd1
+        else 3'd0
+
+
+(2)     
+    input in_channel[1]
+    register state[3] = next()
+    output out_channel[1] = state[2]
+    fun next()[3] = {
+    state[1] & state[0] & in_channel,
+    ~state[1] & state[0] & ~in_channel | state[1] & ~state[0] & ~in_channel,
+    ~state[1] & in_channel | state[1] & ~state[0]}
+
+
+(3)
+    
+    input in_channel[32]
+    input ctrl[2]
+    output out_channel[32] = R
+    register R[32] =
+    if ctrl == 2'b00 then R
+    else if ctrl == 2'b01 then {R[0-30],in_channel[0]}
+    else if ctrl == 2'b10 then {in_channel[31],R[1-31]}
+    else in_channel
+
+
+
+(4)
+
+    input in_channel[32]
+    input ctrl[4]
+    output max_tick[1] = C == 32'xFFFFFFFF
+    register C[32] =
+    if ctrl[3] then 32'x00000000
+    else if ctrl[2] then in_channel
+    else if ctrl[1] then
+    C + (if ctrl[0] then 32'd1 else 32'd-1)
+    else C
+
+
