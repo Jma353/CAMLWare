@@ -915,7 +915,7 @@ module Formatter : CircuitFormatter = struct
       if (StringMap.mem var_id reg_list) then (Reg var_id)
       else (Let var_id)
     | Id_Let (node_id, var_id, _, c2) -> process_conn reg_list c2
-    | x -> let p1 = (Node (get_ids x))
+    | x -> (Node (get_ids x))
 
   (*the four types of registers to dispplay*)
   type display_reg_type = Dis_rising | Dis_falling | Dis_input | Dis_output
@@ -1055,7 +1055,6 @@ module Formatter : CircuitFormatter = struct
       let (n1, l1) = List.split (List.map (fun x -> list_helper x []) c_list) in
       (n::(List.flatten n1), lets@(List.flatten l1))
     | Id_Let (id, var, c1, c2) ->
-      let p2 = "in processing let\n" in
       let inputs = list_dependencies c1 reg_list in
       let new_let = {l_y_coord=0.; l_x_coord=0.; l_id=var; inputs=inputs} in
       let (n2, l2) = list_helper c2 [] in
@@ -1066,8 +1065,6 @@ module Formatter : CircuitFormatter = struct
    * where nodes' is nodes topologically sorted in accordance with their
    * dependencies *)
   let columnize_ast(nodes, lets, register) =
-    let p8 = print_string (string_of_int (List.length lets)) in
-    let p10 = print_string (string_of_int (List.length nodes)) in
     let new_nodes = List.map (fun x-> (x.n_id, x)) nodes in
     let new_lets = List.map (fun x -> (x.l_id, x)) lets in
     if (List.length new_nodes) = 0 then ([], new_lets)
@@ -1165,15 +1162,18 @@ module Formatter : CircuitFormatter = struct
         ::(let_helper t (curr_y +. y_gap))
     in let_helper lets (y_start +. y_gap)
 
+  (* [uncover_input comb reg_list] returns the correct register input
+   *  node for AST comb *)
   let rec uncover_input comb reg_list =
     match comb with
     | Id_Var (_, var_id) ->
       if (StringMap.mem var_id reg_list) then (Reg var_id)
       else (Let var_id)
     | Id_Let (node_id, var_id, _, c2) -> uncover_input c2 reg_list
-    | x -> let p1 = print_string "finding input2!!!\n" in
-      (Node (get_ids x))
+    | x -> (Node (get_ids x))
 
+(* [return_register_nodes column reg_list] returns one columns worth
+ * of display_register s with all x and y coordinates intialized to 0.*)
   let return_register_nodes column reg_list =
     let rec col_helper col =
       match col with
@@ -1186,6 +1186,8 @@ module Formatter : CircuitFormatter = struct
       ::col_helper t in
     col_helper (StringMap.bindings column)
 
+  (* [make_columns columns reg_list] returns one column of display_nodes with
+   * all x and y coordinates initialized to 0. *)
   let make_columns columns reg_list =
     let rec helper cols =
       match cols with
@@ -1193,6 +1195,8 @@ module Formatter : CircuitFormatter = struct
       | h::t -> (return_register_nodes h reg_list)::(helper t)
     in helper columns
 
+  (* [make_inputs inputs] is a completed list of display_inputs
+   * Precondition: all items in inputs are input registers *)
   let make_inputs inputs =
     let gap = 100./.(float_of_int(StringMap.cardinal inputs))  in
     let to_display_input (reg_id, register) y_coord = (reg_id, {
@@ -1208,12 +1212,14 @@ module Formatter : CircuitFormatter = struct
       | h::t -> (to_display_input h y)::(input_helper t (y +. gap))
   in input_helper (StringMap.bindings inputs) (0. +. (gap/.2.))
 
+  (*Determines the toal number of columns (ast and register) in a circuit column*)
   let col_sum (id, (reg, nodes, lets)) =
     List.length nodes + (
         if (List.length lets = 0) then 0
         else 1
     )
 
+  (* determines precisely how many AST columns are requires *)
   let rec col_needed column max =
     match column with
     | [] -> max
@@ -1222,6 +1228,7 @@ module Formatter : CircuitFormatter = struct
       if curr > max then col_needed t curr
       else col_needed t max
 
+  (* [handle_col ] returns a completed circ ast *)
   let handle_ast (id, (reg, nodes, lets)) x_start x_end y_start y_end =
     let final_y_coord = (y_start +. y_end) /. 2. in
     let final_reg =
@@ -1235,6 +1242,7 @@ module Formatter : CircuitFormatter = struct
       x_start x_end y_start y_end nodes (not (List.length lets = 0)) in
     (final_ast, final_lets, final_reg)
 
+  (* [handle_col col x_start x_end] returns a completed circ column *)
   let handle_col col x_start x_end =
     let y_gap = 100./.(float_of_int (List.length col)) in
     let rec col_helper curr_y cols =
@@ -1244,22 +1252,20 @@ module Formatter : CircuitFormatter = struct
                 ::(col_helper (curr_y +. y_gap) t) in
     col_helper 0. col
 
-
+  (* [format circ] is the formatted_circuit version of circ, where all
+   * registers, lets, and nodes have been decomposed into lists where each item
+   * has an X and Y coordinate. *)
   let format circ =
-    let p1 = print_string "get 1\n" in
     let reg_list = get_all_registers circ in
     let (inputs, reg_columns, outputs) = columnize_registers circ in
     let all_ast = reg_columns@[outputs] in
     let final_inputs = make_inputs inputs in
     let reg_done = make_columns all_ast reg_list in (*now have [[id, (reg, ast)]]*)
-    let p1 = print_string "get 2\n" in
     let all_columns =
       List.map
       (fun col -> (
         List.map (fun (id, (reg, ast)) ->
-          let p1 = print_string "get 4\n" in
           let (n, l) = tree_to_list ast reg_list in
-          let p1 = print_string "get 5\n" in
           let (nodes, lets) = columnize_ast (n, l, reg) in
             (id, (reg, nodes, lets))
           ) col
@@ -1270,7 +1276,6 @@ module Formatter : CircuitFormatter = struct
         (fun acc x -> acc + (col_needed x 0)) 0
       all_columns) + (List.length all_columns)in
     let x_gap = 100./.(float_of_int total_col) in
-    let p1 = print_string "get 3\n" in
     let rec x_helper columns curr_x =
       match columns with
       | [] -> []
@@ -1280,7 +1285,6 @@ module Formatter : CircuitFormatter = struct
         let new_x_start = x_end +. x_gap in
         (handle_col h x_start x_end)::(x_helper t new_x_start)
     in
-    let p1 = print_string "get 4\n" in
     let all_nodes_done = x_helper all_columns x_gap in
     let almost_there = List.flatten all_nodes_done in
     let all_registers = List.map (fun (_, _, x) -> x) almost_there in
