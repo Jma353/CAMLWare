@@ -14,6 +14,21 @@ let nonNodeS = 60.
 let nodeS = 50.
 
 
+(* Scale makers *)
+let make_scale dim edge = (fun x -> dim *. x /. 100. -. edge /. 2.)
+let make_node_scale dim = make_scale dim nodeS
+let make_non_node_scale dim = make_scale dim nonNodeS
+
+
+(* Dimensions & scaling *)
+let width_f    = float_of_int width
+let height_f   = float_of_int height
+let x_nn_scale = make_non_node_scale width_f
+let y_nn_scale = make_non_node_scale height_f
+let x_n_scale  = make_node_scale width_f
+let y_n_scale  = make_node_scale height_f
+
+
 (* Mini-Int Module for Maps *)
 module Int = struct
   type t = int
@@ -28,16 +43,8 @@ end
 (* Maps *)
 module IntMap = Map.Make(Int)
 
-
 (* Representing an output *)
 type point = { x : float; y : float }
-
-
-(* Scales *)
-let make_scale dim edge = (fun x -> dim *. x /. 100. -. edge /. 2.)
-let make_node_scale dim = make_scale dim nodeS
-let make_non_node_scale dim = make_scale dim nonNodeS
-
 
 (* Update Registers
  *
@@ -54,42 +61,42 @@ let update_registers circ =
 (* Collect Registers
  *
  * This function collects all the registers in this variant of the circuit *)
-let rec collect_registers x_scale y_scale (regs: display_register list) acc =
+let rec collect_registers (regs: display_register list) acc =
   match regs with
   | [] -> acc
   | h::t ->
-  let x = x_scale h.r_x_coord in
-  let y = y_scale h.r_y_coord in
+  let x = x_nn_scale h.r_x_coord in
+  let y = y_nn_scale h.r_y_coord in
   let zeros = Bitstream.zeros 32 in
   let id = h.r_id in
   begin match h.r_reg_type with
-    | Dis_rising  -> collect_registers x_scale y_scale t ((u_register zeros id x y nonNodeS)::acc)
-    | Dis_falling -> collect_registers x_scale y_scale t ((d_register zeros id x y nonNodeS)::acc)
-    | Dis_output  -> collect_registers x_scale y_scale t ((o_register zeros id x y nonNodeS)::acc)
+    | Dis_rising  -> collect_registers t ((u_register zeros id x y nonNodeS)::acc)
+    | Dis_falling -> collect_registers t ((d_register zeros id x y nonNodeS)::acc)
+    | Dis_output  -> collect_registers t ((o_register zeros id x y nonNodeS)::acc)
     | Dis_input   ->
       let f = Controller.did_change_input update_registers in
-      collect_registers x_scale y_scale t ((i_register f zeros id x y nonNodeS)::acc)
+      collect_registers t ((i_register f zeros id x y nonNodeS)::acc)
   end
 
 
 (* Collect Lets
  *
  * This function collects all the let-statements of this variant of the circuit *)
-let rec collect_lets x_scale y_scale (lets: display_let list) acc =
+let rec collect_lets (lets: display_let list) acc =
   match lets with
   | [] -> acc
   | h::t ->
-  let x = x_scale h.l_x_coord in
-  let y = y_scale h.l_y_coord in
+  let x = x_nn_scale h.l_x_coord in
+  let y = y_nn_scale h.l_y_coord in
   let id = h.l_id in
-  collect_lets x_scale y_scale t ((let_c id x y nonNodeS)::acc)
+  collect_lets t ((let_c id x y nonNodeS)::acc)
 
 
 (* Collect Wires
  *
  * This function collects all the wires present in this variant of the
  * circuit *)
-let rec collect_wires x_scale y_scale map (n_s:display_node list) acc =
+let rec collect_wires map (n_s:display_node list) acc =
 
   (* Add wirings of a node to a properly accumulating list *)
   let rec make_wirings c_s n x base_y space acc =
@@ -123,8 +130,8 @@ let rec collect_wires x_scale y_scale map (n_s:display_node list) acc =
 
   (* Adds wiring based on the type of node to exist *)
   let handle_wiring (n:display_node) acc =
-    let cx = x_scale n.n_x_coord in
-    let cy = y_scale n.n_y_coord in
+    let cx = x_n_scale n.n_x_coord in
+    let cy = y_n_scale n.n_y_coord in
     match n.node with
     | B (_,c1,c2)     -> process_node_wirings [c1;c2] cx cy acc
     | L (_,c1,c2)     -> process_node_wirings [c1;c2] cx cy acc
@@ -142,7 +149,7 @@ let rec collect_wires x_scale y_scale map (n_s:display_node list) acc =
 
   match n_s with
   | [] -> acc
-  | h::t -> collect_wires x_scale y_scale map t (handle_wiring h acc)
+  | h::t -> collect_wires map t (handle_wiring h acc)
 
 
 (* Finalize Tunnels
@@ -150,13 +157,20 @@ let rec collect_wires x_scale y_scale map (n_s:display_node list) acc =
  * This function finalizes any tunneling we have for this circuit *)
 let rec finalize_tunnels map (regs: display_register list) acc =
 
+  (* Process  *)
   let process_reg_tunnel reg acc =
-    if reg.input <> -1 then
-      let id_i = Int.make reg.input in
-      let p = IntMap.find id_i map in
-      (r_tunnel reg.r_id p.x p.y nodeS)::acc
-    else
-      acc
+    match reg.input with
+    | Reg id | Let id ->
+      let x_r = x_n_scale reg.r_x_coord in
+      let y_r = y_n_scale reg.r_y_coord in
+      (l_tunnel id (x_r +. nodeS) y_r nodeS)::acc
+    | Node i ->
+      if i <> -1 then
+        let id_i = Int.make i in
+        let p = IntMap.find id_i map in
+        (r_tunnel reg.r_id p.x p.y nodeS)::acc
+      else
+        acc
   in
 
   match regs with
@@ -168,13 +182,13 @@ let rec finalize_tunnels map (regs: display_register list) acc =
  *
  * This function collects all the non-Registers/Lets of this variant
  * of the circuit *)
-let rec collect_nodes x_scale y_scale (n:display_node list) acc =
+let rec collect_nodes (n:display_node list) acc =
   (* Singular helper *)
   let handle_node (n:display_node) stuff =
     let id_i = Int.make n.n_id in
     let acc = snd stuff in
-    let x = x_scale n.n_x_coord in
-    let y = y_scale n.n_y_coord in
+    let x = x_n_scale n.n_x_coord in
+    let y = y_n_scale n.n_y_coord in
     let map = (IntMap.add id_i
       {x = x +. nodeS; y = y +. nodeS /. 2.}
       (fst stuff)) in
@@ -236,7 +250,7 @@ let rec collect_nodes x_scale y_scale (n:display_node list) acc =
 
   match n with
   | [] -> acc
-  | h::t -> collect_nodes x_scale y_scale t (handle_node h acc)
+  | h::t -> collect_nodes t (handle_node h acc)
 
 
 (* Make
@@ -263,12 +277,6 @@ let make circ =
       (* Format the circuit *)
       let c = Circuit.Formatter.format a_c in
 
-
-
-      (* FLAG TESTING
-      let c = test_circ () in
-      *)
-
       (* Helper function *)
       let get_second = (fun (_,x) -> x) in
 
@@ -277,22 +285,14 @@ let make circ =
       let lets       = List.map get_second c.lets in
       let c_nodes    = List.map get_second c.nodes in
 
-      (* Dimensions & scaling *)
-      let width_f    = float_of_int width in
-      let height_f   = float_of_int height in
-      let x_nn_scale = make_non_node_scale width_f in
-      let y_nn_scale = make_non_node_scale height_f in
-      let x_n_scale  = make_node_scale width_f in
-      let y_n_scale  = make_node_scale height_f in
-
       (* Collect Everything *)
-      let regs       = collect_registers x_nn_scale y_nn_scale registers [] in
-      let lets       = collect_lets x_nn_scale y_nn_scale lets [] in
+      let regs       = collect_registers registers [] in
+      let lets       = collect_lets lets [] in
       let e_map      = IntMap.empty in
-      let stuff      = collect_nodes x_n_scale y_n_scale c_nodes (e_map,[]) in
+      let stuff      = collect_nodes c_nodes (e_map,[]) in
       let nodes      = snd stuff in
       let map        = fst stuff in
-      let wires      = collect_wires x_n_scale y_n_scale map c_nodes [] in
+      let wires      = collect_wires map c_nodes [] in
       let tunnels    = finalize_tunnels map registers [] in
       regs @ lets @ nodes @ wires @ tunnels
   in
