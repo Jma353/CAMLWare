@@ -195,7 +195,7 @@ let format_circuit f circ =
 (************************ eval ***********************)
 
 module Simulator : CircuitSimulator = struct
-  
+
   (* [eval_gates] returns a bitstream after evaluating b1 and b2 by gate g *)
   let rec eval_gates bin_op bin_not g b1 b2 =
     match g with
@@ -223,7 +223,7 @@ module Simulator : CircuitSimulator = struct
     | Neg_logical -> logical_not b1
     | Neg_arithmetic -> negate b1
 
-  (* [eval_comp] returns a bitstream that is comparing b1 b2 by comparator 
+  (* [eval_comp] returns a bitstream that is comparing b1 b2 by comparator
   comp *)
   let eval_comp comp b1 b2 =
     match comp with
@@ -234,7 +234,7 @@ module Simulator : CircuitSimulator = struct
      | Gte -> logical_binop or_bits (greater_than b1 b2) (equals b1 b2)
      | Neq -> logical_not (equals b1 b2)
 
-  (* [eval_comp] returns a bitstream that is evaluating b1 b2 by arithmatic 
+  (* [eval_comp] returns a bitstream that is evaluating b1 b2 by arithmatic
   arth *)
   let eval_arith arth b1 b2 =
     match arth with
@@ -1215,22 +1215,22 @@ module Formatter : CircuitFormatter = struct
       if curr > max then col_needed t curr
       else col_needed t max
 
-  let handle_ast (id, (reg, nodes, lets)) x_start x_end y_start y_end = 
-    let final_y_coord = (y_start +. y_end) /. 2. in 
+  let handle_ast (id, (reg, nodes, lets)) x_start x_end y_start y_end =
+    let final_y_coord = (y_start +. y_end) /. 2. in
     let final_reg = (id, {input=reg.input; r_id = reg.r_id; r_x_coord = x_end; r_y_coord = y_end; r_reg_type = reg.r_reg_type}) in
-    let final_lets = 
+    let final_lets =
       if (List.length lets = 0) then []
-      else (format_lets x_start y_start y_end lets) in 
-    let final_ast = make_ast_coordinates x_start x_end y_start y_end nodes (not (List.length lets = 0)) in 
+      else (format_lets x_start y_start y_end lets) in
+    let final_ast = make_ast_coordinates x_start x_end y_start y_end nodes (not (List.length lets = 0)) in
     (final_ast, final_lets, final_reg)
-  
-  let handle_col col x_start x_end = 
-    let y_gap = 100./.(float_of_int (List.length col)) in 
-    let rec col_helper curr_y cols = 
-      match cols with 
+
+  let handle_col col x_start x_end =
+    let y_gap = 100./.(float_of_int (List.length col)) in
+    let rec col_helper curr_y cols =
+      match cols with
       |[] -> []
       |h::t -> (handle_ast h x_start x_end curr_y (curr_y +. y_gap))::(col_helper (curr_y +. y_gap) t) in
-    col_helper 0. col 
+    col_helper 0. col
 
 
   let format circ =
@@ -1254,21 +1254,21 @@ module Formatter : CircuitFormatter = struct
         (fun acc x -> acc + (col_needed x 0)) 0
       all_columns) + (List.length all_columns)in
     let x_gap = 100./.(float_of_int total_col) in
-    let rec x_helper columns curr_x = 
-      match columns with 
+    let rec x_helper columns curr_x =
+      match columns with
       | [] -> []
-      | h::t -> 
-        let x_start = curr_x in 
-        let x_end = (float_of_int (col_needed h 0))*.x_gap +.curr_x in 
-        let new_x_start = x_end +. x_gap in 
+      | h::t ->
+        let x_start = curr_x in
+        let x_end = (float_of_int (col_needed h 0))*.x_gap +.curr_x in
+        let new_x_start = x_end +. x_gap in
         (handle_col h x_start x_end)::(x_helper t new_x_start)
     in
 
     let all_nodes_done = x_helper all_columns x_gap in
     let almost_there = List.flatten all_nodes_done in
-    let all_registers = List.map (fun (_, _, x) -> x) almost_there in 
-    let all_lets = List.flatten (List.map (fun (_, x, _) -> x) almost_there) in 
-    let all_nodes = List.flatten(List.flatten (List.map (fun (x, _ , _) -> x) almost_there)) in 
+    let all_registers = List.map (fun (_, _, x) -> x) almost_there in
+    let all_lets = List.flatten (List.map (fun (_, x, _) -> x) almost_there) in
+    let all_nodes = List.flatten(List.flatten (List.map (fun (x, _ , _) -> x) almost_there)) in
 
 
     {
