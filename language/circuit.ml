@@ -1272,7 +1272,7 @@ module Formatter : CircuitFormatter = struct
 
 
     {
-      registers = all_registers;
+      registers = final_inputs@all_registers;
       lets = all_lets;
       nodes = all_nodes;
     }
