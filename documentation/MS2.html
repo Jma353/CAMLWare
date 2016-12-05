@@ -1,0 +1,242 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+</head>
+<body>
+<h1 id="milestone-2-implementation">Milestone 2: Implementation</h1>
+<h2 id="team-members">Team Members</h2>
+<ul>
+<li>Joseph Antonakakis, jma353</li>
+<li>Natasha Armbrust, nka8</li>
+<li>Celine Brass, cjb327</li>
+<li>Reuben Rappaport, rbr76</li>
+</ul>
+<h2 id="system-description">System Description</h2>
+<h3 id="summary">Summary</h3>
+<p>We created a new functional hardware description language for digital logic with an OCaml interpreter that simulates the behavior of the circuit and an interactive GUI application that lets the user control the simulation.</p>
+<h3 id="vision">Vision</h3>
+<p>The two most popular hardware description languages (programming languages used to describe the behavior of electrical circuitry) are Verilog and VHDL. Unfortunately, both of these are imperative languages, and the imperative paradigm lends itself poorly to describing hardware. Verilog in particular runs into serious issues. The syntax is such that the vast majority of possible Verilog programs are impossible to translate into real world circuitry! To successfully design in Verilog one must first picture the circuit one wants and then attempt to construct code that will generate it - obviously this results in a design process that’s exactly backwards.</p>
+<p>Although analog circuitry is a good deal more complicated, all digital circuitry is at its core just a state machine. That is, it consists of registers which hold the state and combinational logic connecting them which serve as a transition function every time the clock ticks. This setup is far better suited to being described by a functional language than an imperative one.</p>
+<p>For this project we plan to define the formal syntax, and semantics of a new functional hardware description language for digital logic. Then, to make it a usable digital design tool we’ll write an OCaml interpreter for the language that simulates the behavior of the described circuit. Finally, we’ll build a GUI application to let users interact with the simulation by visualizing their circuit, controlling the values of inputs, and stepping and running the clock.</p>
+<h3 id="featureset">Featureset</h3>
+<p>For this project we: - Formally defined and documented a new functional hardware description language (found under documentation/Language.pdf) - Wrote an OCaml interpreter for our new language that simulates the behavior of the defined circuit - Built a GUI based application that allows the user to interact with the simulation - The GUI allows the user to view a visualization of their circuit - The GUI allows the user to step the circuit - The GUI allows the user to control the values of inputs to the circuit</p>
+<h2 id="architecture">Architecture</h2>
+<p>Since our project is essentially a compiler for hardware, we chose a pipe and filter architecture. Source files are first passed into the Lexer to create a token stream, and then into the parser to build the AST. From there, this is passed to the Simulator, which simulates circuit behavior and to the GUI which renders the circuit and reads user commands. When a user inputs a command, the GUI passes it back to the simulator to update the state, and then reads the new state and rerenders.</p>
+<div class="figure">
+<embed src="images/c_and_c_diagram.pdf" />
+<p class="caption">C&amp;C Diagram</p>
+</div>
+<h2 id="system-design">System Design</h2>
+<p>We split our design up into a number of coherent submodules:</p>
+<h3 id="bitstream">Bitstream</h3>
+<p>This module contains a data type to represent an indexed collection of bits (ie something along the lines of <code>4'b0010</code>). It also provides a large collection of functions to create and manipulate bitstreams (arithmetic, bitwise operations, logical operations, concatenation, etc).</p>
+<h3 id="combinational">Combinational</h3>
+<p>This module contains a data type to represent a combinational logic expression as an abstract syntax tree. References to the values of inputs and registers are done using their id - when the simulator goes to evaluate this AST it will simply look them up in its environment.</p>
+<p>For example, the expression <code>A[2] | B[1] &amp; 1'x1</code> would be represented as</p>
+<pre><code>Result (Gate (Or, Nth (2, Var &quot;A&quot;), Gate (And, Nth (1, Var &quot;B&quot;), Const 1&#39;b1)))</code></pre>
+<h3 id="circuit">Circuit</h3>
+<p>This module contains several submoduls that use the internals of the circuit data structure.</p>
+<h4 id="simulator">Simulator</h4>
+<p>This submodule contains a data type to represent a circuit as a collection of registers storing state. Each register has an associated combinational logic expression which is used to compute its next value when the clock steps. In order to make matters simple, internally we represent inputs and outputs as circuits also. We define the following rules for updating registers:</p>
+<ul>
+<li>A falling register updates its value to the result of evaluating its AST when the clock falls</li>
+<li>A rising register updates its value to the result of evaluating its AST when the clock rises</li>
+<li>An output updates its value to the result of evaluating its AST when anything else changes</li>
+<li>An input changes its value whenever a user inputs a new value for it</li>
+</ul>
+<p>Under this scheme, to change the value of an input, we first set the input's value to the new one, and then recompute all of the outputs.</p>
+<p>This module provides functions for stepping the circuit, and for evaluating combinational expressions in the context of a circuit.</p>
+<h4 id="analyzer">Analyzer</h4>
+<h4 id="formatter">Formatter</h4>
+<p>This module provides an intermediate data structure for representing circuits that's easy to render as an SVG, and an array of functions for converting our internal circuit representation to this renderable format.</p>
+<p>In a formatted_circuit, all registers are assigned a column depending on the other registers they depend on. For example, in the circuit <code>C = A &amp; B</code>, Registers A and B would be assigned column 0 and Register C would be assigned column 1.</p>
+<p>The formatter also assigns wiring positions between circuits and gate placement. All placements are given in percents rather than pixels, etc to make for a more flexible display.</p>
+<h3 id="lexer">Lexer</h3>
+<p>This module is an OCamllex lexer, based in part off the one provided in A4: OCalf. We use it to convert source files into token streams.</p>
+<h3 id="parser">Parser</h3>
+<p>This module is an Ocamlyacc parser, based in part off the one provided in A4: Ocalf. It provides parsing functions both for pure combinational expressions and for circuit definitions. For a description of the syntax involved, see the <strong>Language Definition</strong> section.</p>
+<h3 id="parse">Parse</h3>
+<p>This module is an OCaml wrapper that makes it easy to pass strings and files through the Lexer -&gt; Parser pipeline.</p>
+<h3 id="gui---flag-joe-fill-all-these-in">GUI - FLAG JOE FILL ALL THESE IN</h3>
+<p>This module drives the GUI. It uses the intermediate data structures defined in the Formatter module to render circuits. When neccesary, it passes along user input to the simulator, before reformatting and rerendering the result.</p>
+<h4 id="model">Model</h4>
+<h4 id="view">View</h4>
+<h4 id="controller">Controller</h4>
+<h4 id="components">Components</h4>
+<h4 id="extensions">Extensions</h4>
+<h3 id="module-dependency-diagram">Module Dependency Diagram</h3>
+<div class="figure">
+<embed src="images/mdd_final.pdf" />
+<p class="caption">MDD</p>
+</div>
+<h2 id="module-design">Module Design</h2>
+<p>See the interfaces for each module in <code>src.zip</code></p>
+<h2 id="data">Data</h2>
+<p>We defined several data structures to use in our project.</p>
+<h3 id="bitstream-1">Bitstream</h3>
+<p>A <code>bitstream</code> is a collection of boolean values indexed from least to most significant bit. Internally, this is implemented an <code>array</code>.</p>
+<h3 id="combinational-1">Combinational</h3>
+<p>A <code>comb</code> is an AST representing a combinational logic expression. We define it as:</p>
+<div class="sourceCode"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span class="kw">type</span> id = <span class="dt">string</span>
+
+<span class="kw">type</span> gate =
+| <span class="dt">And</span> | <span class="dt">Or</span> | <span class="dt">Xor</span> | <span class="dt">Nand</span> | <span class="dt">Nor</span> | <span class="dt">Nxor</span>
+
+<span class="kw">type</span> negation =
+| <span class="dt">Neg_bitwise</span> | <span class="dt">Neg_logical</span> | <span class="dt">Neg_arithmetic</span>
+
+<span class="kw">type</span> comparison =
+| <span class="dt">Lt</span> | <span class="dt">Gt</span> | <span class="dt">Eq</span> | <span class="dt">Lte</span> | <span class="dt">Gte</span> | <span class="dt">Neq</span>
+
+<span class="kw">type</span> arithmetic =
+| <span class="dt">Add</span> | <span class="dt">Subtract</span> | <span class="dt">Sll</span> | <span class="dt">Srl</span> | <span class="dt">Sra</span>
+
+<span class="kw">type</span> comb =
+| <span class="dt">Const</span>     <span class="kw">of</span> bitstream
+| <span class="dt">Var</span>       <span class="kw">of</span> id
+| <span class="dt">Sub_seq</span>   <span class="kw">of</span> <span class="dt">int</span> * <span class="dt">int</span> * comb
+| <span class="dt">Nth</span>       <span class="kw">of</span> <span class="dt">int</span> * comb
+| <span class="dt">Gate</span>      <span class="kw">of</span> gate * comb * comb
+| <span class="dt">Logical</span>   <span class="kw">of</span> gate * comb * comb
+| <span class="dt">Reduce</span>    <span class="kw">of</span> gate * comb
+| <span class="dt">Neg</span>       <span class="kw">of</span> negation * comb
+| <span class="dt">Comp</span>      <span class="kw">of</span> comparison * comb * comb
+| <span class="dt">Arith</span>     <span class="kw">of</span> arithmetic * comb * comb
+| <span class="dt">Concat</span>    <span class="kw">of</span> comb <span class="dt">list</span>
+| <span class="dt">Mux2</span>      <span class="kw">of</span> comb * comb * comb
+| <span class="dt">Apply</span>     <span class="kw">of</span> id * comb <span class="dt">list</span>
+| <span class="dt">Let</span>       <span class="kw">of</span> id * comb * comb</code></pre></div>
+<h3 id="register">Register</h3>
+<p>A <code>register</code> is a digital state component. It consists of a value paired with an AST to evaluate when the clock steps to compute the next value.</p>
+<div class="sourceCode"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span class="co">(* since we internally represent inputs and outputs as registers, we need a</span>
+<span class="co">* flag to specify their type *)</span>
+<span class="kw">type</span> reg_type =
+| <span class="dt">Rising</span> | <span class="dt">Falling</span> | <span class="dt">Input</span> | <span class="dt">Output</span>
+
+<span class="kw">type</span> register_input =
+| <span class="dt">User_input</span> | <span class="dt">AST</span> <span class="kw">of</span> comb
+
+<span class="co">(* a digital state component *)</span>
+    <span class="kw">type</span> register = {
+    reg_type : reg_type;
+    length : <span class="dt">int</span>;
+    value : bitstream;
+    next : register_input;
+}</code></pre></div>
+<h3 id="subcircuit">Subcircuit</h3>
+<p>A <code>subcircuit</code> is a digital state component. It consists of a value paired with an AST to evaluate when the clock steps to compute the next value.</p>
+<div class="sourceCode"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span class="kw">type</span> subcircuit = {
+    ast : comb;
+    length : <span class="dt">int</span>;
+    args : (id * <span class="dt">int</span>) <span class="dt">list</span>;
+}</code></pre></div>
+<h3 id="component">Component</h3>
+<p>A <code>component is a</code>register<code>or a</code>subcircuit`. It is used in our circuit map to represent the internal state of a circuit.</p>
+<h3 id="circuit-1">Circuit</h3>
+<p>A <code>circuit</code> is our top level data structure for representing state. It consists of a clock value (either high or low) and a map of components. From <code>ids</code>s to <code>components</code>s. When we step the circuit we compute the new value of each register by evaluating its AST in the context of the current circuit.</p>
+<h3 id="formatted-circuit">Formatted Circuit</h3>
+<p>A <code>formatted_circuit</code> is an intermediate representation of a circuit with extra information added in to make rendering easy.</p>
+<div class="sourceCode"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span class="kw">type</span> connection = <span class="dt">Reg</span> <span class="kw">of</span> id | <span class="dt">Node</span> <span class="kw">of</span> <span class="dt">int</span> | <span class="dt">Let</span> <span class="kw">of</span> id
+
+<span class="kw">type</span> node =
+    | <span class="dt">B</span> <span class="kw">of</span> gate * connection * connection
+    | <span class="dt">L</span> <span class="kw">of</span> gate * connection * connection
+    | <span class="dt">A</span> <span class="kw">of</span> arithmetic * connection * connection
+    | <span class="dt">N</span> <span class="kw">of</span> negation * connection
+    | <span class="dt">C</span> <span class="kw">of</span> comparison * connection * connection
+    | <span class="dt">Sub</span> <span class="kw">of</span> <span class="dt">int</span> * <span class="dt">int</span> * connection
+    | <span class="dt">Nth</span> <span class="kw">of</span> <span class="dt">int</span> * connection
+    | <span class="dt">Red</span> <span class="kw">of</span> gate * connection
+    | <span class="dt">Concat</span> <span class="kw">of</span> connection <span class="dt">list</span>
+    | <span class="dt">Mux</span> <span class="kw">of</span> connection * connection * connection
+    | <span class="dt">Const</span> <span class="kw">of</span> bitstream
+    | <span class="dt">Apply</span> <span class="kw">of</span> id * connection <span class="dt">list</span>
+
+<span class="kw">type</span> display_reg_type = <span class="dt">Dis_rising</span> | <span class="dt">Dis_falling</span> | <span class="dt">Dis_input</span> | <span class="dt">Dis_output</span>
+
+<span class="kw">type</span> display_node = {
+    n_id : <span class="dt">int</span>;
+    n_x_coord: float;
+    n_y_coord: float;
+    node : node;
+}
+
+<span class="kw">type</span> display_let = {
+    l_id : id;
+    l_x_coord:float;
+    l_y_coord: float;
+    inputs: id <span class="dt">list</span>;
+}
+
+<span class="kw">type</span> display_register = {
+    r_id : id;
+    r_reg_type :  display_reg_type;
+    r_x_coord : float;
+    r_y_coord : float;
+    input : connection;
+}
+
+<span class="kw">type</span> formatted_circuit = {
+    registers : (id * display_register) <span class="dt">list</span>;
+    nodes     : (<span class="dt">int</span> * display_node) <span class="dt">list</span>;
+    lets      : (id * display_let) <span class="dt">list</span>
+}</code></pre></div>
+<h2 id="language-definition">Language Definition</h2>
+<p>Please refer to a fully written Language documentation under documentation/Language.pdf. This document outlines our language as well as provides example cases.</p>
+<h2 id="external-dependencies">External Dependencies</h2>
+<p>We will be using Js_of_ocaml, D3, OcamlLex, Menhir. The latter two, will allow us to easily lex and parse source files, the former will make building an interactive GUI significantly less challenging by binding our OCaml code to javascript.</p>
+<h2 id="testing-plan">Testing Plan</h2>
+<p>For testing, we used a mix of unit-, integration-, and hand-testing techniques to ensure our project works.</p>
+<p>Our <code>Bitstream</code> module was unit-tested to ensure that the representations of bitstreams and input values are well-constructed and correct. The functions in this module were unit-tested on a per-function basis, and its testing ensured that this utility was correct for use in other modules.</p>
+<p>Our simulator was tested via unit tests defined in <code>Test_simulator</code>. These unit tests integrated the <code>Parser</code>, <code>Lexer</code>, <code>Circuit</code>, and <code>Combinational</code> modules. In the tests we created different circuits in our language, changed the inputs of the circuit, and stepped the circuit in order to test the language generation and simulation. We probed register values in order to make sure all registers were being updated correctly based on our simulation.</p>
+<p>Our <code>Formatter</code> module was tested via unit tests defined in <code>Test_formatter</code>. In these tests, we created circuits and tested against the expected values the formatter should have. We probed the resultant data-structure generated by the <code>Formatter</code> to ensure that the formatting is expected and sound based on the circuits we're creating.</p>
+<p>We hand-tested our GUI (the product of our <code>Gui</code> module) with tests found in <code>test_gui</code>. These tests involved testing creating circuits on our gui, chaning inputs, and stepping them. The tests go through all features in our language including simple register values, basic gate, arithmatic, comparators, functions, substreams, concatanation, and lets as well as long examples and edge cases.</p>
+<h2 id="division-of-labor">Division of Labor</h2>
+<p>Reuben wrote the Parser, Lexer, and Static Analyzer. FLAG - Reuben</p>
+<p>Natasha wrote the Simulator and the unit tests for the simulator. She also wrote the GUI tests and helped with the language documentation and MS1/MS2 documentation. She wrote the Circuit.Simulator and Bitstream. However, Bitstream was re-written by Reuben after the group decided we wanted an O(1) access time and a 32 bit maximum on the registers. She esitmates she put in ~40 hours on the project between planning, designing, implementing, and testing.</p>
+<p>Celine wrote the Formatter. FLAG - Celine</p>
+<p>Joe wrote the GUI. FLAG - Joe</p>
+</body>
+</html>

@@ -21,10 +21,10 @@
     output D[4] = C
 
 (5)    
-    output D[2] 
+    output D[2] = 2'd300
 
 (6)
-    register HELLOIHAVEAREALLYLONGNAME[32]
+    register helloIhaveareallylongnameitisthis[32] = 32'd10
 
 (7)
     register A[32] = 32'b10101010101
