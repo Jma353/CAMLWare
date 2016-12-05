@@ -975,6 +975,8 @@ module Formatter : CircuitFormatter = struct
       lets      : (id * display_let) list
     }
 
+  (* [tree_to_list ast reg_list] is the (nodes, lets) where nodes is a list
+   * of all display nodes in ast and lets is a list of all lets *)
   let tree_to_list ast reg_list =
     let rec list_helper ast lets =
     match ast with
@@ -1060,11 +1062,12 @@ module Formatter : CircuitFormatter = struct
       (n2, new_let::l2)
   in list_helper ast []
 
+  (* [columnize_ast (nodes, lets, registers)] is (nodes', lets, registers)
+   * where nodes' is nodes topologically sorted in accordance with their
+   * dependencies *)
   let columnize_ast(nodes, lets, register) =
     let p8 = print_string (string_of_int (List.length lets)) in
-    let p9 = print_string "!!!!!!!\n" in
     let p10 = print_string (string_of_int (List.length nodes)) in
-    let p11 = print_string "!!!!!!!\n" in
     let new_nodes = List.map (fun x-> (x.n_id, x)) nodes in
     let new_lets = List.map (fun x -> (x.l_id, x)) lets in
     if (List.length new_nodes) = 0 then ([], new_lets)
@@ -1112,6 +1115,9 @@ module Formatter : CircuitFormatter = struct
         [[head;];]), new_lets)
       | _ -> ([], new_lets)
 
+  (* [make_ast_coordinates x_start x_end y_start y_end ast_columns lets] returns
+   * a list of nodes where all coordinates have been assigned
+   * for display purposes *)
   let make_ast_coordinates x_start x_end y_start y_end ast_columns lets =
     let x_gap =
       if lets
@@ -1145,6 +1151,9 @@ module Formatter : CircuitFormatter = struct
     y_helper col gap (y_start +. (gap/.2.))
   ) x_done
 
+  (* [format_lets x_coord y_start y_end lets] returns a completed list of
+   * display_let where each let is assigned coordinates to be placed on the screen
+   * and fit within the confines of an AST *)
   let format_lets x_coord y_start y_end lets =
     let y_gap = (y_end -. y_start)/.(float_of_int ((List.length lets) + 1)) in
     let rec let_helper unfinished curr_y =
@@ -1285,7 +1294,7 @@ module Formatter : CircuitFormatter = struct
       nodes = all_nodes;
     }
 
-
+(*****************FORMATTING FUNCTIONS**********************)
 let string_of_reg_type t =
   match t with
   | Dis_input -> "Input\n"
