@@ -1217,7 +1217,7 @@ module Formatter : CircuitFormatter = struct
 
   let handle_ast (id, (reg, nodes, lets)) x_start x_end y_start y_end =
     let final_y_coord = (y_start +. y_end) /. 2. in
-    let final_reg = (id, {input=reg.input; r_id = reg.r_id; r_x_coord = x_end; r_y_coord = y_end; r_reg_type = reg.r_reg_type}) in
+    let final_reg = (id, {input=reg.input; r_id = reg.r_id; r_x_coord = x_end; r_y_coord = final_y_coord; r_reg_type = reg.r_reg_type}) in
     let final_lets =
       if (List.length lets = 0) then []
       else (format_lets x_start y_start y_end lets) in
