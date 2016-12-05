@@ -460,7 +460,7 @@ module Miscs = struct
     let h       = w *. 0.3 in
     let g       = container x y in
     let frame   = rect_c w h 0. (edge *. 0.5 -. h *. 0.5) 6. 6. in
-    let words   = text (w *. 0.5) (edge *. 0.5) (w /. 7.5) "" hex_str in
+    let words   = text (w *. 0.5) (edge *. 0.5) (w /. 8.) "" hex_str in
     svg |- (g |- frame |- words)
 
   (* MUX2 Component *)
