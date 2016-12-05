@@ -2,6 +2,9 @@ open D3
 open Extensions
 open Circuit
 
+(* NOTE: We go over the 80 character limit for the sake of clarity in terms
+ * of listing the components that are buildable via specific arguments *)
+
 (* Wiring *)
 val wiring   : float  -> float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 val l_tunnel : string -> float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
@@ -28,7 +31,8 @@ val bitwise_not : float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
 
 (* SubBits *)
 val nth_c     : int -> float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t
-val sub_seq_c : int -> int   -> float -> float -> float         -> ('a, 'b) D3.t -> ('a, 'b) D3.t
+val sub_seq_c : int -> int   -> float -> float -> float ->
+  ('a, 'b) D3.t -> ('a, 'b) D3.t
 
 (* Registers *)
 val u_register : Bitstream.bitstream -> string -> float -> float -> float -> ('a, 'b) D3.t -> ('a, 'b) D3.t

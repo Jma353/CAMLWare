@@ -19,7 +19,7 @@ let step_and_return () =
     clock := new_c;
     let new_circ = Circuit.Simulator.step c in
     circ := Some(new_circ);
-    (new_c, Some(new_circ))
+    (new_c, !circ)
 
 (* Compiles the circuit given a string, updates the circuit, and resets
  * the clock.

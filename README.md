@@ -1,5 +1,8 @@
 # CAMLWare
 
+**NOTE: THIS DOES NOT WORK IN SAFARI, PLZ USE CHROME**
+
+
 To prepare:
 
 `Python` must be installed because the command `python -m SimpleHTTPServer 8000` is utilized in the `run` script (running `D3` JavaScript code in a server environment is always the move).
