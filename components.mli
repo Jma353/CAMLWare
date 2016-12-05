@@ -1,3 +1,9 @@
+(* Components
+ *
+ * Components is a module which houses generic functions for drawing circuit
+ * components (gates, arithmetics modules, etc.) *)
+
+
 open D3
 open Extensions
 open Circuit

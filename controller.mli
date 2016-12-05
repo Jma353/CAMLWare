@@ -1,3 +1,12 @@
+(* Controller
+ *
+ * Controller links view and model, facilitating view changes and augmenting
+ * the model via the model's state-changing functions.  Controller functions
+ * take in functions that the view provides it that allow it to change
+ * the view after model updates.  This allows for events to trigger controller
+ * functions, which have a means of updating the state and then updating the
+ * view. *)
+
 open D3
 open Extensions
 
