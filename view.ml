@@ -142,7 +142,8 @@ let rec collect_registers (regs: display_register list) acc =
 
 (* Collect Lets
  *
- * This function collects all the let-statements of this variant of the circuit *)
+ * This function collects all the let-statements of this variant of the
+ * circuit *)
 let rec collect_lets (lets: display_let list) acc =
   match lets with
   | [] -> acc
