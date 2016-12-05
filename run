@@ -1,4 +1,3 @@
-export ocamlbuildflags="-use-menhir -yaccflag"
 make
 js_of_ocaml gui.byte
 python -m SimpleHTTPServer 8000

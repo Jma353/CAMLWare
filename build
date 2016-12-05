@@ -1,2 +1,1 @@
 oasis setup
-export ocamlbuildflags="-use-menhir -yaccflag"
