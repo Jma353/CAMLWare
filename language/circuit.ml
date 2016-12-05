@@ -806,6 +806,8 @@ module Formatter : CircuitFormatter = struct
           (fun k _ -> not (StringMap.mem k new_finished)) not_finished in
       dependency_helper new_not_finished new_finished (new_col::cols) reg_deps
 
+  (* [columnize_registers circ] returns a listof register columns as
+   * they will be displayed by the GUI *)
   let columnize_registers circ =
     let reg = get_all_registers circ in
     let inputs = find_inputs reg in
@@ -840,6 +842,7 @@ module Formatter : CircuitFormatter = struct
       ) (find_outputs reg) in
   (inputs, final_registers, final_outputs)
 
+  (* [get_ids ast] is the id of the node at the top of ast *)
   let get_ids ast =
     match ast with
     | Id_Const (id, _ ) -> id
@@ -875,12 +878,16 @@ module Formatter : CircuitFormatter = struct
     | Const of bitstream
     | Apply of id * connection list
 
+  (*whether or not a node has been resolved in the topologically sort,
+   * accounting fot the connection type **helper function** *)
   let is_finished connection complete =
     match connection with
     | Reg _ -> true
     | Let _-> true
     | Node n -> List.mem_assoc n complete
 
+  (*whether or not a node has been resolved in the topologically sort,
+   * accounting fot the connection type *)
   let node_complete node complete =
     match node with
     | B (_, c1, c2) -> (is_finished c1 complete)&&(is_finished c2 complete)
@@ -900,6 +907,7 @@ module Formatter : CircuitFormatter = struct
     | Apply (_, c_list) -> List.for_all (fun x -> is_finished x complete) c_list
 
 
+  (* [process_conn]*)
   let process_conn reg_list comb =
     match comb with
     | Id_Var (_, v) ->
@@ -1022,6 +1030,7 @@ module Formatter : CircuitFormatter = struct
       let (n1, l1) = List.split (List.map (fun x -> list_helper x []) c_list) in
       (n::(List.flatten n1), lets@(List.flatten l1))
     | Id_Let (id, var, c1, c2) ->
+      let p2 = "in processing let\n" in
       let inputs = list_dependencies c1 reg_list in
       let new_let = {l_y_coord=0.; l_x_coord=0.; l_id=var; inputs=inputs} in
       let (n2, l2) = list_helper c2 [] in
@@ -1120,20 +1129,21 @@ module Formatter : CircuitFormatter = struct
         ::(let_helper t (curr_y +. y_gap))
     in let_helper lets (y_start +. y_gap)
 
+  let rec uncover_input comb reg_list =
+    match comb with
+    | Id_Var (_, var_id) ->
+      if (StringMap.mem var_id reg_list) then (Reg var_id)
+      else (Let var_id)
+    | Id_Let (node_id, var_id, _, c2) -> uncover_input c2 reg_list
+    | x -> let p1 = print_string "finding input2!!!\n" in
+    (Node (get_ids x))
+
   let return_register_nodes column reg_list =
     let rec col_helper col =
       match col with
       | [] -> []
       | (id, (reg, ast))::t ->
-        let r_input =
-          let p1 = print_string "finding input!!!\n" in
-          match ast with
-          | Id_Var (_, var_id) ->
-            if (StringMap.mem var_id reg_list) then (Reg var_id)
-            else (Let var_id)
-          | Id_Let (node_id, var_id, _, _) -> Let var_id
-          | x -> let p1 = print_string "finding input2!!!\n" in
-          (Node (get_ids x)) in
+        let r_input = uncover_input ast reg_list in
       (id, ({r_x_coord=0.; r_y_coord=0.;
             r_reg_type=(reg_type_to_display (reg.reg_type));
             input=r_input; r_id=id}, ast))
