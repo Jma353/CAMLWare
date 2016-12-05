@@ -236,7 +236,7 @@ module Gates = struct
   (* COMPONENTS *)
 
   (* Arithmetic NOT Component *)
-  let arith_not (x:float) (y:float) (edge:float) svg =
+  let bitwise_not (x:float) (y:float) (edge:float) svg =
     svg |> not_helper x y edge
 
   (* Arithmetic AND Component *)
@@ -300,8 +300,8 @@ module Gates = struct
     svg |> box_with_symbol x y edge "!"
 
   (* Bitwise NOT Component *)
-  let bitwise_not (x:float) (y:float) (edge:float) svg =
-    svg |> box_with_symbol x y edge "!(b)"
+  let arith_not (x:float) (y:float) (edge:float) svg =
+    svg |> box_with_symbol x y edge "(-)"
 
 end
 
