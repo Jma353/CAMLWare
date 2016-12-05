@@ -476,7 +476,7 @@ module Miscs = struct
     let i1_label  = text (edge *. 0.2) (edge *. 0.5) (edge /. 7.5) "" "i_1" in
     let sel_label = text (edge *. 0.2) (edge *. 0.7) (edge /. 7.5) "" "sel" in
     let out_wire  = (line_comp (edge *. 0.6) (edge /. 2.) edge (edge /. 2.)) in
-    svg |- g |- my_path |- i0_label |- i1_label |- sel_label |- out_wire
+    svg |- (g |- my_path |- i0_label |- i1_label |- sel_label |- out_wire)
 
   (* Let-statement Component *)
   let let_c v (x:float) (y:float) (edge:float) svg =
