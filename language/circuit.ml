@@ -195,6 +195,8 @@ let format_circuit f circ =
 (************************ eval ***********************)
 
 module Simulator : CircuitSimulator = struct
+  
+  (* [eval_gates] returns a bitstream after evaluating b1 and b2 by gate g *)
   let rec eval_gates bin_op bin_not g b1 b2 =
     match g with
     | And -> bin_op and_bits b1 b2
@@ -204,6 +206,7 @@ module Simulator : CircuitSimulator = struct
     | Nor -> bin_not (bin_op or_bits b1 b2)
     | Nxor -> bin_not (bin_op xor_bits b1 b2)
 
+  (* [eval_reduce] returns a bitstream after reducing b by gate g *)
   let rec eval_reduce g b1 =
     match g with
     | And -> reduce and_bits b1
@@ -213,12 +216,15 @@ module Simulator : CircuitSimulator = struct
     | Nor ->  bitwise_not (reduce or_bits b1)
     | Nxor -> bitwise_not (reduce xor_bits b1)
 
+  (* [eval_nag] returns a bitstream after negating b by negation n *)
   let eval_neg n b1 =
     match n with
     | Neg_bitwise -> bitwise_not b1
     | Neg_logical -> logical_not b1
     | Neg_arithmetic -> negate b1
 
+  (* [eval_comp] returns a bitstream that is comparing b1 b2 by comparator 
+  comp *)
   let eval_comp comp b1 b2 =
     match comp with
      | Lt -> less_than b1 b2
@@ -228,6 +234,8 @@ module Simulator : CircuitSimulator = struct
      | Gte -> logical_binop or_bits (greater_than b1 b2) (equals b1 b2)
      | Neq -> logical_not (equals b1 b2)
 
+  (* [eval_comp] returns a bitstream that is evaluating b1 b2 by arithmatic 
+  arth *)
   let eval_arith arth b1 b2 =
     match arth with
     | Add -> add b1 b2
@@ -236,14 +244,17 @@ module Simulator : CircuitSimulator = struct
     | Srl -> shift_right_logical b1 b2
     | Sra -> shift_right_arithmetic b1 b2
 
+  (* [subcirc_len_check] truncates or zero extends b to match length len *)
   let subcirc_len_check b len =
     if length b < len then (zero_extend len b)
     else if length b > len then substream b 0 (len - 1)
     else b
 
+  (* [extend_bits] zero extends b by the max of l1, l2 *)
   let extend_bits b l1 l2 =
     if l1 > l2 then zero_extend l1 b else zero_extend l2 b
 
+  (* [eval_hlpr] evaluates the comb in circ via big-step semantics *)
   let rec eval_hlpr circ comb env =
      match comb with
     | Const b -> b
@@ -334,11 +345,13 @@ module Simulator : CircuitSimulator = struct
                   Register {r with value = new_val}
                 else Register r
 
+  (* update_rising_falling updates rising and falling registers only *)
   let update_rising_falling circ c =
     match c with
       | Register r -> eval_regs r circ
       | _ -> c
 
+  (* update_output updates one output defined by c *)
   let update_output circ c =
     match c with
       | Register r -> (match (r.next, r.reg_type) with

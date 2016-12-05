@@ -1,6 +1,5 @@
 open D3
 open Extensions
-open Model
 
 (* Clock UI update *)
 let set_clock num =
@@ -8,29 +7,26 @@ let set_clock num =
   let new_content = "Clock: " ^ string_of_int num in
   Js.Unsafe.set (clock_lol) "innerHTML" (Js.string new_content)
 
-
-(* On clicking on an input register *)
+(* STATE CHANGE
+ * On clicking on an input register *)
 let did_change_input f id =
   let msg = "Enter a new hexadecimal value for input " ^ id in
   let num = prompt msg "" in
-  let b = Bitstream.bitstream_of_hexstring num in
-  let old_circ = !(Model.circ) in
-  match old_circ with
+  let model_mods = Model.change_input_and_return id num in
+  set_clock (fst model_mods);
+  match (snd model_mods) with
   | None -> ()
   | Some (c) ->
-    let new_circ = Circuit.Simulator.change_input id b c in
-    Model.circ := Some(new_circ);
-    f new_circ; ()
+    f c; ()
 
-
-(* On stepping a circuit *)
+(* STATE CHANGE
+ * On stepping a circuit *)
 let did_step f () =
-  let clock_val, new_circ = step_and_return () in
+  let clock_val, new_circ = Model.step_and_return () in
   set_clock clock_val;
   match new_circ with
   | None -> ()
   | Some (c) -> f c; ()
-
 
 let rec make_lines s =
   match try Some (String.index s '\n') with Not_found -> None with
@@ -46,21 +42,20 @@ let change_newlines s =
     | h::t -> h ^ "<br>" ^ (helper t) in
   helper lines
 
-
-(* On compiling - update the state of the reference we're dealing with and
- * call function f *)
+(* STATE CHANGE
+ * On compiling - update the state of the reference we're dealing
+ * with and call function f *)
 let did_compile f () =
-  let comp_helper msg circ =
-    Model.clock := 0; set_clock 0;
+  let comp_helper msg num circ =
+    set_clock num;
     let debug = get_element_by_class_name "debug-output" in
     Js.Unsafe.set (debug) "innerHTML" (Js.string msg);
-    Model.circ := circ;
     f circ; () in
   let text_area = get_element_by_class_name "code" in
   let code = Js.Unsafe.get (text_area) "value" |> Js.to_string in
-  let parse_result = Parse.parse_circuit code in
-  match parse_result with
+  let model_mods = Model.compile_and_return code in
+  match (snd model_mods) with
   | Parse.Error s ->
-    comp_helper (change_newlines s) None
+    comp_helper (change_newlines s) (fst model_mods) None
   | Parse.Result c ->
-      comp_helper "Debug output" (Some(c))
+    comp_helper "Debug output" (fst model_mods) (Some(c))
