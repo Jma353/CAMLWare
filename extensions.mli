@@ -1,3 +1,10 @@
+(* Extensions
+ *
+ * Extensions is a utility file that contains extensions to the js_of_ocaml
+ * bindings for D3, as well as some helper functions related to working
+ * with JavaScript-esque functionality in OCaml *)
+
+
 (* Translation style string helper *)
 val translate : int -> int -> string
 

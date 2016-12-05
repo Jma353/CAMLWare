@@ -1,3 +1,11 @@
+(* Model
+ *
+ * Model houses the state of the app and houses functions that augment and
+ * return state changes.  The state of the app consists of the current
+ * circuit and the clock state, but no other module specifically touches
+ * these values. *)
+
+
 open D3
 open Extensions
 
