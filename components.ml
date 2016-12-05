@@ -147,13 +147,13 @@ module Gates = struct
    * Assists in the creation of a NOT gate
    * NOTE: Adds it to an SVG `svg` *)
   let not_helper (x:float) (y:float) (edge:float) svg =
-    let tl      = (x +. edge *. 0.2, y +. edge *. 0.2) in
-    let mr      = (x +. edge *. 0.7, y +. edge *. 0.5) in
-    let bl      = (x +. edge *. 0.2, y +. edge *. 0.8) in
+    let tl      = (x, y +. edge *. 0.2) in
+    let mr      = (x +. edge *. 0.8, y +. edge *. 0.5) in
+    let bl      = (x, y +. edge *. 0.8) in
     let d       = _d [tl;mr;bl;tl] in
     let my_path = path d "linear" in
     let r       = 0.1 *. edge in
-    let cx      = (x +. edge *. 0.7 +. r) in
+    let cx      = (x +. edge *. 0.8 +. r) in
     let cy      = (y +. 0.5 *. edge) in
     let circ    = circ_c cx cy r in
     svg |- my_path |- circ
@@ -489,6 +489,12 @@ module Miscs = struct
   (* Concat Component *)
   let concat_c (x:float) (y:float) (edge:float) svg =
     svg |> box_with_symbol x y edge "Concat"
+
+  (* SVG Container *)
+  let svg_container_div svg_elmt =
+    static "div"
+    |. str attr "class" "svg-house"
+    |. seq [svg_elmt]
 
   (* Initial View Component *)
   let initial_svg width height padding =

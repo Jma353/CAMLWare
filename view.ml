@@ -7,9 +7,7 @@ open Combinational
 
 
 (* Sizes *)
-let width = 800
-let height = 400
-let padding = 100
+let padding = 90
 let nonNodeS = 60.
 let nodeS = 50.
 
@@ -21,12 +19,10 @@ let make_non_node_scale dim = make_scale dim nonNodeS
 
 
 (* Dimensions & scaling *)
-let width_f    = float_of_int width
-let height_f   = float_of_int height
-let x_nn_scale = make_non_node_scale width_f
-let y_nn_scale = make_non_node_scale height_f
-let x_n_scale  = make_node_scale width_f
-let y_n_scale  = make_node_scale height_f
+let x_nn_scale = ref (make_non_node_scale 800.)
+let y_nn_scale = ref (make_non_node_scale 400.)
+let x_n_scale  = ref (make_node_scale 800.)
+let y_n_scale  = ref (make_node_scale 400.)
 
 
 (* Mini-Int Module for Maps *)
@@ -39,12 +35,74 @@ module Int = struct
     else 0
 end
 
+(* Mini-Float Module for Sets *)
+module Float = struct
+  type t = float
+  let make n : t = n
+  let compare n1 n2 : int =
+    if n1 < n2 then -1
+    else if n1 > n2 then 1
+    else 0
+end
 
-(* Maps *)
+(* Maps + Sets *)
 module IntMap = Map.Make(Int)
+module FloatSet = Set.Make(Float)
 
 (* Representing an output *)
 type point = { x : float; y : float }
+
+(* Get Dimensions
+ *
+ * Gets the dimensions based on the overall coordinates of the formatted
+ * circuit *)
+let get_dims (f_circ: formatted_circuit) =
+  let xSet = FloatSet.empty in
+  let ySet = FloatSet.empty in
+
+  (* Accumulator for registers *)
+  let rec reg_coords regs acc =
+    match regs with
+    | [] -> acc
+    | (_,dr)::t ->
+      let newXSet = FloatSet.add (Float.make dr.r_x_coord) (fst acc) in
+      let newYSet = FloatSet.add (Float.make dr.r_y_coord) (snd acc) in
+      reg_coords t (newXSet, newYSet)
+  in
+
+  (* Accumulator for lets *)
+  let rec let_coords lets acc =
+    match lets with
+    | [] -> acc
+    | (_,dl)::t ->
+      let newXSet = FloatSet.add (Float.make dl.l_x_coord) (fst acc) in
+      let newYSet = FloatSet.add (Float.make dl.l_y_coord) (snd acc) in
+      let_coords t (newXSet, newYSet)
+  in
+
+  (* Accumulator for nodes *)
+  let rec node_coords nodes acc =
+    match nodes with
+    | [] -> acc
+    | (_,nl)::t ->
+      let newXSet = FloatSet.add (Float.make nl.n_x_coord) (fst acc) in
+      let newYSet = FloatSet.add (Float.make nl.n_y_coord) (snd acc) in
+      node_coords t (newXSet, newYSet)
+  in
+
+  (* Build sets *)
+  let result = (xSet,ySet)
+    |> reg_coords (f_circ.registers)
+    |> let_coords (f_circ.lets)
+    |> node_coords (f_circ.nodes) in
+
+  (* Determine dimensions *)
+  let total_x = List.length (FloatSet.elements (fst result)) in
+  let total_y = List.length (FloatSet.elements (snd result)) in
+  let nn_int = int_of_float nonNodeS in
+  (total_x * nn_int * 2 + 80, total_y * nn_int * 2 + 80)
+
+
 
 (* Update Registers
  *
@@ -65,14 +123,17 @@ let rec collect_registers (regs: display_register list) acc =
   match regs with
   | [] -> acc
   | h::t ->
-  let x = x_nn_scale h.r_x_coord in
-  let y = y_nn_scale h.r_y_coord in
+  let x = !x_nn_scale h.r_x_coord in
+  let y = !y_nn_scale h.r_y_coord in
   let zeros = Bitstream.zeros 32 in
   let id = h.r_id in
   begin match h.r_reg_type with
-    | Dis_rising  -> collect_registers t ((u_register zeros id x y nonNodeS)::acc)
-    | Dis_falling -> collect_registers t ((d_register zeros id x y nonNodeS)::acc)
-    | Dis_output  -> collect_registers t ((o_register zeros id x y nonNodeS)::acc)
+    | Dis_rising  -> (collect_registers t
+                      ((u_register zeros id x y nonNodeS)::acc))
+    | Dis_falling -> (collect_registers t
+                      ((d_register zeros id x y nonNodeS)::acc))
+    | Dis_output  -> (collect_registers t
+                      ((o_register zeros id x y nonNodeS)::acc))
     | Dis_input   ->
       let f = Controller.did_change_input update_registers in
       collect_registers t ((i_register f zeros id x y nonNodeS)::acc)
@@ -86,8 +147,8 @@ let rec collect_lets (lets: display_let list) acc =
   match lets with
   | [] -> acc
   | h::t ->
-  let x = x_nn_scale h.l_x_coord in
-  let y = y_nn_scale h.l_y_coord in
+  let x = !x_nn_scale h.l_x_coord in
+  let y = !y_nn_scale h.l_y_coord in
   let id = h.l_id in
   collect_lets t ((let_c id x y nonNodeS)::acc)
 
@@ -130,8 +191,8 @@ let rec collect_wires map (n_s:display_node list) acc =
 
   (* Adds wiring based on the type of node to exist *)
   let handle_wiring (n:display_node) acc =
-    let cx = x_n_scale n.n_x_coord in
-    let cy = y_n_scale n.n_y_coord in
+    let cx = !x_n_scale n.n_x_coord in
+    let cy = !y_n_scale n.n_y_coord in
     match n.node with
     | B (_,c1,c2)     -> process_node_wirings [c1;c2] cx cy acc
     | L (_,c1,c2)     -> process_node_wirings [c1;c2] cx cy acc
@@ -161,8 +222,8 @@ let rec finalize_tunnels map (regs: display_register list) acc =
   let process_reg_tunnel reg acc =
     match reg.input with
     | Reg id | Let id ->
-      let x_r = x_nn_scale reg.r_x_coord in
-      let y_r = y_nn_scale reg.r_y_coord in
+      let x_r = !x_nn_scale reg.r_x_coord in
+      let y_r = !y_nn_scale reg.r_y_coord in
       (l_tunnel id x_r (y_r +. nonNodeS /. 2.) nonNodeS)::acc
     | Node i ->
       if i <> -1 then
@@ -187,8 +248,8 @@ let rec collect_nodes (n:display_node list) acc =
   let handle_node (n:display_node) stuff =
     let id_i = Int.make n.n_id in
     let acc = snd stuff in
-    let x = x_n_scale n.n_x_coord in
-    let y = y_n_scale n.n_y_coord in
+    let x = !x_n_scale n.n_x_coord in
+    let y = !y_n_scale n.n_y_coord in
     let map = (IntMap.add id_i
       {x = x +. nodeS; y = y +. nodeS /. 2.}
       (fst stuff)) in
@@ -257,6 +318,8 @@ let rec collect_nodes (n:display_node list) acc =
  *
  * Creates a circuit *)
 let make circ =
+  (* Clears the SVG div *)
+  plz_run (select ".svg-house" |. html (fun _ _ _ -> ""));
 
   (* Applies all views to a container *)
   let rec apply_views views container =
@@ -265,13 +328,19 @@ let make circ =
     | h::t -> apply_views t (container |> h)
   in
 
+  (* Adds the an SVG to the div *)
+  let add_svg s =
+    (select ".svg-house"
+    |. seq [s])
+  in
+
   (* Collects a list of functions to be applied to a view, as well as map
-   * info regarding inputs & outputs. *)
-  let collect_views (op_c: circuit option) =
-    (* Clears the view *)
-    plz_run (select ".circuit" |. html (fun _ _ _ -> ""));
+   * info regarding inputs & outputs.  Sets up changes to be applied to the
+   * SVG. *)
+  let build_view (op_c: circuit option) =
     match op_c with
-    | None -> []
+    | None ->
+      add_svg (initial_svg 800 400 padding)
     | Some a_c ->
 
       (* Format the circuit *)
@@ -279,6 +348,15 @@ let make circ =
 
       (* Helper function *)
       let get_second = (fun (_,x) -> x) in
+
+      (* Change scaling functions *)
+      let dims = get_dims c in
+      let x_f = float_of_int (fst dims) in
+      let y_f = float_of_int (snd dims) in
+      x_nn_scale := make_non_node_scale x_f;
+      y_nn_scale := make_non_node_scale y_f;
+      x_n_scale  := make_node_scale x_f;
+      y_n_scale  := make_node_scale y_f;
 
       (* Format info *)
       let registers  = List.map get_second c.registers in
@@ -294,11 +372,16 @@ let make circ =
       let map        = fst stuff in
       let wires      = collect_wires map c_nodes [] in
       let tunnels    = finalize_tunnels map registers [] in
-      regs @ lets @ nodes @ wires @ tunnels
+
+      (* Our result :) *)
+      let colletion = regs @ lets @ nodes @ wires @ tunnels in
+      let init = initial_svg (int_of_float x_f) (int_of_float y_f) padding in
+      add_svg (apply_views colletion init)
+
   in
 
-  (* Our resultant *)
-  let result = apply_views (collect_views circ) (select ".circuit") in
+  (* View to be built *)
+  let result = build_view circ in
 
   (* Apply it to the view *)
   plz_run result;
@@ -308,10 +391,12 @@ let make circ =
   | None -> ()
   | Some c -> update_registers c
 
+
 (* Initial view for compiling *)
 let init_view () =
-  let init = initial_svg width height padding in
+  let init = initial_svg 600 300 padding in
+  let svg_container = svg_container_div init in
   let div = compile_area (Controller.did_compile make) in
   let step_b = step_btn (Controller.did_step update_registers) in
   let clock_c = clock () in
-  seq [div; init; step_b; clock_c]
+  seq [div; svg_container; step_b; clock_c]
