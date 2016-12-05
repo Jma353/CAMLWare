@@ -684,20 +684,27 @@ module Formatter : CircuitFormatter = struct
       | Sub_seq(i1, i2, comb) -> Id_Sub_seq (newvar (), i1, i2, id_helper comb)
       | Nth (n, comb) -> Id_Nth (newvar (), n, id_helper comb)
       | Gate (g, c1, c2) ->  Id_Gate (newvar (), g, id_helper c1, id_helper c2)
-      | Logical(l, c1, c2) -> Id_Logical(newvar (), l, id_helper c1, id_helper c2)
+      | Logical(l, c1, c2) ->
+        Id_Logical(newvar (), l, id_helper c1, id_helper c2)
       | Reduce (g, comb) -> Id_Reduce (newvar (), g, id_helper comb)
       | Neg (n, comb) -> Id_Neg (newvar (), n, id_helper comb)
       | Comp(c, c1, c2) -> Id_Comp (newvar (), c, id_helper c1, id_helper c2)
       | Arith (o, c1, c2) -> Id_Arith (newvar (), o, id_helper c1, id_helper c2)
-      | Concat (c_list) -> Id_Concat (newvar (), (List.map (function x -> id_helper x) c_list))
-      | Mux2 (c1, c2, c3) -> Id_Mux2 (newvar (), id_helper c1, id_helper c2, id_helper c3)
-      | Apply (id, c_list) -> Id_Apply (newvar (), id, (List.map (function x -> id_helper x) c_list))
-      | Let (id, c1, c2) -> Id_Let (newvar (), id, id_helper c1, id_helper c2)
+      | Concat (c_list) ->
+        Id_Concat (newvar (), (List.map (function x -> id_helper x) c_list))
+      | Mux2 (c1, c2, c3) ->
+        Id_Mux2 (newvar (), id_helper c1, id_helper c2, id_helper c3)
+      | Apply (id, c_list) ->
+        Id_Apply (newvar (), id, (List.map (function x -> id_helper x) c_list))
+      | Let (id, c1, c2) ->
+        Id_Let (newvar (), id, id_helper c1, id_helper c2)
     in id_helper ast
 
   let get_all_registers circ =
   let reg =
-    (StringMap.filter (fun k v -> match v with |Register _ -> true | _ -> false) circ.comps)
+    (StringMap.filter
+      (fun k v -> match v with |Register _ -> true | _ -> false)
+    circ.comps)
     in
   (StringMap.map
     (fun v ->
@@ -716,19 +723,26 @@ module Formatter : CircuitFormatter = struct
       | Id_Var (_, v) -> if (StringMap.mem v reg_list) then v::dep else dep
       | Id_Sub_seq (_,_, _, comb) -> (dependency_helper comb dep)
       | Id_Nth (_,_, comb) -> (dependency_helper comb dep)
-      | Id_Gate (_,_, c1, c2) -> (dependency_helper c1 dep)@(dependency_helper c2 dep)
-      | Id_Logical(_,_, c1, c2) -> (dependency_helper c1 dep)@(dependency_helper c2 dep)
+      | Id_Gate (_,_, c1, c2) ->
+        (dependency_helper c1 dep)@(dependency_helper c2 dep)
+      | Id_Logical(_,_, c1, c2) ->
+        (dependency_helper c1 dep)@(dependency_helper c2 dep)
       | Id_Reduce (_,_, comb) -> (dependency_helper comb dep)
       | Id_Neg (_,_, comb) -> (dependency_helper comb dep)
-      | Id_Comp(_,_, c1, c2) -> (dependency_helper c1 dep)@(dependency_helper c2 dep)
-      | Id_Arith (_,_, c1, c2) -> (dependency_helper c1 dep)@(dependency_helper c2 dep)
+      | Id_Comp(_,_, c1, c2) ->
+        (dependency_helper c1 dep)@(dependency_helper c2 dep)
+      | Id_Arith (_,_, c1, c2) ->
+        (dependency_helper c1 dep)@(dependency_helper c2 dep)
       | Id_Concat (_,c_list) -> List.fold_left
         (fun acc c -> acc@(dependency_helper c acc)) dep c_list
       | Id_Mux2 (_,c1, c2, c3) ->
-        (dependency_helper c1 dep)@(dependency_helper c2 dep)@(dependency_helper c3 dep)
+        (dependency_helper c1 dep)
+        @(dependency_helper c2 dep)
+        @(dependency_helper c3 dep)
       | Id_Apply (_,_, c_list) -> List.fold_left
         (fun acc c -> acc@(dependency_helper c acc)) dep c_list
-      | Id_Let (_,_, c1, c2) -> (dependency_helper c1 dep)@(dependency_helper c2 dep)
+      | Id_Let (_,_, c1, c2) ->
+        (dependency_helper c1 dep)@(dependency_helper c2 dep)
       in List.sort_uniq id_comp (dependency_helper ast [])
 
   let no_inputs reg_list =
@@ -762,9 +776,12 @@ module Formatter : CircuitFormatter = struct
         let f = StringMap.filter resolved not_finished in
         if (StringMap.cardinal f = 0) then not_finished
         else f in
-      let new_finished = StringMap.union (fun k vi v2 -> Some v2) finished new_col in
-      let new_not_finished = StringMap.filter (fun k _ -> not (StringMap.mem k new_finished)) not_finished in
-
+      let new_finished =
+        StringMap.union
+          (fun k vi v2 -> Some v2) finished new_col in
+      let new_not_finished =
+        StringMap.filter
+          (fun k _ -> not (StringMap.mem k new_finished)) not_finished in
       dependency_helper new_not_finished new_finished (new_col::cols) reg_deps
 
   let columnize_registers circ =
@@ -775,13 +792,16 @@ module Formatter : CircuitFormatter = struct
     let reg_deps =
       StringMap.mapi
       (fun id (r, ast) ->
-        let dependencies = List.filter (fun x -> x <> id) (list_dependencies ast reg) in
+        let dependencies =
+          List.filter (fun x -> x <> id) (list_dependencies ast reg) in
         (r, ast, dependencies)
       )
       new_asts in(*now id -> register, id_ast, dependencies*)
-    let fake_inputs = StringMap.map (fun value -> (value, Id_Const (1, create [true;]), [])) inputs in
-    let registers = List.rev (dependency_helper reg_deps fake_inputs [] reg_deps) in
-
+    let fake_inputs =
+      StringMap.map
+        (fun value -> (value, Id_Const (1, create [true;]), [])) inputs in
+    let registers =
+      List.rev (dependency_helper reg_deps fake_inputs [] reg_deps) in
      let final_registers = List.map (
        fun reg_col -> (
           StringMap.map (fun (reg, ast, dep) -> (reg, ast)) reg_col
@@ -850,16 +870,13 @@ module Formatter : CircuitFormatter = struct
     | Nth (_, c) -> (is_finished c complete)
     | Red (_, c) -> (is_finished c complete)
     | Concat (c_list) -> List.for_all (fun x -> is_finished x complete) c_list
-    | Mux (c1, c2, c3) -> (is_finished c1 complete)&&(is_finished c2 complete)&&(is_finished c3 complete)
+    | Mux (c1, c2, c3) ->
+      (is_finished c1 complete)
+      &&(is_finished c2 complete)
+      &&(is_finished c3 complete)
     | Const _ -> true
     | Apply (_, c_list) -> List.for_all (fun x -> is_finished x complete) c_list
 
-(*   type display_info = {
-    y_coord : float;
-    id : int;
-    node : node;
-    parents : int list;
-  } *)
 
   let process_conn reg_list comb =
     match comb with
@@ -913,55 +930,73 @@ module Formatter : CircuitFormatter = struct
     | Id_Var (id, v) ->
       ([], lets)
     | Id_Sub_seq(id, i1, i2, comb) ->
-      let n = {n_y_coord=0.; n_x_coord=0.; n_id=id; node = Sub (i1, i2, (process_conn reg_list comb))} in
+      let n =
+        {n_y_coord=0.; n_x_coord=0.; n_id=id;
+         node = Sub (i1, i2, (process_conn reg_list comb))} in
       let (n1, l2) = list_helper comb lets in
       (n::n1, lets@l2)
     | Id_Nth (id, i, comb) ->
-      let n = {n_y_coord=0.; n_x_coord=0.; n_id=id; node = Nth (i, (process_conn reg_list comb))} in
+      let n = {n_y_coord=0.; n_x_coord=0.; n_id=id;
+               node = Nth (i, (process_conn reg_list comb))} in
       let (n1, l2) = list_helper comb lets in
       (n::n1, lets@l2)
     | Id_Gate (id, g, c1, c2) ->
-      let n = {n_y_coord=0.; n_x_coord=0.; n_id=id; node = B (g, (process_conn reg_list c1), (process_conn reg_list c2))} in
+      let n = {n_y_coord=0.; n_x_coord=0.; n_id=id;
+               node = B (g, (process_conn reg_list c1),
+               (process_conn reg_list c2))} in
       let (n1, l1) = list_helper c1 [] in
       let (n2, l2) = list_helper c2 [] in
       (n::(n1@n2), lets@l1@l2)
     | Id_Logical (id, g, c1, c2) ->
-      let n = {n_y_coord=0.; n_x_coord=0.; n_id=id; node = L (g, (process_conn reg_list c1), (process_conn reg_list c2))} in
+      let n = {n_y_coord=0.; n_x_coord=0.; n_id=id;
+               node = L (g, (process_conn reg_list c1),
+               (process_conn reg_list c2))} in
       let (n1, l1) = list_helper c1 [] in
       let (n2, l2) = list_helper c2 [] in
       (n::(n1@n2), lets@l1@l2)
     | Id_Reduce ( id, g, comb ) ->
-      let n = {n_y_coord=0.; n_x_coord=0.; n_id=id; node = Red (g, (process_conn reg_list comb))} in
+      let n = {n_y_coord=0.; n_x_coord=0.; n_id=id;
+               node = Red (g, (process_conn reg_list comb))} in
       let (n1, l2) = list_helper comb [] in
       (n::n1, lets@l2)
     | Id_Neg (id, neg, comb) ->
-      let n = {n_y_coord=0.; n_x_coord=0.; n_id=id; node = N (neg, (process_conn reg_list comb))} in
+      let n = {n_y_coord=0.; n_x_coord=0.; n_id=id;
+               node = N (neg, (process_conn reg_list comb))} in
       let (n1, l2) = list_helper comb lets in
       (n::n1, lets@l2)
     | Id_Comp(id, c, c1, c2) ->
-      let n = {n_y_coord=0.; n_x_coord=0.; n_id=id; node = C (c, (process_conn reg_list c1), (process_conn reg_list c2))} in
+      let n = {n_y_coord=0.; n_x_coord=0.; n_id=id;
+              node = C (c, (process_conn reg_list c1),
+              (process_conn reg_list c2))} in
       let (n1, l1) = list_helper c1 [] in
       let (n2, l2) = list_helper c2 [] in
       (n::(n1@n2), lets@l1@l2)
     | Id_Arith (id, o, c1, c2) ->
-      let n = {n_y_coord=0.; n_x_coord=0.; n_id=id; node = A (o, (process_conn reg_list c1), (process_conn reg_list c2))} in
+      let n = {n_y_coord=0.; n_x_coord=0.; n_id=id;
+               node = A (o, (process_conn reg_list c1),
+               (process_conn reg_list c2))} in
       let (n1, l1) = list_helper c1 [] in
       let (n2, l2) = list_helper c2 [] in
       (n::(n1@n2), lets@l1@l2)
     | Id_Concat (id, c_list) ->
-      let connection_list = List.map (fun x -> process_conn reg_list x) c_list in
-      let n = {n_y_coord=0.; n_x_coord=0.; n_id=id; node = Concat connection_list} in
+      let connection_list =
+        List.map (fun x -> process_conn reg_list x) c_list in
+      let n =
+        {n_y_coord=0.; n_x_coord=0.; n_id=id; node = Concat connection_list} in
       let (n1, l1) = List.split (List.map (fun x -> list_helper x []) c_list) in
       (n::(List.flatten n1), lets@(List.flatten l1))
     | Id_Mux2 (id, c1, c2, c3) ->
-      let n = {n_y_coord=0.; n_x_coord=0.; n_id=id; node=Mux (process_conn reg_list c1, process_conn reg_list c2, process_conn reg_list c3)} in
+      let n = {n_y_coord=0.; n_x_coord=0.; n_id=id;
+              node=Mux (process_conn reg_list c1, process_conn reg_list c2,
+              process_conn reg_list c3)} in
       let (n1, l1) = list_helper c1 [] in
       let (n2, l2) = list_helper c2 [] in
       let (n3, l3) = list_helper c3 [] in
       (n::(n1@n2@n3), lets@l1@l2@l3)
     | Id_Apply (id, var, c_list) ->
       let connections = List.map (fun x -> process_conn reg_list x) c_list in
-      let n = {n_y_coord=0.; n_x_coord=0.; n_id=id; node= Apply (var, connections)} in
+      let n = {n_y_coord=0.; n_x_coord=0.; n_id=id;
+               node= Apply (var, connections)} in
       let (n1, l1) = List.split (List.map (fun x -> list_helper x []) c_list) in
       (n::(List.flatten n1), lets@(List.flatten l1))
     | Id_Let (id, var, c1, c2) ->
@@ -998,33 +1033,40 @@ module Formatter : CircuitFormatter = struct
           | Nth(_, c) -> unwrap [c;]
           | Red(_, c) -> unwrap [c;]
           | Concat c_list -> unwrap c_list
-          | Mux (c1,c2,c3) -> unwrap [c3;c2;c1;]
+          | Mux (c1,c2,c3) -> unwrap [c2;c3;c1;]
           | Const _ -> []
           | Apply(_, c_list) -> unwrap c_list in
         let rec col_helper finished unfinished cols =
           match unfinished with
           |[] -> cols
           |h::t ->
-            let next_col = List.map (fun (_, x)-> find_connections x.node) (List.hd cols) in
+            let next_col =
+              List.map (fun (_, x)-> find_connections x.node) (List.hd cols) in
             let now_finished = List.flatten next_col in
             let new_cols = now_finished::cols in
             let new_finished = now_finished@finished in
-            let new_unfinished = List.filter (fun x -> not (List.mem x now_finished)) unfinished in
+            let new_unfinished =
+              List.filter (fun x -> not (List.mem x now_finished)) unfinished in
             col_helper new_finished new_unfinished new_cols
-        in ((col_helper [head;] (List.filter (fun x-> x <> head) new_nodes) [[head;];]), new_lets)
+        in
+        ((col_helper [head;]
+          (List.filter (fun x-> x <> head) new_nodes)
+        [[head;];]), new_lets)
       | _ -> ([], new_lets)
 
   let make_ast_coordinates x_start x_end y_start y_end ast_columns lets =
     let x_gap =
       if lets
       then (x_end -. x_start)/.((float_of_int ((List.length ast_columns) + 2)))
-      else (x_end -. x_start)/.((float_of_int ((List.length ast_columns) + 1))) in
+      else
+        (x_end -. x_start)/.((float_of_int ((List.length ast_columns) + 1))) in
     let x_c = if lets then (x_start +. x_gap) else (x_start) in
     let rec y_helper nodes y_gap curr_y =
       match nodes with
       |[] -> []
       |h::t ->
-      (h.n_id, {n_id=h.n_id; n_y_coord=curr_y; n_x_coord=h.n_x_coord; node=h.node})::
+      (h.n_id,
+        {n_id=h.n_id; n_y_coord=curr_y; n_x_coord=h.n_x_coord; node=h.node})::
       (y_helper t y_gap (curr_y +. y_gap)) in
 
     let rec x_helper columns curr_x =
@@ -1032,7 +1074,9 @@ module Formatter : CircuitFormatter = struct
       |[] -> []
       | h::t ->
         (List.map
-          (fun (id, node) -> {n_id=node.n_id; n_y_coord=node.n_y_coord; node=node.node; n_x_coord=curr_x}
+          (fun (id, node) ->
+            {n_id=node.n_id; n_y_coord=node.n_y_coord;
+            node=node.node; n_x_coord=curr_x}
           ) h
         )::(x_helper t (curr_x +. (x_gap))) in
 
@@ -1049,13 +1093,13 @@ module Formatter : CircuitFormatter = struct
       match unfinished with
       | [] -> []
       | (id, l)::t ->
-        (l.l_id,{l_id=l.l_id; l_x_coord=x_coord; l_y_coord=curr_y; inputs=l.inputs})
+        (l.l_id,{l_id=l.l_id; l_x_coord=x_coord;
+         l_y_coord=curr_y; inputs=l.inputs})
         ::(let_helper t (curr_y +. y_gap))
     in let_helper lets (y_start +. y_gap)
 
-  (* let return_register_nodes column x_coord reg_list =
-    let gap = 100./.(float_of_int (StringMap.cardinal column)) in
-    let rec col_helper col y_coord =
+  let return_register_nodes column reg_list =
+    let rec col_helper col =
       match col with
       | [] -> []
       | (id,(reg, ast))::t ->
@@ -1065,31 +1109,11 @@ module Formatter : CircuitFormatter = struct
             if (StringMap.mem var_id reg_list) then (Reg var_id)
             else (Let var_id)
           | x -> (Node (get_ids x)) in
-      (id, ({r_x_coord=x_coord; r_y_coord=y_coord; r_reg_type=(reg_type_to_display (reg.reg_type)); input=r_input; r_id=id}, ast))
-      ::col_helper t (y_coord +. gap) in
-    col_helper (StringMap.bindings column) (0. +. (gap/.2.)) *)
-    (* returns in form (id, (display, ast)) *)
-    let return_register_nodes column reg_list =
-      let rec col_helper col =
-        match col with
-        | [] -> []
-        | (id,(reg, ast))::t ->
-          let r_input =
-            match ast with
-            | Id_Var (node_id, var_id) ->
-              if (StringMap.mem var_id reg_list) then (Reg var_id)
-              else (Let var_id)
-            | x -> (Node (get_ids x)) in
-        (id, ({r_x_coord=0.; r_y_coord=0.; r_reg_type=(reg_type_to_display (reg.reg_type)); input=r_input; r_id=id}, ast))
-        ::col_helper t in
-      col_helper (StringMap.bindings column)
-
-  (* let make_columns columns gap reg_list =
-    let rec helper cols x_coord =
-      match cols with
-      | [] -> []
-      | h::t -> (return_register_nodes h x_coord reg_list)::(helper t (x_coord +. gap))
-    in helper columns gap *)
+      (id, ({r_x_coord=0.; r_y_coord=0.;
+            r_reg_type=(reg_type_to_display (reg.reg_type));
+            input=r_input; r_id=id}, ast))
+      ::col_helper t in
+    col_helper (StringMap.bindings column)
 
   let make_columns columns reg_list =
     let rec helper cols =
@@ -1113,94 +1137,6 @@ module Formatter : CircuitFormatter = struct
       | h::t -> (to_display_input h y)::(input_helper t (y +. gap))
   in input_helper (StringMap.bindings inputs) (0. +. (gap/.2.))
 
-  (* let format_circ =
-    let reg_list = get_all_registers circ in
-    let (inputs, reg_columns, outputs) = columnize_registers circ in
-    let all_ast = reg_columns@[outputs] in
-    let reg_and_nodes = List.map
-    (
-      fun col -> (
-        StringMap.mapi (fun id reg ->
-          let (nodes, lets) = tree_to_list (id_helper reg.next) in
-        ) col
-      )
-    )
-    all_ast *)
-    let r1 = {
-      r_id = "A";
-      r_reg_type = Dis_input;
-      r_x_coord = 0.;
-      r_y_coord = 0.;
-      input = (Node (-1));
-    }
-
-    let r2 = {
-      r_id = "B";
-      r_reg_type = Dis_input;
-      r_x_coord = 0.;
-      r_y_coord = 50.;
-      input = (Node (-1));
-    }
-
-    let r3 = {
-      r_id = "C";
-      r_reg_type = Dis_input;
-      r_x_coord = 0.;
-      r_y_coord = 100.;
-      input = (Node (-1));
-    }
-
-    let r4 = {
-      r_id = "D";
-      r_reg_type = Dis_rising;
-      r_x_coord = 75.;
-      r_y_coord = 50.;
-      input = Node 5;
-    }
-
-    let r5 = {
-      r_id = "E";
-      r_reg_type = Dis_output;
-      r_x_coord = 100.;
-      r_y_coord = 50.;
-      input= Node 6;
-    }
-
-    let r = [("A", r1);("B",r2);("C",r3);("D",r4);("E",r5);]
-
-    let n1 = {
-      n_id = 3;
-      n_x_coord = 25.;
-      n_y_coord = 25.;
-      node = L (And, Reg "A", Reg "B");
-    }
-
-    let n2 = {
-      n_id = 5;
-      n_x_coord = 37.5;
-      n_y_coord = 75.;
-      node = L (And, Node 3, Let "X");
-    }
-
-    let n3 = {
-      n_id = 6;
-      n_x_coord = 87.5;
-      n_y_coord = 50.;
-      node = Red (And, Reg "D");
-    }
-
-    let n = [(3, n1); (5, n2); (6, n3)]
-
-    let lets = [("X",{l_id="X"; l_x_coord=12.5; l_y_coord=75.; inputs=["B"; "C"];})]
-
-    (* Test circuit *)
-    let test_circ () =
-    {
-      registers = r;
-      lets = lets;
-      nodes = n;
-    }
-
   let col_sum (id, (reg, nodes, lets)) =
     List.length nodes + (
         if (List.length lets = 0) then 0
@@ -1217,11 +1153,15 @@ module Formatter : CircuitFormatter = struct
 
   let handle_ast (id, (reg, nodes, lets)) x_start x_end y_start y_end =
     let final_y_coord = (y_start +. y_end) /. 2. in
-    let final_reg = (id, {input=reg.input; r_id = reg.r_id; r_x_coord = x_end; r_y_coord = final_y_coord; r_reg_type = reg.r_reg_type}) in
+    let final_reg =
+      (id, {input=reg.input; r_id = reg.r_id;
+            r_x_coord = x_end; r_y_coord = final_y_coord;
+            r_reg_type = reg.r_reg_type}) in
     let final_lets =
       if (List.length lets = 0) then []
       else (format_lets x_start y_start y_end lets) in
-    let final_ast = make_ast_coordinates x_start x_end y_start y_end nodes (not (List.length lets = 0)) in
+    let final_ast = make_ast_coordinates
+      x_start x_end y_start y_end nodes (not (List.length lets = 0)) in
     (final_ast, final_lets, final_reg)
 
   let handle_col col x_start x_end =
@@ -1229,7 +1169,8 @@ module Formatter : CircuitFormatter = struct
     let rec col_helper curr_y cols =
       match cols with
       |[] -> []
-      |h::t -> (handle_ast h x_start x_end curr_y (curr_y +. y_gap))::(col_helper (curr_y +. y_gap) t) in
+      |h::t -> (handle_ast h x_start x_end curr_y (curr_y +. y_gap))
+                ::(col_helper (curr_y +. y_gap) t) in
     col_helper 0. col
 
 
@@ -1268,49 +1209,15 @@ module Formatter : CircuitFormatter = struct
     let almost_there = List.flatten all_nodes_done in
     let all_registers = List.map (fun (_, _, x) -> x) almost_there in
     let all_lets = List.flatten (List.map (fun (_, x, _) -> x) almost_there) in
-    let all_nodes = List.flatten(List.flatten (List.map (fun (x, _ , _) -> x) almost_there)) in
-
-
+    let all_nodes =
+      List.flatten(
+        List.flatten (List.map (fun (x, _ , _) -> x) almost_there)) in
     {
       registers = final_inputs@all_registers;
       lets = all_lets;
       nodes = all_nodes;
     }
 
-    (* let rec reg_helper curr_y curr_x y_gap col len =
-      let p1 = print_string "made it here 8\n" in
-      match col with
-      | [] -> []
-      | (id, (display, ast))::tail ->
-        let (n, l) = tree_to_list ast reg_list in
-        let p1 = print_string "made it here 9\n" in
-        let (nodes, lets) = columnize_ast (n, l, display) in
-        let p1 = print_string "made it here 10\n" in
-        let formatted_ast = List.flatten (
-          make_ast_coordinates curr_x (curr_x +. (x_gap/.len)) (curr_y) (curr_y +. y_gap) nodes ((List.length lets) = 0)
-          ) in
-        let formatted_lets = (format_lets curr_x curr_y (curr_y +. y_gap) lets) in
-        let formatted_register = (id, display) in
-        (formatted_ast, formatted_lets, formatted_register)::(reg_helper (curr_y +. y_gap) (curr_x +. (x_gap/.len)) y_gap tail len)
-    in
-    let p1 = print_string "made it here 11\n" in
-    let rec finish_column curr_x cols =
-      match cols with
-      | [] -> []
-      | column::t ->
-        let p1 = print_string "made it here 12\n" in
-        let y_gap = (100./.(float_of_int (List.length column))) in
-        let p1 = print_string "made it here 13\n" in
-        (reg_helper 0. curr_x y_gap column (float_of_int (List.length column)))::(finish_column (curr_x +. x_gap) t) in
-    let finished = List.flatten (finish_column 0. reg_done) in
-    let p1 = print_string "made it here 14\n" in
-    let (ast, lets, reg) = List.fold_left (fun (a_list, l_list, r_list) (a, l, r) -> (a::a_list, l::l_list, r::r_list)) ([],[],[]) finished in
-    let p1 = print_string "made it here 15\n" in
-    {
-      registers=final_inputs@reg;
-      nodes=(List.flatten ast);
-      lets=(List.flatten lets);
-    } *)
 
 let string_of_reg_type t =
   match t with
@@ -1337,7 +1244,8 @@ let print_node node =
 
 let print_display_let (id, l) =
   print_string ("Let ID " ^ id ^ "\n");
-  print_string ("Postition : (" ^ (string_of_float l.l_x_coord) ^ ", " ^ (string_of_float l.l_y_coord) ^ ")\n");
+  print_string ("Postition : (" ^ (string_of_float l.l_x_coord) ^
+                ", " ^ (string_of_float l.l_y_coord) ^ ")\n");
   print_string ("Inputs ");
   List.iter (fun x -> print_string (x^",")) l.inputs;
   ()
@@ -1352,7 +1260,8 @@ let print_display_reg (id, r) =
   print_string ("Display Register " ^ id);
   print_string ("Register : \n");
   print_string ("Register type : " ^ (string_of_reg_type r.r_reg_type));
-  print_string ("Postition : (" ^ (string_of_float r.r_x_coord) ^ ", " ^ (string_of_float r.r_y_coord) ^ ")\n");
+  print_string ("Postition : (" ^ (string_of_float r.r_x_coord) ^ ", "
+                ^ (string_of_float r.r_y_coord) ^ ")\n");
   print_string ("Input: " ^ (string_of_conn r.input) ^ "\n");
   ()
 
@@ -1360,7 +1269,8 @@ let print_display_node (id, n) =
   print_string ("Display Node " ^ (string_of_int id) ^ "\n");
   print_string "NODE : ";
   print_node n.node;
-  print_string ("Postition : (" ^ (string_of_float n.n_x_coord) ^ ", " ^ (string_of_float n.n_y_coord) ^ ")\n");
+  print_string ("Postition : (" ^ (string_of_float n.n_x_coord)
+                ^ ", " ^ (string_of_float n.n_y_coord) ^ ")\n");
   ()
 
 let format_format_circuit f circ =
@@ -1368,5 +1278,82 @@ let format_format_circuit f circ =
   List.iter print_display_reg circ.registers;
   List.iter print_display_let circ.lets;
   ()
+
+(* A test circuit for the GUI to practice on *)
+
+let r1 = {
+  r_id = "A";
+  r_reg_type = Dis_input;
+  r_x_coord = 0.;
+  r_y_coord = 0.;
+  input = (Node (-1));
+}
+
+let r2 = {
+  r_id = "B";
+  r_reg_type = Dis_input;
+  r_x_coord = 0.;
+  r_y_coord = 50.;
+  input = (Node (-1));
+}
+
+let r3 = {
+  r_id = "C";
+  r_reg_type = Dis_input;
+  r_x_coord = 0.;
+  r_y_coord = 100.;
+  input = (Node (-1));
+}
+
+let r4 = {
+  r_id = "D";
+  r_reg_type = Dis_rising;
+  r_x_coord = 75.;
+  r_y_coord = 50.;
+  input = Node 5;
+}
+
+let r5 = {
+  r_id = "E";
+  r_reg_type = Dis_output;
+  r_x_coord = 100.;
+  r_y_coord = 50.;
+  input= Node 6;
+}
+
+let r = [("A", r1);("B",r2);("C",r3);("D",r4);("E",r5);]
+
+let n1 = {
+  n_id = 3;
+  n_x_coord = 25.;
+  n_y_coord = 25.;
+  node = L (And, Reg "A", Reg "B");
+}
+
+let n2 = {
+  n_id = 5;
+  n_x_coord = 37.5;
+  n_y_coord = 75.;
+  node = L (And, Node 3, Let "X");
+}
+
+let n3 = {
+  n_id = 6;
+  n_x_coord = 87.5;
+  n_y_coord = 50.;
+  node = Red (And, Reg "D");
+}
+
+let n = [(3, n1); (5, n2); (6, n3)]
+
+let lets = [("X",{l_id="X"; l_x_coord=12.5; l_y_coord=75.; inputs=["B"; "C"];})]
+
+(* Test circuit *)
+let test_circ () =
+{
+  registers = r;
+  lets = lets;
+  nodes = n;
+}
 
 end
