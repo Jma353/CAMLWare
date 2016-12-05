@@ -198,7 +198,7 @@ let rec collect_wires map (n_s:display_node list) acc =
     | L (_,c1,c2)     -> process_node_wirings [c1;c2] cx cy acc
     | A (_,c1,c2)     -> process_node_wirings [c1;c2] cx cy acc
     | C (_,c1,c2)     -> process_node_wirings [c1;c2] cx cy acc
-    | Mux (c1,c2,c3)  -> process_node_wirings [c1;c2;c3] cx cy acc
+    | Mux (c1,c2,c3)  -> process_node_wirings [c3;c2;c1] cx cy acc
     | Sub (_,_,c)     -> process_node_wirings [c] cx cy acc
     | N (_,c)         -> process_node_wirings [c] cx cy acc
     | Nth (_,c)       -> process_node_wirings [c] cx cy acc
