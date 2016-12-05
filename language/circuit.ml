@@ -676,6 +676,9 @@ module Formatter : CircuitFormatter = struct
     new_id := 1 + !(new_id);
     !new_id
 
+  (*[attach_ids ast] is ast' identical in structure to ast,
+   * however, all nodes are of type Id_Comb and have been assigned a unique
+   * integer id *)
   let attach_ids ast =
     let rec id_helper ast =
       match ast with
@@ -700,6 +703,7 @@ module Formatter : CircuitFormatter = struct
         Id_Let (newvar (), id, id_helper c1, id_helper c2)
     in id_helper ast
 
+  (* [get_all_registers circ] is a map of all registers in a circuit *)
   let get_all_registers circ =
   let reg =
     (StringMap.filter
@@ -713,9 +717,11 @@ module Formatter : CircuitFormatter = struct
       | _ -> failwith "invalid map")
     reg)
 
-
+  (* place-holding comp function for reg ID's so that sort_uniq can be used *)
   let id_comp = fun x y ->  0
 
+  (*[list_dependencies ast reg_list] is a list of every register found in [ast]
+   * Precondition : AST is a valid AST, with no undefined Var nodes *)
   let list_dependencies ast reg_list =
     let rec dependency_helper ast dep =
       match ast with
@@ -745,28 +751,44 @@ module Formatter : CircuitFormatter = struct
         (dependency_helper c1 dep)@(dependency_helper c2 dep)
       in List.sort_uniq id_comp (dependency_helper ast [])
 
+  (*[no_inputs reg_list] if all registers in reg_list for which
+   * [reg_type <> INPUT]*)
   let no_inputs reg_list =
   StringMap.filter
   (fun k v -> match v.reg_type with |Input -> false | _ -> true) reg_list
 
+  (*[no_inputs reg_list] if all registers in reg_list for which
+   * [reg_type = INPUT]*)
   let find_inputs reg_list =
   StringMap.filter
   (fun k v -> match v.reg_type with |Input -> true | _ -> false) reg_list
 
+  (*[no_inputs reg_list] if all registers in reg_list for which
+   * [reg_type <> OUTPUT]*)
   let no_outputs reg_list =
   StringMap.filter
   (fun k v -> match v.reg_type with |Output -> false | _ -> true) reg_list
 
+  (*[no_inputs reg_list] if all registers in reg_list for which
+   * [reg_type = OUTPUT]*)
   let find_outputs reg_list =
   StringMap.filter
   (fun k v -> match v.reg_type with |Output -> true | _ -> false) reg_list
 
+  (*[normalize_reg r] unwraps r.next and returns the associated ast
+   * precondition: r is a register NOT of type INPUT*)
   let normalize_reg r =
     match r.next with
     | AST ast -> (r, attach_ids ast)
     | _ -> failwith "invalid ast"
 
-
+  (*[dependency_helper not_finished finished cols reg_deps] topologically
+   * sorts registers based on their depencies.  Register R is considered
+   * "finished" when all nodes in [list_dependencies r] have also finished.
+   *
+   * Exceptions to this rule occurs when R is listed in R's dependencies,
+   * during which that dependency is ignored OR when registers cyclically
+   * depend on eachother, in which case they all share a column.  *)
   let rec dependency_helper not_finished finished cols reg_deps =
     if (StringMap.is_empty not_finished) then cols
     else
@@ -1102,13 +1124,16 @@ module Formatter : CircuitFormatter = struct
     let rec col_helper col =
       match col with
       | [] -> []
-      | (id,(reg, ast))::t ->
+      | (id, (reg, ast))::t ->
         let r_input =
+          let p1 = print_string "finding input!!!\n" in
           match ast with
-          | Id_Var (node_id, var_id) ->
+          | Id_Var (_, var_id) ->
             if (StringMap.mem var_id reg_list) then (Reg var_id)
             else (Let var_id)
-          | x -> (Node (get_ids x)) in
+          | Id_Let (node_id, var_id, _, _) -> Let var_id
+          | x -> let p1 = print_string "finding input2!!!\n" in
+          (Node (get_ids x)) in
       (id, ({r_x_coord=0.; r_y_coord=0.;
             r_reg_type=(reg_type_to_display (reg.reg_type));
             input=r_input; r_id=id}, ast))
@@ -1225,6 +1250,7 @@ let string_of_reg_type t =
   | Dis_output -> "Output\n"
   | Dis_rising -> "Rising\n"
   | Dis_falling -> "Falling\n"
+
 let print_node node =
   let s =
     match node with
