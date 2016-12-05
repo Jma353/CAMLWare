@@ -841,12 +841,12 @@ module Formatter : CircuitFormatter = struct
     | Const _ -> true
     | Apply (_, c_list) -> List.for_all (fun x -> is_finished x complete) c_list
 
-  type display_info = {
+(*   type display_info = {
     y_coord : float;
     id : int;
     node : node;
     parents : int list;
-  }
+  } *)
 
   let process_conn reg_list comb =
     match comb with
@@ -1001,14 +1001,12 @@ module Formatter : CircuitFormatter = struct
         in ((col_helper [head;] (List.filter (fun x-> x <> head) new_nodes) [[head;];]), new_lets)
       | _ -> ([], new_lets)
 
-  let reg_width = 4.
-
   let make_ast_coordinates x_start x_end y_start y_end ast_columns lets =
     let x_gap =
       if lets
-      then (x_end -. x_start -. reg_width)/.((float_of_int ((List.length ast_columns) + 2)))
-      else (x_end -. x_start -. reg_width)/.((float_of_int ((List.length ast_columns) + 1))) in
-    let x_c = if lets then (x_start +. reg_width +.(2.*.x_gap)) else (x_start +. reg_width +. x_gap) in
+      then (x_end -. x_start)/.((float_of_int ((List.length ast_columns) + 2)))
+      else (x_end -. x_start)/.((float_of_int ((List.length ast_columns) + 1))) in
+    let x_c = if lets then (x_start +. x_gap) else (x_start) in
     let rec y_helper nodes y_gap curr_y =
       match nodes with
       |[] -> []
@@ -1042,7 +1040,7 @@ module Formatter : CircuitFormatter = struct
         ::(let_helper t (curr_y +. y_gap))
     in let_helper lets (y_start +. y_gap)
 
-  let return_register_nodes column x_coord reg_list =
+  (* let return_register_nodes column x_coord reg_list =
     let gap = 100./.(float_of_int (StringMap.cardinal column)) in
     let rec col_helper col y_coord =
       match col with
@@ -1056,14 +1054,36 @@ module Formatter : CircuitFormatter = struct
           | x -> (Node (get_ids x)) in
       (id, ({r_x_coord=x_coord; r_y_coord=y_coord; r_reg_type=(reg_type_to_display (reg.reg_type)); input=r_input; r_id=id}, ast))
       ::col_helper t (y_coord +. gap) in
-    col_helper (StringMap.bindings column) (0. +. (gap/.2.))
+    col_helper (StringMap.bindings column) (0. +. (gap/.2.)) *)
+    (* returns in form (id, (display, ast)) *)
+    let return_register_nodes column reg_list =
+      let rec col_helper col =
+        match col with
+        | [] -> []
+        | (id,(reg, ast))::t ->
+          let r_input =
+            match ast with
+            | Id_Var (node_id, var_id) ->
+              if (StringMap.mem var_id reg_list) then (Reg var_id)
+              else (Let var_id)
+            | x -> (Node (get_ids x)) in
+        (id, ({r_x_coord=0.; r_y_coord=0.; r_reg_type=(reg_type_to_display (reg.reg_type)); input=r_input; r_id=id}, ast))
+        ::col_helper t in
+      col_helper (StringMap.bindings column)
 
-  let make_columns columns gap reg_list =
+  (* let make_columns columns gap reg_list =
     let rec helper cols x_coord =
       match cols with
       | [] -> []
       | h::t -> (return_register_nodes h x_coord reg_list)::(helper t (x_coord +. gap))
-    in helper columns gap
+    in helper columns gap *)
+
+  let make_columns columns reg_list =
+    let rec helper cols =
+      match cols with
+      | [] -> []
+      | h::t -> (return_register_nodes h reg_list)::(helper t)
+    in helper columns
 
   let make_inputs inputs =
     let gap = 100./.(float_of_int(StringMap.cardinal inputs))  in
@@ -1080,22 +1100,164 @@ module Formatter : CircuitFormatter = struct
       | h::t -> (to_display_input h y)::(input_helper t (y +. gap))
   in input_helper (StringMap.bindings inputs) (0. +. (gap/.2.))
 
+  (* let format_circ =
+    let reg_list = get_all_registers circ in
+    let (inputs, reg_columns, outputs) = columnize_registers circ in
+    let all_ast = reg_columns@[outputs] in
+    let reg_and_nodes = List.map
+    (
+      fun col -> (
+        StringMap.mapi (fun id reg ->
+          let (nodes, lets) = tree_to_list (id_helper reg.next) in
+        ) col
+      )
+    )
+    all_ast *)
+    let r1 = {
+      r_id = "A";
+      r_reg_type = Dis_input;
+      r_x_coord = 0.;
+      r_y_coord = 0.;
+      input = (Node (-1));
+    }
+
+    let r2 = {
+      r_id = "B";
+      r_reg_type = Dis_input;
+      r_x_coord = 0.;
+      r_y_coord = 50.;
+      input = (Node (-1));
+    }
+
+    let r3 = {
+      r_id = "C";
+      r_reg_type = Dis_input;
+      r_x_coord = 0.;
+      r_y_coord = 100.;
+      input = (Node (-1));
+    }
+
+    let r4 = {
+      r_id = "D";
+      r_reg_type = Dis_rising;
+      r_x_coord = 75.;
+      r_y_coord = 50.;
+      input = Node 5;
+    }
+
+    let r5 = {
+      r_id = "E";
+      r_reg_type = Dis_output;
+      r_x_coord = 100.;
+      r_y_coord = 50.;
+      input= Node 6;
+    }
+
+    let r = [("A", r1);("B",r2);("C",r3);("D",r4);("E",r5);]
+
+    let n1 = {
+      n_id = 3;
+      n_x_coord = 25.;
+      n_y_coord = 25.;
+      node = L (And, Reg "A", Reg "B");
+    }
+
+    let n2 = {
+      n_id = 5;
+      n_x_coord = 37.5;
+      n_y_coord = 75.;
+      node = L (And, Node 3, Let "X");
+    }
+
+    let n3 = {
+      n_id = 6;
+      n_x_coord = 87.5;
+      n_y_coord = 50.;
+      node = Red (And, Reg "D");
+    }
+
+    let n = [(3, n1); (5, n2); (6, n3)]
+
+    let lets = [("X",{l_id="X"; l_x_coord=12.5; l_y_coord=75.; inputs=["B"; "C"];})]
+
+    (* Test circuit *)
+    let test_circ () =
+    {
+      registers = r;
+      lets = lets;
+      nodes = n;
+    }
+
+  let col_sum (id, (reg, nodes, lets)) =
+    List.length nodes + (
+        if (List.length lets = 0) then 0
+        else 1
+    )
+
+  let rec col_needed column max =
+    match column with
+    | [] -> max
+    | h::t ->
+      let curr = col_sum h in
+      if curr > max then col_needed t curr
+      else col_needed t max
+
+  let handle_ast (id, (reg, nodes, lets)) x_start x_end y_start y_end = 
+    let final_y_coord = (y_start +. y_end) /. 2. in 
+    let final_reg = {input=reg.input; r_id = reg.r_id; r_x_coord = x_end; r_y_coord = y_end; r_reg_type = reg.r_reg_type} in
+    let final_lets = 
+      if (List.length lets = 0) then []
+      else (format_lets x_start y_start y_end lets) in 
+    let final_ast = make_ast_coordinates x_start x_end y_start y_end nodes (not (List.length lets = 0)) in 
+    (final_ast, final_lets, final_reg)
+  
+  let handle_col col x_start x_end = 
+    let y_gap = 100./.(float_of_int (List.length col)) in 
+    let rec col_helper curr_y cols = 
+      match cols with 
+      |[] -> []
+      |h::t -> (handle_ast h x_start x_end curr_y (curr_y +. y_gap))::(col_helper (curr_y +. y_gap) t) in
+    col_helper 0. col 
+
+
   let format circ =
     let reg_list = get_all_registers circ in
-    let p1 = print_string "made it here 1\n" in
     let (inputs, reg_columns, outputs) = columnize_registers circ in
-    let p1 = print_string "made it here 2\n" in
     let all_ast = reg_columns@[outputs] in
-    let p1 = print_string "made it here 3\n" in
-    let total_col = float_of_int (List.length all_ast) in
-    let p1 = print_string "made it here 4\n" in
     let final_inputs = make_inputs inputs in
-    let p1 = print_string "made it here 5\n" in
-    let x_gap = 100./.total_col in
-    let p1 = print_string "made it here 6\n" in
-    let reg_done = make_columns all_ast x_gap reg_list in
-    let p1 = print_string "made it here 7\n" in
-    let rec reg_helper curr_y curr_x y_gap col len =
+    let reg_done = make_columns all_ast reg_list in (*now have [[id, (reg, ast)]]*)
+    let all_columns =
+      List.map
+      (fun col -> (
+        List.map (fun (id, (reg, ast)) ->
+          let (n, l) = tree_to_list ast reg_list in
+          let (nodes, lets) = columnize_ast (n, l, reg) in
+            (id, (reg, nodes, lets))
+          ) col
+        )
+      ) reg_done in
+    let total_col =
+      (List.fold_left
+        (fun acc x -> acc + (col_needed x 0)) 0
+      all_columns) + (List.length all_columns)in
+    let x_gap = 100./.(float_of_int total_col) in
+    let rec x_helper columns curr_x = 
+      match columns with 
+      | [] -> []
+      | h::t -> 
+        let x_start = curr_x in 
+        let x_end = (float_of_int (col_needed h 0))*.x_gap +.curr_x in 
+        let new_x_start = x_end +. x_gap in 
+        (handle_col h x_start x_end)::(x_helper t new_x_start)
+    in
+
+    {
+      registers = r;
+      lets = lets;
+      nodes = n;
+    }
+
+    (* let rec reg_helper curr_y curr_x y_gap col len =
       let p1 = print_string "made it here 8\n" in
       match col with
       | [] -> []
@@ -1128,7 +1290,8 @@ module Formatter : CircuitFormatter = struct
       registers=final_inputs@reg;
       nodes=(List.flatten ast);
       lets=(List.flatten lets);
-    }
+    } *)
+
 let string_of_reg_type t =
   match t with
   | Dis_input -> "Input\n"
@@ -1185,80 +1348,5 @@ let format_format_circuit f circ =
   List.iter print_display_reg circ.registers;
   List.iter print_display_let circ.lets;
   ()
-
-  let r1 = {
-    r_id = "A";
-    r_reg_type = Dis_input;
-    r_x_coord = 0.;
-    r_y_coord = 0.;
-    input = (Node (-1));
-  }
-
-  let r2 = {
-    r_id = "B";
-    r_reg_type = Dis_input;
-    r_x_coord = 0.;
-    r_y_coord = 50.;
-    input = (Node (-1));
-  }
-
-  let r3 = {
-    r_id = "C";
-    r_reg_type = Dis_input;
-    r_x_coord = 0.;
-    r_y_coord = 100.;
-    input = (Node (-1));
-  }
-
-  let r4 = {
-    r_id = "D";
-    r_reg_type = Dis_rising;
-    r_x_coord = 75.;
-    r_y_coord = 50.;
-    input = Node 5;
-  }
-
-  let r5 = {
-    r_id = "E";
-    r_reg_type = Dis_output;
-    r_x_coord = 100.;
-    r_y_coord = 50.;
-    input= Node 6;
-  }
-
-  let r = [("A", r1);("B",r2);("C",r3);("D",r4);("E",r5);]
-
-  let n1 = {
-    n_id = 3;
-    n_x_coord = 25.;
-    n_y_coord = 25.;
-    node = L (And, Reg "A", Reg "B");
-  }
-
-  let n2 = {
-    n_id = 5;
-    n_x_coord = 37.5;
-    n_y_coord = 75.;
-    node = L (And, Node 3, Let "X");
-  }
-
-  let n3 = {
-    n_id = 6;
-    n_x_coord = 87.5;
-    n_y_coord = 50.;
-    node = Red (And, Reg "D");
-  }
-
-  let n = [(3, n1); (5, n2); (6, n3)]
-
-  let lets = [("X",{l_id="X"; l_x_coord=12.5; l_y_coord=75.; inputs=["B"; "C"];})]
-
-  (* Test circuit *)
-  let test_circ () =
-  {
-    registers = r;
-    lets = lets;
-    nodes = n;
-  }
 
 end
