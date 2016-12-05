@@ -257,8 +257,7 @@ Reuben designed the language syntax and wrote up most of the language reference 
 
 Natasha wrote the Simulator and the unit tests for the simulator. She also wrote the GUI tests and helped with the language documentation and MS1/MS2 documentation. She wrote the `Circuit.Simulator` and `Bitstream`. However, `Bitstream `was re-written by Reuben after the group decided we wanted an $O(1)$ access time and a 32 bit maximum on the registers. She esitmates she put in ~40 hours on the project between planning, designing, implementing, and testing.
 
-Celine wrote the Formatter and the tests for the Formatter. This module went through several iterations as the group learned the limitations the GUI would present.  Celine worked with Joe extensively to design an appropriate intermediate representation of a circuit (the formatted_circuit) that took as much processing responsibility as possible from the GUI itself.  This helped preserve the MVC design.  
-
+Celine wrote the Formatter and the tests for the Formatter. This module went through several iterations as the group learned the limitations the GUI would present.  Celine worked with Joe extensively to design an appropriate intermediate representation of a circuit (the formatted_circuit) that took as much processing responsibility as possible from the GUI itself.  This helped preserve the MVC design.  She esitmates she put in ~40 hours on the project between planning, designing, implementing, and testing.
 
 
 Joe wrote the GUI. FLAG - Joe

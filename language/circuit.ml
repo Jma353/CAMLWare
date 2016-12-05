@@ -690,7 +690,7 @@ module Formatter : CircuitFormatter = struct
       | Comp(c, c1, c2) -> Id_Comp (newvar (), c, id_helper c1, id_helper c2)
       | Arith (o, c1, c2) -> Id_Arith (newvar (), o, id_helper c1, id_helper c2)
       | Concat (c_list) -> Id_Concat (newvar (), (List.map (function x -> id_helper x) c_list))
-      | Mux2 (c1, c2, c3) -> Id_Mux2 (newvar (), id_helper c1, id_helper c2, id_helper c3)
+      | Mux2 (c1, c2, c3) -> Id_Mux2 (newvar (), id_helper c2, id_helper c3, id_helper c1)
       | Apply (id, c_list) -> Id_Apply (newvar (), id, (List.map (function x -> id_helper x) c_list))
       | Let (id, c1, c2) -> Id_Let (newvar (), id, id_helper c1, id_helper c2)
     in id_helper ast
