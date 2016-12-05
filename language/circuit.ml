@@ -907,15 +907,20 @@ module Formatter : CircuitFormatter = struct
     | Apply (_, c_list) -> List.for_all (fun x -> is_finished x complete) c_list
 
 
-  (* [process_conn]*)
-  let process_conn reg_list comb =
+  (* [process_conn reg_list comb] creates the necesary connection a register
+   * in accordance with its AST *)
+  let rec process_conn reg_list comb =
     match comb with
-    | Id_Var (_, v) ->
-      if (StringMap.mem v reg_list) then (Reg v) else (Let v)
-    | x -> Node (get_ids x)
+    | Id_Var (_, var_id) ->
+      if (StringMap.mem var_id reg_list) then (Reg var_id)
+      else (Let var_id)
+    | Id_Let (node_id, var_id, _, c2) -> process_conn reg_list c2
+    | x -> let p1 = (Node (get_ids x))
 
+  (*the four types of registers to dispplay*)
   type display_reg_type = Dis_rising | Dis_falling | Dis_input | Dis_output
 
+  (*conversion between display and non-display registers*)
   let reg_type_to_display reg_type =
     match reg_type with
     | Rising -> Dis_rising
@@ -923,7 +928,11 @@ module Formatter : CircuitFormatter = struct
     | Input -> Dis_input
     | Output -> Dis_output
 
-
+    (*A node for the GUI to display.
+     * n_id: unique id of node
+     * n_x_coord: the x_coord for the node to be displayed at
+     * n_y_coord: the y_coord for the node to be displayed at
+     * node: the type of node to display ant its connections*)
     type display_node = {
       n_id : int;
       n_x_coord: float;
@@ -931,6 +940,11 @@ module Formatter : CircuitFormatter = struct
       node : node;
     }
 
+    (*A let for the GUI to display.
+     * l_id: unique variable name of the let
+     * l_x_coord: the x_coord for the let to be displayed at
+     * l_coord: the y_coord for the let to be displayed at
+     * inputs: all registers the let computes on*)
     type display_let = {
       l_id : id;
       l_x_coord:float;
@@ -938,6 +952,11 @@ module Formatter : CircuitFormatter = struct
       inputs: id list;
     }
 
+    (*A register for the GUI to display.
+     * r_id: unique variable name of the register
+     * r_x_coord: the x_coord for the reg to be displayed at
+     * r_coord: the y_coord for the reg to be displayed at
+     * input: the node input into the register *)
     type display_register = {
       r_id : id;
       r_reg_type :  display_reg_type;
@@ -946,6 +965,10 @@ module Formatter : CircuitFormatter = struct
       input : connection;
     }
 
+    (*A circuit for the GUI to display.
+     * registers: all registers in the circuit
+     * nodes: all nodes in the circuit
+     * lets: all lets in the circuit *)
     type formatted_circuit = {
       registers : (id * display_register) list;
       nodes     : (int * display_node) list;
@@ -1038,6 +1061,10 @@ module Formatter : CircuitFormatter = struct
   in list_helper ast []
 
   let columnize_ast(nodes, lets, register) =
+    let p8 = print_string (string_of_int (List.length lets)) in
+    let p9 = print_string "!!!!!!!\n" in
+    let p10 = print_string (string_of_int (List.length nodes)) in
+    let p11 = print_string "!!!!!!!\n" in
     let new_nodes = List.map (fun x-> (x.n_id, x)) nodes in
     let new_lets = List.map (fun x -> (x.l_id, x)) lets in
     if (List.length new_nodes) = 0 then ([], new_lets)
@@ -1136,7 +1163,7 @@ module Formatter : CircuitFormatter = struct
       else (Let var_id)
     | Id_Let (node_id, var_id, _, c2) -> uncover_input c2 reg_list
     | x -> let p1 = print_string "finding input2!!!\n" in
-    (Node (get_ids x))
+      (Node (get_ids x))
 
   let return_register_nodes column reg_list =
     let rec col_helper col =
@@ -1210,16 +1237,20 @@ module Formatter : CircuitFormatter = struct
 
 
   let format circ =
+    let p1 = print_string "get 1\n" in
     let reg_list = get_all_registers circ in
     let (inputs, reg_columns, outputs) = columnize_registers circ in
     let all_ast = reg_columns@[outputs] in
     let final_inputs = make_inputs inputs in
     let reg_done = make_columns all_ast reg_list in (*now have [[id, (reg, ast)]]*)
+    let p1 = print_string "get 2\n" in
     let all_columns =
       List.map
       (fun col -> (
         List.map (fun (id, (reg, ast)) ->
+          let p1 = print_string "get 4\n" in
           let (n, l) = tree_to_list ast reg_list in
+          let p1 = print_string "get 5\n" in
           let (nodes, lets) = columnize_ast (n, l, reg) in
             (id, (reg, nodes, lets))
           ) col
@@ -1230,6 +1261,7 @@ module Formatter : CircuitFormatter = struct
         (fun acc x -> acc + (col_needed x 0)) 0
       all_columns) + (List.length all_columns)in
     let x_gap = 100./.(float_of_int total_col) in
+    let p1 = print_string "get 3\n" in
     let rec x_helper columns curr_x =
       match columns with
       | [] -> []
@@ -1239,7 +1271,7 @@ module Formatter : CircuitFormatter = struct
         let new_x_start = x_end +. x_gap in
         (handle_col h x_start x_end)::(x_helper t new_x_start)
     in
-
+    let p1 = print_string "get 4\n" in
     let all_nodes_done = x_helper all_columns x_gap in
     let almost_there = List.flatten all_nodes_done in
     let all_registers = List.map (fun (_, _, x) -> x) almost_there in
