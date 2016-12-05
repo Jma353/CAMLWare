@@ -484,7 +484,8 @@ module Miscs = struct
     let d_3       = _d [one_2;two_2;three_2] in
     let my_path_3 = path d_3 "linear" in
     let mux_txt = text (edge *. 0.3) (edge *. 0.4) (edge /. 5.) "" "Mux" in
-    svg |- (g |- my_path_1 |- my_path_2 |- my_path_3 |- mux_txt)
+    let zero_txt = text (edge *. 0.1) (edge *. 0.2) (edge /. 6.) "" "0" in
+    svg |- (g |- my_path_1 |- my_path_2 |- my_path_3 |- mux_txt |- zero_txt)
 
   (* Let-statement Component *)
   let let_c v (x:float) (y:float) (edge:float) svg =
