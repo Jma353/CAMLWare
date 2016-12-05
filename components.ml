@@ -490,6 +490,12 @@ module Miscs = struct
   let concat_c (x:float) (y:float) (edge:float) svg =
     svg |> box_with_symbol x y edge "Concat"
 
+  (* SVG Container *)
+  let svg_container_div svg_elmt =
+    static "div"
+    |. str attr "class" "svg-house"
+    |. seq [svg_elmt]
+
   (* Initial View Component *)
   let initial_svg width height padding =
     let width = width + 2 * padding in

@@ -7,8 +7,6 @@ open Combinational
 
 
 (* Sizes *)
-let width = 800
-let height = 400
 let padding = 100
 let nonNodeS = 60.
 let nodeS = 50.
@@ -21,12 +19,10 @@ let make_non_node_scale dim = make_scale dim nonNodeS
 
 
 (* Dimensions & scaling *)
-let width_f    = float_of_int width
-let height_f   = float_of_int height
-let x_nn_scale = make_non_node_scale width_f
-let y_nn_scale = make_non_node_scale height_f
-let x_n_scale  = make_node_scale width_f
-let y_n_scale  = make_node_scale height_f
+let x_nn_scale = make_non_node_scale 800.
+let y_nn_scale = make_non_node_scale 400.
+let x_n_scale  = make_node_scale 800.
+let y_n_scale  = make_node_scale 400.
 
 
 (* Mini-Int Module for Maps *)
@@ -310,8 +306,9 @@ let make circ =
 
 (* Initial view for compiling *)
 let init_view () =
-  let init = initial_svg width height padding in
+  let init = initial_svg 800 400 padding in
+  let svg_container = svg_container_div init in
   let div = compile_area (Controller.did_compile make) in
   let step_b = step_btn (Controller.did_step update_registers) in
   let clock_c = clock () in
-  seq [div; init; step_b; clock_c]
+  seq [div; svg_container; step_b; clock_c]
