@@ -24,3 +24,8 @@ Open up webpage `localhost:8000` in browser
 ```
 ./clean
 ```
+
+## Documentation
+- For an overview of this project read `documentation/MS2.pdf`
+- For a detailed description of the programming language `CAMLWare` read `documentation/language.pdf`
+- For a description of how to use the GUI read `documentation/GUIDoc.pdf`
